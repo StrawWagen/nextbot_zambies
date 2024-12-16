@@ -5,11 +5,28 @@ terminator_Extras.zamb_PotentialSpawnPositions = terminator_Extras.zamb_Potentia
 terminator_Extras.zamb_Spawnpoints = terminator_Extras.zamb_Spawnpoints or nil
 terminator_Extras.zamb_SpawnOverrideQueue = terminator_Extras.zamb_SpawnOverrideQueue or {}
 
+local defaultMaxZambs = 35
+local maxZambsVar = CreateConVar( "zambie_director_maxzambs", -1, FCVAR_ARCHIVE, "Max zombies the ai \"Director\" will spawn. -1 for default," .. defaultMaxZambs, 0, 999 )
+local maxZambs
+
+local function doMaxZambs()
+    local var = maxZambsVar:GetInt()
+    if var <= -1 then
+        maxZambs = defaultMaxZambs
+
+    else
+        maxZambs = var
+
+    end
+end
+
+doMaxZambs()
+
+cvars.AddChangeCallback( "zambie_director_maxzambs", function() doMaxZambs() end, "updatelocal" )
 
 local difficultyBeingExperienced
 local targetDifficulty
 local difference
-local maxZambs
 local zamCount
 local plyCount
 local gettingHandsDirty
@@ -123,8 +140,8 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 
         end
 
-        print( "added ", toAdd )
-        print( sameCurveChainLength, lastTypeAdded, toAdd )
+        --print( "added ", toAdd )
+        --print( sameCurveChainLength, lastTypeAdded, toAdd )
 
         if lastTypeAdded == toAdd then
             sameCurveChainLength = sameCurveChainLength + 1
@@ -201,7 +218,7 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     zamCount = #ents.FindByClass( "terminator_nextbot_zambie*" )
     difference = targetDifficulty - difficultyBeingExperienced
 
-    print( difficultyBeingExperienced, targetDifficulty, currCurveType )
+    --print( difficultyBeingExperienced, targetDifficulty, currCurveType )
 
 end
 
@@ -304,7 +321,6 @@ function terminator_Extras.zamb_SetupManager()
 
     end
 
-    maxZambs = 35
     difficultyBeingExperienced = 0
     zamCount = 0
     plyCount = 0
@@ -350,7 +366,6 @@ function terminator_Extras.zamb_TearDownManager()
 
     zamCount = nil
     plyCount = nil
-    maxZambs = nil
     difficultyBeingExperienced = nil
     targetDifficulty = nil
 
