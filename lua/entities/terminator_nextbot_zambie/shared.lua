@@ -1,5 +1,3 @@
--- DOES NOT SHOOT THRU FENCES!
-
 AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot"
@@ -9,76 +7,79 @@ ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambie", {
     Name = "Zombie",
     Class = "terminator_nextbot_zambie",
-    Category = "Terminator Nextbot",
+    Category = "Nexbot Zambies",
 } )
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambie", ENT.PrintName )
 
-    local supercopsColor = Vector( 0.1, 0.1, 0.1 )
-    --https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/matproxy/player_color.lua
-    function ENT:GetPlayerColor()
-        return supercopsColor
+    function ENT:AdditionalClientInitialize()
+        local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
+        --https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/matproxy/player_color.lua
+        self.GetPlayerColor = function()
+            return myColor
 
+        end
     end
 
     return
 
-else
-    include( "entbreaking.lua" )
-
 end
+
+local coroutine_yield = coroutine.yield
+
+ENT.CoroutineThresh = 0.00015
+ENT.MaxPathingIterations = 5000
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.PathGoalToleranceFinal = 35
+ENT.PathGoalToleranceFinal = 50
 ENT.SpawnHealth = 100
+ENT.AimSpeed = 300
 ENT.WalkSpeed = 50
-ENT.RunSpeed = 85
-ENT.AccelerationSpeed = 1000
-ENT.DeathDropHeight = 100000
-ENT.InformRadius = 0
+ENT.MoveSpeed = 150
+ENT.RunSpeed = 250
+ENT.AccelerationSpeed = 750
+ENT.InformRadius = 20000
 
--- default is 500, setting this lower means supercop will ignore low priority enemies and focus on players, unless they're blocking his path
-ENT.CloseEnemyDistance = 0
-ENT.SupercopOnDamagedEnemyDistance = 65
+ENT.CanUseStuff = nil
 
-ENT.DoMetallicDamage = true -- metallic fx like bullet ricochet sounds
+ENT.FistDamageMul = 0.35
+ENT.DuelEnemyDist = 350
+ENT.CloseEnemyDistance = 500
+
+ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
 ENT.MetallicMoveSounds = false
-ENT.ReallyStrong = true
-ENT.ReallyHeavy = true
+ENT.ReallyStrong = false
+ENT.ReallyHeavy = false
 ENT.DontDropPrimary = true
 
-ENT.LookAheadOnlyWhenBlocked = true
-ENT.alwaysManiac = true -- always create feuds between us and other terms/supercops, when they damage us
+ENT.LookAheadOnlyWhenBlocked = nil
+ENT.alwaysManiac = nil -- always create feuds between us and other terms/supercops, when they damage us
 ENT.HasFists = true
-ENT.IsTerminatorSupercop = true
+ENT.IsTerminatorZambie = true
 
+ENT.frenzyBoredomEnts = {}
+ENT.zamb_nextRandomFrenzy = 0
+
+ENT.IsFodder = true
+ENT.IsStupid = true
 ENT.CanSpeak = true
 
-local SUPERCOP_MODEL = "models/player/police.mdl"
-ENT.ARNOLD_MODEL = SUPERCOP_MODEL
+local ZAMBIE_MODEL = "models/player/zombie_classic.mdl"
+ENT.ARNOLD_MODEL = ZAMBIE_MODEL
+ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.05 ) end
 
-if not SERVER then return end
+ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
-ENT.PhysgunDisabled = true
-function ENT:CanProperty()
-    return false
+CreateConVar( "zambie_nextbot_forcedmodel", ZAMBIE_MODEL, bit.bor( FCVAR_ARCHIVE ), "Override the supercop nextbot's spawned-in model. Model needs to be rigged for player movement" )
 
-end
-function ENT:CanTool()
-    return false
-
-end
-
-CreateConVar( "supercop_nextbot_forcedmodel", SUPERCOP_MODEL, bit.bor( FCVAR_ARCHIVE ), "Override the supercop nextbot's spawned-in model. Model needs to be rigged for player movement" )
-
-local function supercopModel()
-    local convar = GetConVar( "supercop_nextbot_forcedmodel" )
-    local model = SUPERCOP_MODEL
+local function zambieModel()
+    local convar = GetConVar( "zambie_nextbot_forcedmodel" )
+    local model = ZAMBIE_MODEL
     if convar then
         local varModel = convar:GetString()
         if varModel and util.IsValidModel( varModel ) then
@@ -90,1267 +91,917 @@ local function supercopModel()
 
 end
 
-if not supercopModel() then
-    RunConsoleCommand( "supercop_nextbot_forcedmodel", SUPERCOP_MODEL )
+if not zambieModel() then
+    RunConsoleCommand( "zambie_nextbot_forcedmodel", ZAMBIE_MODEL )
 
 end
 
-ENT.Models = { SUPERCOP_MODEL }
+ENT.Models = { ZAMBIE_MODEL }
 
-local vecFiveDown = Vector( 0, 0, -5 )
-
--- copied the original function
-function ENT:MakeFootstepSound( volume, surface )
-    local foot = self.m_FootstepFoot
-    self.m_FootstepFoot = not foot
-    self.m_FootstepTime = CurTime()
-
-    local tr
-
-    if not surface then
-        tr = util.TraceEntity( {
-            start = self:GetPos(),
-            endpos = self:GetPos() + vecFiveDown,
-            filter = self,
-            mask = self:GetSolidMask(),
-            collisiongroup = self:GetCollisionGroup(),
-
-        }, self )
-
-        surface = tr.SurfaceProps
-    end
-    local pos = self:GetPos()
-
-    if surface or ( tr and tr.Hit ) then
-        local copStep = foot and "NPC_MetroPolice.RunFootstepRight" or "NPC_MetroPolice.RunFootstepLeft"
-
-        local filter = RecipientFilter()
-        filter:AddAllPlayers()
-
-        self:EmitSound( copStep, 88, math.random( 80, 90 ), 1, CHAN_STATIC, bit.bor( SND_CHANGE_PITCH, SND_CHANGE_VOL ), 0, filter )
-
-    end
-
-    util.ScreenShake( self:GetPos(), 1, 20, 0.5, 1500 )
-
-    if not surface then return end
-
-    local surfaceDat = util.GetSurfaceData( surface )
-    if not surfaceDat then return end
-
-    local sound = foot and surfaceDat.stepRightSound or surfaceDat.stepLeftSound
-
-    if sound then
-
-        local filter = RecipientFilter()
-        filter:AddPAS( pos )
-
-        if not self:OnFootstep( pos, foot, sound, volume, filter ) then
-            self.stepSoundPatches = self.stepSoundPatches or {}
-
-            local stepSound = self.stepSoundPatches[sound]
-            if not stepSound then
-                stepSound = CreateSound( self, sound, filter )
-                self.stepSoundPatches[sound] = stepSound
-            end
-            stepSound:Stop()
-            stepSound:Play()
-
-        end
-    end
-end
-
-local dotVec = Vector( 0,0,1 )
-
--- hacky as hell but makes sure the sounds are always in sync
-function ENT:AdditionalThink()
-    if not self.loco:IsOnGround() then return end
-
-    local leftFoot = self:LookupBone( "ValveBiped.Bip01_L_Foot" )
-    local leftFootPos, leftFootAng = self:GetBonePosition( leftFoot )
-
-    local rightFoot = self:LookupBone( "ValveBiped.Bip01_R_Foot" )
-    local rightFootPos, rightFootAng = self:GetBonePosition( rightFoot )
-
-    local currStepping = { left = false, right = false }
-    local oldStepping = self.custom_OldStepping or currStepping
-    local feet = { left = { pos = leftFootPos, ang = leftFootAng }, right = { pos = rightFootPos, ang = rightFootAng } }
-
-    for curr, foot in pairs( feet ) do
-        local dot = foot.ang:Forward():Dot( dotVec )
-        currStepping[curr] = dot < -0.8
-
-        if currStepping[curr] and not oldStepping[curr] then
-            self.NeedsAStep = true
-
-        end
-    end
-
-    self.custom_OldStepping = currStepping
+function ENT:canDoRun()
+    if self.forcedShouldWalk and self.forcedShouldWalk > CurTime() then return end
+    if self.isInTheMiddleOfJump then return end
+    local nearObstacleBlockRunning = self.nearObstacleBlockRunning or 0
+    if nearObstacleBlockRunning > CurTime() and not self.IsSeeEnemy then return end
+    local area = self:GetCurrentNavArea()
+    if not area then return end
+    if area:HasAttributes( NAV_MESH_CLIFF ) then return end
+    if area:HasAttributes( NAV_MESH_CROUCH ) then return end
+    local nextArea = self:GetNextPathArea()
+    if self:getMaxPathCurvature( area, self.MoveSpeed ) > 0.45 then return end
+    if self:confinedSlope( area, nextArea ) == true then return end
+    if not nextArea then return true end
+    if not nextArea:IsValid() then return true end
+    local myPos = self:GetPos()
+    if myPos:DistToSqr( nextArea:GetClosestPointOnArea( myPos ) ) > ( self.MoveSpeed * 1.25 ) ^ 2 then return true end
+    if nextArea:HasAttributes( NAV_MESH_CLIFF ) then return end
+    if nextArea:HasAttributes( NAV_MESH_CROUCH ) then return end
+    local minSizeNext = math.min( nextArea:GetSizeX(), nextArea:GetSizeY() )
+    if minSizeNext < 25 then return end
+    return true
 
 end
 
--- yuck!
-function ENT:GetFootstepSoundTime()
-    if self.NeedsAStep then
-        self.NeedsAStep = nil
-        return 0
+function ENT:shouldDoWalk()
+    if self.forcedShouldWalk and self.forcedShouldWalk > CurTime() then return true end
+
+    local area = self:GetCurrentNavArea()
+    if not area then return end
+    if not area:IsValid() then return end
+    local minSize = math.min( area:GetSizeX(), area:GetSizeY() )
+    if minSize < 45 then return true end
+    local nextArea = self:GetNextPathArea()
+    if self:confinedSlope( area, nextArea ) then return true end
+    if self:getMaxPathCurvature( area, self.WalkSpeed, true ) > 0.85 then return true end
+    if not nextArea then return end
+    if not nextArea:IsValid() then return end
+    return true
+
+end
+
+function ENT:AdditionalAvoidAreas( costs )
+
+    if not self.HasBrains then return end
+
+    if not terminator_Extras.zamb_IndexedRottingAreas then return end
+    costs = costs or {}
+
+    local scale = self:GetCreationID() % 10
+    scale = scale / 10
+
+    local rotAmounts = terminator_Extras.zamb_RottingAreas
+    for _, area in ipairs( terminator_Extras.zamb_IndexedRottingAreas ) do
+        local oldMul = costs[ area:GetID() ] or 0
+        costs[ area:GetID() ] = oldMul + rotAmounts[ area ] * scale
 
     end
-    return math.huge
+    return costs
 
+end
+
+local walkStart = ACT_HL2MP_WALK_ZOMBIE_01
+local function randomWalk( ent )
+    return walkStart + ( ent:GetCreationID() % 4 )
+
+end
+
+local IdleActivity = ACT_HL2MP_IDLE_ZOMBIE
+ENT.IdleActivity = IdleActivity
+ENT.IdleActivityTranslations = {
+    [ACT_MP_STAND_IDLE]                 = IdleActivity,
+    [ACT_MP_WALK]                       = randomWalk,
+    [ACT_MP_RUN]                        = IdleActivity + 2,
+    [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,
+    [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
+    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
+    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
+    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
+    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
+    [ACT_MP_JUMP]                       = ACT_HL2MP_JUMP_FIST,
+    [ACT_MP_SWIM]                       = IdleActivity + 9,
+    [ACT_LAND]                          = ACT_LAND,
+}
+
+ENT.zamb_CallAnim = nil
+ENT.zamb_AttackAnim = nil
+
+function ENT:OnKilledGenericEnemyLine( enemyLost )
 end
 
 function ENT:DoHardcodedRelations()
-    self:SetClassRelationship( "player", D_HT,1 )
-    self:SetClassRelationship( "npc_lambdaplayer", D_HT,1 )
-    self:SetClassRelationship( "terminator_nextbot", D_HT, 1 )
-    self:SetClassRelationship( "terminator_nextbot_slower", D_HT, 1 )
-
+    self.term_HardCodedRelations = {
+        ["npc_zombie"] = { D_LI, D_LI, 1000 },
+        ["npc_zombie_torso"] = { D_LI, D_LI, 1000 },
+        ["npc_headcrab"] = { D_LI, D_LI, 1000 },
+        ["npc_fastzombie"] = { D_LI, D_LI, 1000 },
+        ["npc_fastzombie_torso"] = { D_LI, D_LI, 1000 },
+        ["npc_headcrab_fast"] = { D_LI, D_LI, 1000 },
+        ["npc_poisonzombie"] = { D_LI, D_LI, 1000 },
+        ["npc_headcrab_black"] = { D_LI, D_LI, 1000 },
+        ["npc_zombine"] = { D_LI, D_LI, 1000 },
+    }
 end
-
-local function hitEffect( hitPos, scale )
-    local effect = EffectData()
-    effect:SetOrigin( hitPos )
-    effect:SetMagnitude( 2 * scale )
-    effect:SetScale( 1 )
-    effect:SetRadius( 6 * scale )
-    util.Effect( "Sparks", effect )
-
-end
-
-local rics = {
-    "weapons/fx/rics/ric3.wav",
-    "weapons/fx/rics/ric5.wav",
-
-}
-
-local function doRicsEnt( shotEnt )
-    shotEnt:EmitSound( table.Random( rics ), 75, math.random( 92, 100 ), 1, CHAN_AUTO )
-
-end
-local function blockDamage( damaged, _, damageInfo )
-    if not damaged.IsTerminatorSupercop then return end
-
-    damaged:Anger( damageInfo:GetDamage() * 0.1 )
-    local increased = damaged.SupercopEquipRevolverDist + ( damaged.EquipDistRampup / 4 )
-    increased = math.Clamp( increased, 0, damaged.SupercopMaxUnequipRevolverDist + -250 )
-    damaged.SupercopEquipRevolverDist = increased
-
-    local attacker = damageInfo:GetAttacker()
-
-    if IsValid( attacker ) and attacker ~= damaged and attacker:GetClass() == damaged:GetClass() then
-        damageInfo:ScaleDamage( 2 )
-
-    else
-        damageInfo:ScaleDamage( 0 )
-
-    end
-
-    damaged:MakeFeud( attacker )
-
-    damaged.CloseEnemyDistance = damaged.SupercopOnDamagedEnemyDistance
-    local timerName = "supercop_fixcloseenemydist" .. damaged:GetCreationID()
-    timer.Remove( timerName )
-    timer.Create( timerName, 5, 1, function()
-        if not IsValid( damaged ) then return end
-        damaged.CloseEnemyDistance = 0
-
-    end )
-
-    if not damageInfo:IsBulletDamage() then return end
-    doRicsEnt( damaged )
-    hitEffect( damageInfo:GetDamagePosition(), 0.25 )
-
-end
-
-hook.Add( "ScaleNPCDamage", "supercop_nextbot_blockdamage", blockDamage )
-
-function ENT:OnTakeDamage( damageInfo )
-    blockDamage( self, nil, damageInfo )
-
-end
-
-local spottedEnemy = {
-    "METROPOLICE_MOVE_ALONG_A0",
-    "METROPOLICE_BACK_UP_A0",
-    "METROPOLICE_BACK_UP_B0",
-    "METROPOLICE_BACK_UP_C0",
-    "METROPOLICE_IDLE_HARASS_PLAYER2",
-
-}
-
-local approachingEnemyVisible = {
-    "METROPOLICE_IDLE_HARASS_PLAYER0",
-    "METROPOLICE_IDLE_HARASS_PLAYER1",
-    "METROPOLICE_IDLE_HARASS_PLAYER3",
-    "METROPOLICE_IDLE_HARASS_PLAYER4",
-
-    "METROPOLICE_MOVE_ALONG_A1",
-    "METROPOLICE_MOVE_ALONG_A2",
-
-    "METROPOLICE_MOVE_ALONG_B1",
-
-    "METROPOLICE_MOVE_ALONG_C1",
-    "METROPOLICE_MOVE_ALONG_C2",
-    "METROPOLICE_MOVE_ALONG_C3",
-
-    "METROPOLICE_BACK_UP_A1",
-    "METROPOLICE_BACK_UP_A2",
-
-    "METROPOLICE_BACK_UP_B1",
-
-    "METROPOLICE_BACK_UP_C1",
-    "METROPOLICE_BACK_UP_C3",
-
-}
-
-local weaponWarn = {
-    "METROPOLICE_BACK_UP_C3",
-    "METROPOLICE_MOVE_ALONG_C0",
-    "METROPOLICE_MOVE_ALONG_C3",
-    "METROPOLICE_BACK_UP_C4",
-    "METROPOLICE_MONST_CITIZENS0",
-    "METROPOLICE_HIT_BY_PHYSOBJECT2",
-    "METROPOLICE_HIT_BY_PHYSOBJECT3",
-    "METROPOLICE_HIT_BY_PHYSOBJECT4",
-
-    "METROPOLICE_FREEZE0",
-    "METROPOLICE_FREEZE1",
-
-}
-
-local approachingEnemyObscured = {
-    "METROPOLICE_LOST_LONG0",
-    "METROPOLICE_LOST_LONG1",
-    "METROPOLICE_LOST_LONG2",
-    "METROPOLICE_LOST_LONG3",
-    "METROPOLICE_LOST_LONG4",
-    "METROPOLICE_LOST_LONG5",
-
-}
-
-local playerDead = {
-    "METROPOLICE_MOVE_ALONG_B0",
-
-    "METROPOLICE_KILL_PLAYER0",
-    "METROPOLICE_KILL_PLAYER1",
-    "METROPOLICE_KILL_PLAYER2",
-    "METROPOLICE_KILL_PLAYER3",
-    "METROPOLICE_KILL_PLAYER4",
-    "METROPOLICE_KILL_PLAYER5",
-
-    "METROPOLICE_KILL_CITIZENS0",
-    "METROPOLICE_KILL_CITIZENS1",
-    "METROPOLICE_KILL_CITIZENS2",
-    "METROPOLICE_KILL_CITIZENS3",
-
-    "METROPOLICE_PLAYERHIT1",
-    "METROPOLICE_PLAYERHIT2",
-    "METROPOLICE_PLAYERHIT3",
-
-}
-
-local playerUnreachBegin = {
-    "METROPOLICE_HIT_BY_PHYSOBJECT2",
-    "METROPOLICE_ARREST_IN_POS1",
-
-}
-
-local stunstickEquip = {
-    "METROPOLICE_ACTIVATE_BATON0",
-    "METROPOLICE_ACTIVATE_BATON1",
-    "METROPOLICE_ACTIVATE_BATON2",
-
-}
-
-function ENT:GetDesiredEnemyRelationship( ent )
-    local disp = D_HT
-    local theirdisp = D_HT
-    local priority = 1
-
-    if ent:GetClass() == self:GetClass() then
-        disp = D_LI
-        theirdisp = D_LI
-
-    end
-
-    if ent:IsPlayer() then
-        priority = 1000
-
-    elseif ent:IsNPC() or ent:IsNextBot() then
-        local obj = ent:GetPhysicsObject()
-        -- invalid npc or something, happens alot with engine ents
-        if not IsValid( obj ) then
-            disp = D_NU
-            priority = 0
-            return disp,priority,theirdisp
-
-        end
-
-        local memories = {}
-        if self.awarenessMemory then
-            memories = self.awarenessMemory
-
-        end
-        local key = self:getAwarenessKey( ent )
-        local memory = memories[key]
-
-        if memory == MEMORY_WEAPONIZEDNPC then
-            priority = priority + 300
-
-        else
-            priority = priority + 100
-
-        end
-    end
-
-    return disp,priority,theirdisp
-end
-
-local beatinStickClass = "weapon_term_supercopstunstick"
-local olReliableClass = "weapon_term_supercoprevolver"
-
-ENT.TERM_FISTS = beatinStickClass
-
-function ENT:OnKilledPlayerEnemyLine()
-    -- secret, funny pick up that can line
-    if math.random( 0, 100 ) <= 5 and math.random( 0, 100 ) <= 15 and self.NextPickupTheCanLine < CurTime() then
-        self.NextPickupTheCanLine = CurTime() + 55
-        self.NextSpokenLine = CurTime() + 4
-        timer.Simple( 1.5, function()
-            if not IsValid( self ) then return end
-            self:SpeakLine( "npc/metropolice/vo/pickupthecan3.wav" )
-
-        end )
-
-        timer.Simple( 2.75, function()
-            if not IsValid( self ) then return end
-            self:SpeakLine( "npc/metropolice/vo/chuckle.wav" )
-
-        end )
-    else
-        self:Term_PlaySentence( playerDead )
-
-    end
-end
-
-function ENT:OnKilledGenericEnemyLine( enemyLost )
-    -- killed other supercop, i am the the superior cop
-    if IsValid( enemyLost ) and enemyLost:GetClass() == self:GetClass() then
-        self:SetHealth( self:Health(), self:GetMaxHealth() / 2, self:GetMaxHealth() )
-
-    end
-end
-
--- re-override terminator's aimvector code
-function ENT:GetAimVector()
-    local dir = self:GetEyeAngles():Forward()
-
-    if self:HasWeapon() then
-        local deg = 0.01
-        local active = self:GetActiveLuaWeapon()
-        if isfunction( active.GetNPCBulletSpread ) then
-            deg = active:GetNPCBulletSpread( self:GetCurrentWeaponProficiency() )
-            deg = math.sin( math.rad( deg ) )
-        end
-
-        dir:Add( Vector( math.Rand( -deg, deg ), math.Rand( -deg, deg ),math.Rand( -deg, deg ) ) )
-    end
-
-    return dir
-end
-
--- supercop is really angry for less time
-function ENT:IsReallyAngry()
-    local reallyAngryTime = self.terminator_ReallyAngryTime or CurTime()
-    local checkIsReallyAngry = self.terminator_CheckIsReallyAngry or 0
-
-    if checkIsReallyAngry < CurTime() then
-        self.terminator_CheckIsReallyAngry = CurTime() + 1
-        local enemy = self:GetEnemy()
-
-        if enemy and enemy.isTerminatorHunterKiller then
-            reallyAngryTime = reallyAngryTime + 60
-
-        elseif self.isUnstucking then
-            reallyAngryTime = reallyAngryTime + 2
-
-        elseif self:inSeriousDanger() then
-            reallyAngryTime = reallyAngryTime + 2
-
-        elseif self:EnemyIsUnkillable() then
-            reallyAngryTime = reallyAngryTime + 10
-
-        end
-    end
-
-    local reallyAngry = reallyAngryTime > CurTime()
-    self.terminator_ReallyAngryTime = math.max( reallyAngryTime, CurTime() )
-
-    return reallyAngry
-
-end
-
-
-local spawnProtectionLength     = CreateConVar( "supercop_nextbot_spawnprot_copspawn",  10, bit.bor( FCVAR_ARCHIVE ), "Bot won't shoot until it's been alive for this long", 0, 60 )
-local plyspawnProtectionLength  = CreateConVar( "supercop_nextbot_spawnprot_ply",       5, bit.bor( FCVAR_ARCHIVE ), "Don't shoot players until they've been alive for this long.", 0, 60 )
-
-ENT.SupercopEquipRevolverDist = 150
-ENT.DuelEnemyDist = ENT.SupercopEquipRevolverDist
-ENT.EquipDistRampup = 15
-ENT.SupercopMaxUnequipRevolverDist = 1200
-ENT.SupercopBeatingStickDist = 100
-ENT.SupercopBlockOlReliable = 0
-ENT.SupercopBlockShooting = 0
-ENT.NextPickupTheCanLine = 0
-
-ENT.DefaultAimSpeed = 80
-ENT.MeleeAimSpeedMul = 6
-
-ENT.ShouldJog = false
-
-local CurTime = CurTime
-
-local ignorePlayers = GetConVar( "ai_ignoreplayers" )
-local cheats = GetConVar( "sv_cheats" )
-local aiDisabled = GetConVar( "ai_disabled" )
-local developer = GetConVar( "developer" )
-local supercopIgnorePlayers = CreateConVar( "supercop_nextbot_ignoreplayers", 0, bit.bor( FCVAR_NONE ), "Ignore players?" )
-
-function ENT:IgnoringPlayers()
-    if supercopIgnorePlayers:GetBool() then return true end
-    if cheats:GetBool() and developer:GetBool() and ignorePlayers:GetBool() then return true end
-
-end
-function ENT:DisabledThinking()
-    if cheats:GetBool() and developer:GetBool() and aiDisabled:GetBool() then return true end
-
-end
-
-hook.Add( "PlayerSpawn", "supercop_plyspawnprotection", function( spawned )
-    spawned.Supercop_SpawnProtection = CurTime() + plyspawnProtectionLength:GetInt()
-
-end )
-
-local supercopJog = CreateConVar( "supercop_nextbot_jog", 0, bit.bor( FCVAR_ARCHIVE ), "Should supercop jog?.", 0, 1 )
 
 function ENT:AdditionalInitialize()
-    self:SetModel( supercopModel() )
+    self:SetModel( zambieModel() )
+    self:SetBodygroup( 1, 1 )
 
-    self:Give( "weapon_term_supercoprevolver" )
-    self:SetCollisionGroup( COLLISION_GROUP_PLAYER )
-    self:SetSolidMask( MASK_PLAYERSOLID )
+    self.isTerminatorHunterChummy = "zambies"
+    self.nextInterceptTry = 0
+    self.term_NextIdleTaunt = CurTime() + 4
+    local hasBrains = math.random( 1, 100 ) < 20
+    if hasBrains then
+        self.HasBrains = true
+        terminator_Extras.RegisterListener( self )
 
-    self:SetBloodColor( DONT_BLEED )
-
-    local spawnProt = spawnProtectionLength:GetInt()
-    self.SupercopJustspawnedBlockShooting = CurTime() + spawnProt
-    self.SupercopJustspawnedBlockBeatstick = CurTime() + ( spawnProt * 0.25 )
-
-    self.Term_FOV = 180
-    self.AutoUpdateFOV = nil
-
-    self.AimSpeed = self.DefaultAimSpeed
-    self.NextForcedEnemy = CurTime()
-    self.LastEnemySpotTime = CurTime()
-    self.isTerminatorHunterChummy = false
-
-    if engine.ActiveGamemode() == "terrortown" then
-        if supercopJog:GetBool() then return end
-        timer.Simple( 0, function()
-            if not IsValid( self ) then return end
-            local button = ents.Create( "ttt_traitor_button" )
-            if not IsValid( button ) then return end
-            button:SetPos( self:WorldSpaceCenter() )
-            button.RawDescription = "Make supercop jog ( Costs 2 Credits )"
-            button.RawDelay = -1
-            button:SetUsableRange( 512 )
-            button:SetParent( self )
-            button:Spawn()
-
-            button.IsSupercopJogButton = true
-            button.my_supercop = self
-
-        end )
     end
+
+    self.TakesFallDamage = true
+    self.HeightToStartTakingDamage = 200
+    self.FallDamagePerHeight = 0.15
+    self.DeathDropHeight = 1000
+    self.walkedAreas = nil -- disables walked area logic, we're fodder, we dont need that
+
 end
 
-if engine.ActiveGamemode() == "terrortown" then
-    hook.Add( "TTTCanUseTraitorButton", "supercop_jogbutton_canpress", function( button, presser )
-        if not button.IsSupercopJogButton then return end
+local cutoff = 35^2
 
-        if presser:GetCredits() >= 2 then return true end
+function ENT:AdditionalThink()
+    if self.loco:GetVelocity():LengthSqr() > cutoff then
+        self.term_NextIdleTaunt = CurTime() + math.Rand( 0.5, 1 )
+        return
 
-        return false, "You don't have enough credits to activate this."
+    end
+    if self.term_NextIdleTaunt > CurTime() then return end
 
+    self.term_NextIdleTaunt = CurTime() + math.Rand( 3, 7 )
+
+    self:RunTask( "ZambOnGrumpy" )
+
+end
+
+local sndFlags = bit.bor( SND_CHANGE_VOL )
+
+function ENT:OnFootstep( pos, foot, sound, volume, filter )
+    local lvl = 85
+    local snd = foot and "Zombie.FootstepRight" or "Zombie.FootstepLeft"
+    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
+        lvl = 76
+        snd = foot and "Zombie.ScuffRight" or "Zombie.ScuffLeft"
+
+    end
+    self:EmitSound( snd, lvl, 100, volume + 1, CHAN_STATIC, sndFlags )
+    return true
+
+end
+
+function ENT:ZAMB_AngeringCall()
+    self:StopMoving()
+    self:InvalidatePath( "angeringcall" )
+    self.nextNewPath = CurTime() + 0.5
+
+    self:Term_SpeakSound( "blarg", function( me )
+        local callAnim = me.zamb_CallAnim or ACT_GMOD_GESTURE_TAUNT_ZOMBIE
+        me:DoGesture( callAnim, 0.8, true )
+        local filterAllPlayers = RecipientFilter()
+        filterAllPlayers:AddAllPlayers()
+        me:EmitSound( self.term_CallingSound, 120 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 0.5, CHAN_STATIC, sndFlags, nil, filterAllPlayers )
+        me:EmitSound( self.term_CallingSmallSound, 85 + self.term_SoundLevelShift, math.random( 75, 85 ) + self.term_SoundPitchShift, 1, CHAN_STATIC, sndFlags, nil )
+
+        for _, ally in ipairs( self:GetNearbyAllies() ) do
+            if not IsValid( ally ) then continue end
+            local time = math.Rand( 1, 3 )
+            if ally.HasBrains then
+                time = 0.5
+
+            end
+            timer.Simple( time, function()
+                if not IsValid( ally ) then return end
+                ally:Anger( math.random( 55, 75 ) )
+
+            end )
+        end
     end )
-    hook.Add( "TTTTraitorButtonActivated", "supercop_jogbutton_functionality", function( button, presser )
-        if not button.IsSupercopJogButton then return end
-
-        presser:SetCredits( presser:GetCredits() - 2 )
-        button.my_supercop.ShouldJog = true
-
-    end )
 end
 
-local function aliveEnem( me )
-    local enem = me:GetEnemy()
-    if not IsValid( enem ) or not enem:Alive() then return end
-    return true
+function ENT:ZAMB_NormalCall()
+    local callAnim = self.zamb_CallAnim or ACT_GMOD_GESTURE_TAUNT_ZOMBIE
+    if math.random( 1, 100 ) > 75 then
+        self:DoGesture( callAnim, 1.1, true )
 
-end
+    else
+        self:DoGesture( callAnim, 1.4, self.NoAnimLayering or false )
 
-local function stunstickCondition( me )
-    if me:GetActiveWeapon():GetClass() ~= me.TERM_FISTS then return end
-    if not aliveEnem( me ) then return end
-    return true
+    end
+    self:Term_SpeakSound( self.term_FindEnemySound )
 
 end
 
-local function revolverCondition( me )
-    if me:GetActiveWeapon():GetClass() == me.TERM_FISTS then return end
-    if not aliveEnem( me ) then return end
-    return true
+local nextZombieCall = 0
 
-end
+ENT.zamb_LookAheadWhenRunning = true
+ENT.zamb_MeleeAttackSpeed = 1.1
+ENT.term_SoundPitchShift = 0
+ENT.term_SoundLevelShift = 0
 
-function ENT:DoTasks()
+ENT.term_LoseEnemySound = "Zombie.Idle"
+ENT.term_CallingSound = "ambient/creatures/town_zombie_call1.wav"
+ENT.term_CallingSmallSound = "npc/zombie/zombie_voice_idle6.wav"
+ENT.term_FindEnemySound = "Zombie.Alert"
+ENT.term_AttackSound = "Zombie.Alert"
+ENT.term_AngerSound = "Zombie.Idle"
+ENT.term_DamagedSound = "Zombie.Pain"
+ENT.term_DieSound = "Zombie.Die"
+ENT.term_JumpSound = "npc/zombie/foot1.wav"
+
+ENT.IdleLoopingSounds = {}
+ENT.AngryLoopingSounds = {
+    "npc/zombie/moan_loop1.wav",
+    "npc/zombie/moan_loop2.wav",
+    "npc/zombie/moan_loop3.wav",
+    "npc/zombie/moan_loop4.wav",
+
+}
+
+local MEMORY_MEMORIZING = 1
+local MEMORY_INERT = 2
+local MEMORY_BREAKABLE = 4
+local MEMORY_VOLATILE = 8
+--local MEMORY_THREAT = 16
+local MEMORY_WEAPONIZEDNPC = 32
+local MEMORY_DAMAGING = 64
+
+function ENT:DoCustomTasks( defaultTasks )
     self.TaskList = {
-        ["shooting_handler"] = {
-            OnStart = function( self, data )
-            end,
-            BehaveUpdate = function(self,data,interval)
-                local enemy = self:GetEnemy()
-                local wep = self:GetActiveLuaWeapon() or self:GetActiveWeapon()
-                -- edge case
-                if not IsValid( wep ) then
-                    self:shootAt( self.LastEnemyShootPos, true )
+        ["shooting_handler"] = defaultTasks["shooting_handler"],
+        ["awareness_handler"] = defaultTasks["awareness_handler"],
+        ["enemy_handler"] = defaultTasks["enemy_handler"],
+        ["inform_handler"] = defaultTasks["inform_handler"],
+        ["reallystuck_handler"] = defaultTasks["reallystuck_handler"],
+        ["zambstuff_handler"] = {
+            ZambOnGrumpy = function( self, data )
+                if self.HasBrains or math.random( 1, 100 ) > 25 then
+                    self:Term_SpeakSound( self.term_FindEnemySound )
                     return
 
-                end
+                elseif nextZombieCall < CurTime() and self.DistToEnemy > 750 then
+                    nextZombieCall = CurTime() + 40
+                    self:ZAMB_AngeringCall()
 
-                local moving = self:primaryPathIsValid()
-                local doingBeatinStick = wep:GetClass() == beatinStickClass
-                local equipRevolverDist = self.SupercopEquipRevolverDist
-                if self:IsReallyAngry() then
-                    equipRevolverDist = equipRevolverDist * 2.5
-
-                elseif self:IsAngry() then
-                    equipRevolverDist = equipRevolverDist * 1.5
-
-                end
-                local closeOrNotMoving = self.DistToEnemy < equipRevolverDist or not moving
-                local blockShootingTimeGood = self.SupercopBlockShooting < CurTime()
-                -- give fists logic time to work, see isfists in terminator weapons override file
-                local nextWeaponPickup = self.terminator_NextWeaponPickup or 0
-
-                if self.DistToEnemy < self.SupercopBeatingStickDist and self.IsSeeEnemy and self.NothingOrBreakableBetweenEnemy then
-                    -- bring out stunstick
-                    if not doingBeatinStick and blockShootingTimeGood and nextWeaponPickup < CurTime() then
-                        self.PreventShooting = nil
-                        self.IsHolstered = nil
-                        self:Give( beatinStickClass )
-                        self.AimSpeed = self.DefaultAimSpeed * self.MeleeAimSpeedMul
-                        self.SupercopBlockShooting = CurTime() + 0.2
-                        self:Term_PlaySentence( stunstickEquip, stunstickCondition )
-                        self.SupercopBlockOlReliable = CurTime() + math.Rand( 2, 3 )
-
-                    end
-
-                elseif doingBeatinStick then
-                    -- put away stunstick
-                    if blockShootingTimeGood and nextWeaponPickup < CurTime() and self.SupercopBlockOlReliable < CurTime() then
-                        self:Give( olReliableClass )
-                        -- fix aimspeed
-                        self.AimSpeed = self.DefaultAimSpeed
-                        self.SupercopBlockShooting = CurTime() + 0.4
-
-                    end
-                -- bring out gun
-                elseif self.IsHolstered and closeOrNotMoving and self.IsSeeEnemy and self.NothingOrBreakableBetweenEnemy then
-                    self.IsHolstered = nil
-                    self:Term_PlaySentence( weaponWarn, revolverCondition )
-
-                    self.SupercopBlockShooting = math.max( self.SupercopBlockShooting, CurTime() + 0.75 )
-                    self.PreventShooting = nil
-
-                    -- make sure supercop's aimspeed is fixed!
-                    self.AimSpeed = self.DefaultAimSpeed
-
-                    -- as ply tests bot, increase the dist that we pull out the gun at.
-                    local increased = self.SupercopEquipRevolverDist + self.EquipDistRampup
-                    increased = math.Clamp( increased, 0, self.SupercopMaxUnequipRevolverDist + -250 )
-                    self.SupercopEquipRevolverDist = increased
-
-                -- put away gun
-                elseif self.DistToEnemy > ( self.SupercopEquipRevolverDist + 250 ) and moving and blockShootingTimeGood and not self:IsReallyAngry() then
-                    self.IsHolstered = true
-                    self.PreventShooting = true
-
-                end
-
-                local lostEnemyForASec = ( self.LastEnemySpotTime + 1 ) < CurTime()
-                local needToReload = ( wep:Clip1() < wep:GetMaxClip1() / 2 ) or ( wep:Clip1() < wep:GetMaxClip1() and self.IsHolstered )
-
-                if self.IsHolstered ~= self.OldIsHolstered then
-                    -- gun was reloaded and i dont need to shoot right now
-                    if self.IsHolstered and wep:Clip1() == wep:GetMaxClip1() then
-                        wep:SetWeaponHoldType( "passive" )
-
-                    -- i need to shoot!
-                    elseif self.IsHolstered ~= true then
-                        wep:SetWeaponHoldType( "revolver" )
-
-                    end
-                    self.OldIsHolstered = self.IsHolstered
-
-                end
-                local readyToShoot = self.SupercopBlockShooting < CurTime()
-                local tooLongSinceSeen = math.abs( self.LastEnemySpotTime - CurTime() ) > 4
-                local canSeeThem = self.IsSeeEnemy
-                local blockShooting = not blockShootingTimeGood or self.IsHolstered or self.PreventShooting or not readyToShoot or tooLongSinceSeen
-                -- by default, aim at the last spot we saw enemy
-                local toAimAt = self.LastEnemyShootPos
-                -- otherwise, if we see enemy, aim right at them
-                -- basically don't always aim at entshootpos  
-                if canSeeThem then
-                    toAimAt = self:EntShootPos( enemy )
-
-                end
-
-                if IsValid( enemy ) and not blockShooting and canSeeThem then
-                    local enemySpawnProtEnds = enemy.Supercop_SpawnProtection or 0
-                    local enemyIsSpawnProtected = enemySpawnProtEnds > CurTime()
-
-                    if doingBeatinStick then
-                        self:shootAt( toAimAt, true )
-                        -- beating stick gets a shorter cooldown after bot spawned, and ignores per-player spawnprotection
-                        if ( self.DistToEnemy < wep.Range * 1.25 ) and self.SupercopJustspawnedBlockBeatstick < CurTime() and readyToShoot then
-                            self:WeaponPrimaryAttack()
-
-                        end
-                    else
-                        -- dont shoot if bot just spawned, or enemy just spawned
-                        local protected = ( self.SupercopJustspawnedBlockShooting > CurTime() ) or enemyIsSpawnProtected or not self.IsSeeEnemy
-                        local shootableVolatile = self:getShootableVolatile( enemy )
-
-                        -- attack barrel next to ply!
-                        if IsValid( shootableVolatile ) and not protected then
-                            self:shootAt( self:getBestPos( shootableVolatile ), false, 4 )
-
-                        -- attack ply!
-                        else
-                            self:shootAt( toAimAt, protected, 4 )
-
-                        end
-                    end
-                elseif wep:Clip1() <= 0 and wep:GetMaxClip1() > 0 and lostEnemyForASec then
-                    self:WeaponReload()
-                    self.OldIsHolstered = nil
-
-                elseif wep:GetMaxClip1() > 0 and self.IsSeeEnemy and self.NothingOrBreakableBetweenEnemy and needToReload then
-                    self:WeaponReload()
-                    self.OldIsHolstered = nil
-
-                else
-                    -- look at enemy, block shooting
-                    self:shootAt( toAimAt, true )
+                elseif self.DistToEnemy > 750 then
+                    self:ZAMB_NormalCall()
 
                 end
             end,
-            StartControlByPlayer = function( self, data, ply )
-                self:TaskFail( "shooting_handler" )
+            EnemyLost = function( self, data )
+                self:Term_SpeakSound( self.term_LoseEnemySound )
             end,
-        },
-        -- manages whether or not stuff is breakable.
-        ["awareness_handler"] = {
-            BehaveUpdate = function( self, data, interval )
-                local nextAware = data.nextAwareness or 0
-                if nextAware < CurTime() then
-                    data.nextAwareness = CurTime() + 1.5
-                    self:understandSurroundings()
+            EnemyFound = function( self, data )
+                self:RunTask( "ZambOnGrumpy" )
+            end,
+            OnAttack = function( self, data )
+                self:Term_SpeakSound( self.term_AttackSound )
+
+            end,
+            OnAnger = function( self, data )
+                if self.term_lastAngerSound and math.random( CurTime() - 10, CurTime() ) < self.term_lastAngerSound then return end
+                self.term_lastAngerSound = CurTime()
+                self:Term_SpeakSound( self.term_AngerSound )
+
+            end,
+            OnJump = function( self, damage )
+                self:EmitSound( self.term_JumpSound, 75 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+
+            end,
+            OnDamaged = function( self, damage )
+                self:EmitSound( self.term_DamagedSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+
+            end,
+            OnKilled = function( self, damage )
+                self:EmitSound( "common/null.wav", 80 + self.term_SoundLevelShift, 100, 1, CHAN_VOICE )
+                self:EmitSound( self.term_DieSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+                local b1, b2 = self:GetCollisionBounds()
+                b1 = b1 * 2
+                b2 = b2 * 2
+                local deadlyAreas = navmesh.FindInBox( self:LocalToWorld( b1 ), self:LocalToWorld( b2 ) )
+                if #deadlyAreas > 0 then
+                    local rotPunishment = self:GetMaxHealth() / #deadlyAreas
+                    rotPunishment = rotPunishment / 100
+                    for _, area in ipairs( deadlyAreas ) do
+                        local old = terminator_Extras.zamb_RottingAreas[ area ] or 0
+                        terminator_Extras.zamb_RottingAreas[ area ] = old + rotPunishment
+                        terminator_Extras.zamb_AreasLastRot[ area ] = CurTime()
+
+                    end
                 end
             end,
-        },
-        ["enemy_handler"] = {
-            OnStart = function( self, data )
-                data.UpdateEnemies = CurTime()
-                data.HasEnemy = false
-                data.playerCheckIndex = 0
-                data.blockSwitchingEnemies = 0
-                self.IsSeeEnemy = false
-                self.NothingOrBreakableBetweenEnemy = false
-                self.DistToEnemy = 0
-                self:SetEnemy( NULL )
+            OnPathFail = function( self )
+                self:ReallyAnger( 20 )
+                self:RunTask( "ZambOnGrumpy" )
 
-                self.UpdateEnemyHandler = function( forceupdateenemies )
-                    local prevenemy = self:GetEnemy()
-                    local newenemy = prevenemy
-
-                    if forceupdateenemies or not data.UpdateEnemies or CurTime() > data.UpdateEnemies or data.HasEnemy and not IsValid( prevenemy ) then
-                        data.UpdateEnemies = CurTime() + 0.5
-
-                        self:FindEnemies()
-
-                        -- rotate through all players one by one
-                        -- we check looong distance here so it's staggered.
-                        if not self:IgnoringPlayers() then
-                            local allPlayers = player.GetAll()
-                            local pickedPlayer = allPlayers[data.playerCheckIndex]
-
-                            local pickedIsReachable
-
-                            if IsValid( pickedPlayer ) then
-                                local result = terminator_Extras.getNearestPosOnNav( pickedPlayer:GetPos() )
-                                pickedIsReachable = self:areaIsReachable( result.area )
-
-                            end
-
-                            local didForceEnemy
-                            local tooLongSinceLastPlayer = self.NextForcedEnemy < CurTime()
-
-                            -- check if alive etc
-                            -- MESSY but it's better than it going off to the right
-                            if
-                                IsValid( pickedPlayer ) and
-                                pickedPlayer:Health() > 0 and
-                                (
-                                    ( self:ShouldBeEnemy( pickedPlayer ) and self:IsInMyFov( pickedPlayer ) and terminator_Extras.PosCanSee( self:GetShootPos(), self:EntShootPos( pickedPlayer ) ) ) or
-                                    ( tooLongSinceLastPlayer and pickedIsReachable )
-                                )
-                            then
-                                didForceEnemy = true
-                                self:UpdateEnemyMemory( pickedPlayer, pickedPlayer:GetPos() )
-
-                            end
-
-                            if didForceEnemy and tooLongSinceLastPlayer then
-                                self.OverwatchReportedEnemy = true
-                                self.NextForcedEnemy = CurTime() + 5
-                                local nextFlankLine = data.nextFlankLine or 0
-                                if nextFlankLine < CurTime() then
-                                    data.nextFlankLine = CurTime() + 20
-                                    self:Term_PlaySentence( "METROPOLICE_FLANK6" )
-
-                                end
-                            end
-
-                            local new = data.playerCheckIndex + 1
-                            if new > #allPlayers then
-                                data.playerCheckIndex = 1
-                            else
-                                data.playerCheckIndex = new
-                            end
-                        end
-
-                        local enemy = self:FindPriorityEnemy()
-                        local canSeePrevious
-                        local nothingOrBreakableBetweenPrevious
-                        local frictionApplying
-
-                        local prevEnemyValid = IsValid( prevenemy ) and ( prevenemy.Health and prevenemy:Health() > 0 ) and prevenemy ~= enemy
-                        if prevEnemyValid then
-                            canSeePrevious = self:CanSeePosition( enemy )
-                            nothingOrBreakableBetweenPrevious = self:ClearOrBreakable( self:GetShootPos(), self:EntShootPos( enemy ), true )
-
-                            frictionApplying = prevenemy:IsPlayer() or ( canSeePrevious and nothingOrBreakableBetweenPrevious )
-
-                        end
-
-                        -- conditional friction for switching enemies.
-                        -- fixes bot jumping between two enemies that get obscured as it paths, and doing a little dance
-                        if
-                            IsValid( enemy ) and
-                            prevEnemyValid and
-                            ( data.blockSwitchingEnemies > 0 and frictionApplying ) and
-                            self:GetPos():Distance( enemy:GetPos() ) > self.CloseEnemyDistance -- enemy needs to be far away, otherwise just switch now
-
-                        then
-                            data.blockSwitchingEnemies = data.blockSwitchingEnemies + -1
-                            enemy = prevenemy
-
-
-                        elseif IsValid( enemy ) then
-                            newenemy = enemy
-                            local enemyPos = enemy:GetPos()
-                            if not self.EnemyLastPos then self.EnemyLastPos = enemyPos end
-
-                            local canSeePriority = self:CanSeePosition( enemy )
-                            local nothingOrBreakableBetweenPriority = self:ClearOrBreakable( self:GetShootPos(), self:EntShootPos( enemy ), true )
-
-                            if enemy:IsPlayer() then
-                                self.NextForcedEnemy = CurTime()
-
-                            end
-                            self.LastEnemySpotTime = CurTime()
-                            self.DistToEnemy = self:GetPos():Distance( enemyPos )
-                            self.IsSeeEnemy = canSeePriority
-                            self.NothingOrBreakableBetweenEnemy = nothingOrBreakableBetweenPriority
-
-                            if self.IsSeeEnemy and not self.WasSeeEnemy then
-                                self.SupercopBlockShooting = math.max( self.SupercopBlockShooting, CurTime() + 0.15 )
-                                hook.Run( "terminator_spotenemy", self, enemy )
-
-                            elseif not self.IsSeeEnemy and self.WasSeeEnemy then
-                                hook.Run( "terminator_loseenemy", self, enemy )
-
-                            end
-
-                            hook.Run( "terminator_enemythink", self, enemy )
-
-                            self.WasSeeEnemy = self.IsSeeEnemy
-
-                            -- override enemy's relations to me
-                            self:MakeFeud( enemy )
-                            -- we cheatily store the enemy's stuff for a second to make bot feel smarter
-                            -- people can intuit where someone ran off to after 1 second, so bot can too
-                            local posCheatsLeft = self.EnemyPosCheatsLeft or 0
-                            if self.IsSeeEnemy then
-                                posCheatsLeft = 5000 -- default 5, changing it to 5000 is a certified HACK
-                            -- doesn't time out if we are too close to them
-                            elseif self.DistToEnemy < 500 and posCheatsLeft >= 1 then
-                                --debugoverlay.Line( enemyPos, self:GetPos(), 0.3, Color( 255,255,255 ), true )
-                                posCheatsLeft = math.max( 1, posCheatsLeft )
-
-                            end
-
-                            local isPly = enemy:IsPlayer()
-
-                            if isPly and self:IgnoringPlayers() then
-                                self.EnemyPosCheatsLeft = nil
-
-                            elseif enemy and enemy.Alive and enemy:Alive() then
-                                self.EnemyPosCheatsLeft = posCheatsLeft + -1
-                                self:UpdateEnemyMemory( enemy, enemy:GetPos() )
-
-                            else
-                                self.EnemyPosCheatsLeft = nil
-
-                            end
-
-                        else
-                            self.DistToEnemy = math.huge
-                        end
-                    end
-
-                    if IsValid( newenemy ) then
-                        if not data.HasEnemy then
-                            self:Term_PlaySentence( spottedEnemy, aliveEnem )
-                            self:RunTask( "EnemyFound", newenemy )
-                            --print( "new", newenemy )
-
-                        elseif prevenemy ~= newenemy then
-                            self:RunTask( "EnemyChanged", newenemy, prevenemy )
-                            --print( "swit", prevenemy, newenemy )
-
-                        end
-                        data.HasEnemy = true
-
-                        if self:CanSeePosition( newenemy ) then
-                            if newenemy:IsPlayer() then
-                                data.blockSwitchingEnemies = 8
-
-                            else
-                                data.blockSwitchingEnemies = math.random( 1, 2 )
-
-                            end
-                            self.LastEnemyShootPos = self:EntShootPos( newenemy )
-                            self.AimAtEnemyShootPosTime = CurTime() + 10
-                            self:UpdateEnemyMemory( newenemy, newenemy:GetPos() )
-
-                        end
-                    else
-                        if data.HasEnemy then
-                            self:RunTask( "EnemyLost", prevenemy )
-                            --print( "lost", prevenemy )
-
-                        end
-                        data.HasEnemy = false
-                        self.IsSeeEnemy = false
-
-                    end
-
-                    local stopShootingTime = self.AimAtEnemyShootPosTime or 0
-                    if stopShootingTime < CurTime() then
-                        self.LastEnemyShootPos = nil
-
-                    end
-
-                    self:SetEnemy( newenemy )
-                end
             end,
-            BehaveUpdate = function(self,data,interval)
-                self.UpdateEnemyHandler()
+
+            ShouldRun = function( self, data )
+                return self:IsAngry() and self:canDoRun()
             end,
-            StartControlByPlayer = function( self, data, ply )
-                self:TaskFail( "enemy_handler" )
+            ShouldWalk = function( self, data )
+                return ( not self.HasBrains and not self:IsAngry() ) or self:shouldDoWalk()
             end,
         },
         ["movement_handler"] = {
             OnStart = function( self, data )
+                self:StartTask( "zambstuff_handler" )
                 self:TaskComplete( "movement_handler" )
-                self:StartTask2( "movement_followenemy", nil, "getem!" )
+                self:StartTask2( "movement_wander", nil, "spawned in!" )
 
             end,
         },
-        -- follow enemy
-        -- if not enemy, bail to maintainlos
-        -- if failed path to enemy, bail too
         ["movement_followenemy"] = {
             OnStart = function( self, data )
-                data.nextTauntLine = CurTime() + 8
-
-                self:InvalidatePath( "started followenemy" )
-
+                data.nextPathAttempt = 0
+                if not self.isUnstucking then
+                    self:InvalidatePath( "followenemy" )
+                end
             end,
-            BehaveUpdate = function( self, data )
+            BehaveUpdateMotion = function( self, data )
                 local enemy = self:GetEnemy()
-                local validEnemy = IsValid( enemy ) and enemy:Health() > 0
-                local enemyPos = self:GetLastEnemyPosition( enemy ) or self.EnemyLastPos or nil
+                local validEnemy = IsValid( enemy )
+                local enemyPos = self.EnemyLastPos
+                local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
+                local goodEnemy = validEnemy and aliveOrHp
+                local toPos = enemyPos
 
-                local noPath = enemyPos and not self:primaryPathIsValid()
-                local currentPathIsStale = enemyPos and self:primaryPathIsValid() and self:CanDoNewPath( enemyPos ) and not self.terminator_HandlingLadder
+                if not self.IsSeeEnemy and data.overridePos then
+                    toPos = data.overridePos
 
-                local newPath = noPath or currentPathIsStale
-                newPath = self:nextNewPathIsGood() and not data.Unreachable and newPath
+                end
 
-                if newPath then
-                    local result = terminator_Extras.getNearestPosOnNav( enemyPos )
+                if data.nextPathAttempt < CurTime() and toPos and not data.Unreachable and self:primaryPathInvalidOrOutdated( toPos ) then
+                    data.nextPathAttempt = CurTime() + math.Rand( 0.1, 0.5 )
+                    if self.term_ExpensivePath then
+                        data.nextPathAttempt = CurTime() + math.Rand( 0.5, 1.5 )
 
+                    end
+                    local result = terminator_Extras.getNearestPosOnNav( toPos )
                     local reachable = self:areaIsReachable( result.area )
                     if not reachable then data.Unreachable = true return end
 
-                    local aboveUsJustShoot = ( math.abs( result.pos.z - enemyPos.z ) / 2 ) > self:GetPos():Distance( result.pos )
+                    data.triedToPath = nil
 
-                    if aboveUsJustShoot then data.Unreachable = true return end
+                    if self.HasBrains and ( self.zamb_AlwaysFlank or math.random( 1, 100 ) > 25 ) then
+                        -- split up!
+                        local otherHuntersHalfwayPoint = self:GetOtherHuntersProbableEntrance()
+                        local splitUpResult
+                        local splitUpPos
+                        local splitUpBubble
+                        if otherHuntersHalfwayPoint then
+                            splitUpPos = otherHuntersHalfwayPoint
+                            splitUpBubble = self:GetPos():Distance( otherHuntersHalfwayPoint ) * 0.7
+                            splitUpResult = terminator_Extras.getNearestPosOnNav( splitUpPos )
 
-                    local posOnNav = result.pos
-                    self:SetupPathShell( posOnNav )
-
-                    if not self:primaryPathIsValid() then data.Unreachable = true return end
-
-                end
-
-                self:ControlPath2( not self.IsSeeEnemy )
-
-                local pathLeng = 0
-                local pathIsCurrent
-                if self:primaryPathIsValid() then
-                    pathLeng = self:GetPath():GetLength()
-                    if enemyPos then
-                        pathIsCurrent = self:GetPath():GetEnd():DistToSqr( enemyPos ) < 200^2
-
-                    end
-                end
-
-                local circuitiousPath = self.IsSeeEnemy and self.NothingOrBreakableBetweenEnemy and ( pathLeng > ( self.DistToEnemy * 8 ) ) and ( pathLeng > 3000 ) and pathIsCurrent
-
-                -- not worth pathing to new enemy
-                if validEnemy then
-                    if data.Unreachable or circuitiousPath or ( enemy.InVehicle and enemy:InVehicle() ) then
-                        --print( data.Unreachable, failedPath, circuitiousPath, pathLeng, ( enemy.InVehicle and enemy:InVehicle() ) )
-                        self:TaskComplete( "movement_followenemy" )
-                        self:StartTask2( "movement_maintainlos", { Unreachable = true }, "they're unreachable!" )
-                        if validEnemy then
-                            self:Term_PlaySentence( playerUnreachBegin, aliveEnem )
-
-                        end
-                    end
-                    if data.nextTauntLine < CurTime() then
-                        if self.IsSeeEnemy then
-                            self:Term_PlaySentence( approachingEnemyVisible, aliveEnem )
-                            data.nextTauntLine = CurTime() + math.Rand( 7, 13 )
-
-                        else
-                            self:Term_PlaySentence( approachingEnemyObscured, aliveEnem )
-                            data.nextTauntLine = CurTime() + math.Rand( 13, 20 )
-
-                        end
-                    end
-                -- reached end of path
-                elseif not self:primaryPathIsValid() then
-                    self:TaskComplete( "movement_followenemy" )
-                    self:StartTask2( "movement_maintainlos", nil, "no enemy!" )
-                end
-            end,
-            StartControlByPlayer = function()
-            end,
-            ShouldRun = function( self, data )
-                return self.ShouldJog or supercopJog:GetBool()
-            end,
-            ShouldWalk = function( self, data )
-                return not ( self.ShouldJog or supercopJog:GetBool() )
-            end,
-        },
-        ["movement_maintainlos"] = {
-            OnStart = function( self, data )
-                local enemy = self:GetEnemy()
-                data.nextPath = 0
-                data.tryAndApproach = {}
-                if data.Unreachable and IsValid( enemy ) then
-                    data.tryAndApproach[enemy:GetCreationID()] = CurTime() + 5
-
-                end
-                data.nextTauntLine = CurTime() + 8
-                local distToShootpos = self:GetPos():Distance( self:GetShootPos() )
-                data.offsetToShootPos = Vector( 0, 0, distToShootpos )
-
-                data.endToEnemyBlockedCount = 0
-
-                self:GetPath():Invalidate()
-
-            end,
-            BehaveUpdate = function( self, data )
-                local enemy = self:GetEnemy()
-                local goodEnemy = IsValid( enemy ) and enemy:Health() >= 0
-                local seeAndCanShoot = self.IsSeeEnemy and self.NothingOrBreakableBetweenEnemy
-                local canTryToApproach = false
-
-                if not data.wander and not goodEnemy then
-                    data.wander = true
-
-                elseif data.wander and goodEnemy then
-                    data.wander = nil
-
-                end
-
-                if goodEnemy then
-                    local time = data.tryAndApproach[enemy:GetCreationID()]
-                    canTryToApproach = ( not time or time < CurTime() ) or data.wander
-
-                end
-
-                local endCanSeeEnemy
-
-                if self:primaryPathIsValid() and IsValid( enemy ) then
-                    endCanSeeEnemy = self:ClearOrBreakable( self:GetPath():GetEnd() + data.offsetToShootPos, self:EntShootPos( enemy ) )
-                    data.endToEnemyBlockedCount = data.endToEnemyBlockedCount + 1
-
-                end
-                if not endCanSeeEnemy then
-                    data.endToEnemyBlockedCount = 0
-
-                end
-
-                local standingStillAndCantSee = not self:primaryPathIsValid() and not seeAndCanShoot
-                local walkingOverAndEndCantSee = not data.wander and self:primaryPathIsValid() and data.endToEnemyBlockedCount > 15 and not self.terminator_HandlingLadder
-
-                local newPath = standingStillAndCantSee or walkingOverAndEndCantSee
-                if newPath and data.nextPath < CurTime() then
-                    local enemysShootPos = nil
-                    local enemsCrouchShootPos = nil
-                    if not data.wander then
-                        enemysShootPos = self:EntShootPos( enemy )
-                        enemsCrouchShootPos = enemysShootPos + ( -data.offsetToShootPos / 2 )
-
-                    end
-
-                    local scoreData = {}
-                    scoreData.blockRadiusEnd = not data.wander
-
-                    scoreData.self = self
-                    scoreData.myShootPos = self:GetShootPos()
-                    scoreData.enemysShootPos = enemysShootPos
-                    scoreData.enemysCrouchShootPos = enemsCrouchShootPos
-                    scoreData.areaCenterOffset = data.offsetToShootPos
-                    scoreData.wander = data.wander
-                    scoreData.startingShootPosZ = scoreData.myShootPos.z
-                    scoreData.goingFurtherAwayCutoff = self.DistToEnemy^2
-
-                    local maxDist = 2000
-
-                    if IsValid( enemy ) then
-                        maxDist = self.DistToEnemy + 2000
-                        maxDist = math.Clamp( maxDist, 2000, 8000 )
-
-                    end
-
-                    -- find areas that have a line of sight to my enemy
-                    local scoreFunction = function( scoreData, area1, area2 )
-                        if not scoreData.self:areaIsReachable( area2 ) then return 0 end
-
-                        local area2Center = area2:GetCenter()
-
-                        local enemsShoot = scoreData.enemysShootPos
-                        local score = 1
-                        if enemsShoot then
-                            score = math.Round( ( maxDist - area2Center:Distance( enemsShoot ) ) / maxDist, 3 )
+                        elseif validEnemy and self.zamb_AlwaysFlank then
+                            splitUpPos = enemy:GetPos()
+                            splitUpResult = terminator_Extras.getNearestPosOnNav( splitUpPos )
 
                         end
 
-                        local heightChange = area1:ComputeGroundHeightChange( area2 )
-                        local wander = scoreData.wander
-
-                        if heightChange > scoreData.self.JumpHeight then
-                            score = score * 0.5
-                            --debugoverlay.Cross( area2Center, 10, 10, color_white, true )
-
-                        elseif wander and ( heightChange < -( scoreData.self.JumpHeight / 2 ) ) then
-                            score = score * 0.5
+                        if splitUpResult and self:areaIsReachable( splitUpResult.area ) then
+                            -- flank em!
+                            self:SetupFlankingPath( enemyPos, splitUpResult.area, splitUpBubble )
+                            data.triedToPath = true
+                            coroutine_yield()
 
                         end
-
-                        if area2:IsUnderwater() then
-                            if wander then
-                                score = score * 0.05
-
-                            else
-                                score = score * 0.6
-
-                            end
-                        end
-
-                        local firstWasGood
-
-                        if score >= 0.8 and not wander then
-                            local firstClearOrBreakable, _, firstJustClear = self:ClearOrBreakable( area2Center + scoreData.areaCenterOffset, enemsShoot )
-
-                            if firstJustClear then
-                                firstWasGood = true
-                                score = 1000
-
-                            elseif firstClearOrBreakable then
-                                score = maxDist - area2Center:Distance( enemsShoot ) / 100
-
-                            end
-                        end
-
-                        if firstWasGood then
-                            local potentialSnipingSpot = area2Center + scoreData.areaCenterOffset
-                            local secondClearOrBreakable, _, secondJustClear = self:ClearOrBreakable( potentialSnipingSpot, scoreData.enemysCrouchShootPos )
-                            if secondJustClear and terminator_Extras.PosCanSeeComplex( potentialSnipingSpot, scoreData.enemysCrouchShootPos ) then
-                                score = math.huge -- perfect spot to shoot from
-
-                            elseif secondClearOrBreakable then
-                                score = 2000
-                                --debugoverlay.Text( area2Center, tostring( score ), 5, false )
-                            end
-                        end
-
-                        if not wander then
-                            -- prefer high ground
-                            if area2Center.z > scoreData.startingShootPosZ then
-                                score = score * 1.5
-
-                            -- don't go down!
-                            elseif area2Center.z < ( scoreData.startingShootPosZ + -300 ) then
-                                score = math.Clamp( score * 0.5, 0, 10000 )
-
-                            end
-                            if area2Center:DistToSqr( enemsShoot ) > scoreData.goingFurtherAwayCutoff then
-                                score = score * 0.8
-
-                            end
-                        else
-                            -- dont go to spots we've already been
-                            if scoreData.self.walkedAreas[ area2:GetID() ] then
-                                score = score * 0.05
-
-                            -- prefer higher spots when wandering 
-                            elseif area2Center.z > ( scoreData.startingShootPosZ + 150 ) then
-                                score = score * 4
-
-                            elseif area2Center.z < ( scoreData.startingShootPosZ + -300 ) then
-                                score = score * 0.05
-
-                            end
-                        end
-
-                        --debugoverlay.Text( area2Center, tostring( score ), 5, false )
-
-                        return score
+                    end
+                    -- cant flank
+                    if not self:primaryPathIsValid() then
+                        self:SetupPathShell( result.pos )
+                        data.triedToPath = true
+                        coroutine_yield()
 
                     end
-                    local posWithSightline = self:findValidNavResult( scoreData, self:GetPos(), maxDist, scoreFunction, 8 )
-
-                    local result = terminator_Extras.getNearestPosOnNav( posWithSightline )
-                    local posOnNav = result.pos
-
-                    if posOnNav then
-                        self:InvalidatePath( "new path time, los" )
-                        self:SetupPathShell( posOnNav )
-
-                        data.nextPath = CurTime() + math.Rand( 0.25, 0.5 )
-                        --debugoverlay.Cross( posOnNav, 100, 1, color_white, true )
-
-                        if not self:primaryPathIsValid() then return end
-                        data.endToEnemyBlockedCount = 0
-                        data.nextPath = CurTime() + math.Rand( 0.5, 1 )
-
-                    end
-                elseif data.endToEnemyBlockedCount > 4 and seeAndCanShoot then
-                    -- walked into los, but path end will take us out of los
-                    self:InvalidatePath( "break path, i can see em!" )
-
-                end
-
-                if not newPath and goodEnemy then
-                    data.nextPath = math.max( CurTime() + 1, data.nextPath )
-
-                end
-
-                local farFromPathEnd = self:GetPath():GetEnd():DistToSqr( self:GetPos() ) > 200^2
-                -- if bot is handling path then override shooting handler
-                local isTraversingPath = self:primaryPathIsValid() and farFromPathEnd and self.DistToEnemy > self.SupercopMaxUnequipRevolverDist
-                local pathResult = self:ControlPath2( isTraversingPath or data.wander )
-
-                if pathResult == true and not data.endedPath then
-                    if self.DistToEnemy > self.SupercopMaxUnequipRevolverDist then
-                        data.nextPath = CurTime() + math.Rand( 2, 4 )
-
-                    else
-                        data.nextPath = CurTime() + math.Rand( 0.5, 1 )
-
-                    end
-                    data.endedPath = nil
-
-                end
-                data.endedPath = data.endedPath or pathResult == true
-
-                local shouldTryToFollow = seeAndCanShoot and canTryToApproach
-
-                -- this is the BAIL routine
-                if goodEnemy and ( shouldTryToFollow or self.OverwatchReportedEnemy ) then
-                    self.OverwatchReportedEnemy = nil
-                    local navResult = terminator_Extras.getNearestPosOnNav( enemy:GetPos() )
-                    local reachable = self:areaIsReachable( navResult.area )
-                     -- allow an escape here on wander because wander can't loop easily.
-                    if reachable then
-                        self:TaskComplete( "movement_maintainlos" )
-                        self:StartTask2( "movement_followenemy", nil, "enemy seems to be reachable, gonna try pathing to them." )
+                    if not self:primaryPathIsValid() then
+                        data.overridePos = nil
+                        data.Unreachable = true
                         return
 
+                    end
+                end
+
+
+                local distToExit = self.DuelEnemyDist
+
+                local lookAtGoal = self.zamb_LookAheadWhenRunning or not ( self.IsSeeEnemy and self.HasBrains )
+                local result = self:ControlPath2( lookAtGoal )
+
+                if lookAtGoal then
+                    self.blockAimingAtEnemy = CurTime() + 0.15
+
+                end
+
+                if false and self:CanBashLockedDoor( self:GetPos(), 1000 ) then
+                    --self:BashLockedDoor( "movement_followenemy" )
+                elseif not goodEnemy and not self:primaryPathIsValid() and data.triedToPath then
+                    self:TaskFail( "movement_followenemy" )
+                    self:StartTask2( "movement_wander", nil, "i cant get to them/no enemy" )
+                    data.overridePos = nil
+                elseif not self:primaryPathIsValid() and data.Unreachable then
+                    data.overridePos = nil
+                    if math.random( 1, 100 ) < 50 or self:IsReallyAngry() then
+                        self:TaskFail( "movement_followenemy" )
+                        self:StartTask2( "movement_frenzy", nil, "i cant get to them" )
+
                     else
-                        self.NextForcedEnemy = 0
+                        self:TaskFail( "movement_followenemy" )
+                        self:StartTask2( "movement_wander", nil, "i cant get to them" )
 
                     end
-                -- we can see enemy and our path is valid, nuke our path and just open fire
-                elseif goodEnemy and seeAndCanShoot and self:primaryPathIsValid() and ( ( math.random( 1, 100 ) < 10 ) or walkingOverAndEndCantSee ) then
-                    self:GetPath():Invalidate()
-                    data.nextPath = CurTime() + 1
-
-                else
-                    if data.nextTauntLine < CurTime() then
-                        if seeAndCanShoot then
-                            self:Term_PlaySentence( approachingEnemyVisible, aliveEnem )
-                            data.nextTauntLine = CurTime() + math.Rand( 7, 13 )
-
-                        else
-                            self:Term_PlaySentence( approachingEnemyObscured, aliveEnem )
-                            data.nextTauntLine = CurTime() + math.Rand( 13, 20 )
-
-                        end
+                elseif goodEnemy and self.NothingOrBreakableBetweenEnemy and self.DistToEnemy < distToExit and not self.terminator_HandlingLadder then
+                    self:TaskComplete( "movement_followenemy" )
+                    self:StartTask2( "movement_duelenemy_near", nil, "i gotta punch em" )
+                elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 300 ) then
+                    data.overridePos = nil
+                    if not self.IsSeeEnemy then
+                        self:TaskFail( "movement_followenemy" )
+                        self:StartTask2( "movement_wander", nil, "got there, but no enemy" )
                     end
                 end
             end,
-            StartControlByPlayer = function()
+        },
+        ["movement_duelenemy_near"] = {
+            OnStart = function( self, data )
+                data.badCount = 0
             end,
-            ShouldRun = function( self, data )
-                return self.ShouldJog or supercopJog:GetBool()
+            BehaveUpdateMotion = function( self, data )
+                local enemy = self:GetEnemy()
+                local validEnemy = IsValid( enemy )
+                local enemyPos = self.EnemyLastPos
+                local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
+                local goodEnemy = validEnemy and aliveOrHp
+                local maxDuelDist = self.DuelEnemyDist + 100
+
+                local badAdd = 0
+
+                if not self.IsSeeEnemy and not self.NothingOrBreakableBetweenEnemy then
+                    badAdd = badAdd + 1
+
+                end
+                if goodEnemy and self:GetRangeTo( enemyPos ) > maxDuelDist then
+                    badAdd = badAdd + 2
+
+                end
+                if not goodEnemy then
+                    badAdd = badAdd + 2
+
+                end
+
+                if badAdd then
+                    data.badCount = data.badCount + badAdd
+
+                else
+                    data.badCount = 0
+
+                end
+
+                if data.badCount > 25 or not aliveOrHp then
+                    local propInMyWay = ( self.IsSeeEnemy and not self.NothingOrBreakableBetweenEnemy ) and ( math.random( 1, 100 ) < 75 or self:IsReallyAngry() )
+                    local propInMyWay2 = IsValid( self:GetCachedDisrespector() ) and self:IsReallyAngry()
+                    if propInMyWay or propInMyWay2 then
+                        self:TaskComplete( "movement_duelenemy_near" )
+                        self:StartTask2( "movement_frenzy", nil, "got bored" )
+
+                    else
+                        self:TaskComplete( "movement_duelenemy_near" )
+                        self:StartTask2( "movement_followenemy", nil, "got bored" )
+
+                    end
+                else -- the dueling in question
+                    local enemVel = enemy:GetVelocity()
+                    enemVel.z = enemVel.z * 0.15
+                    local velProduct = math.Clamp( enemVel:Length() * 1.4, 0, self.DistToEnemy * 0.8 )
+                    local offset = enemVel:GetNormalized() * velProduct
+
+                    -- determine where player CAN go
+                    -- dont build path to somewhere behind walls
+                    local mymins,mymaxs = self:GetCollisionBounds()
+                    mymins = mymins * 0.5
+                    mymaxs = mymaxs * 0.5
+
+                    local pathHull = {}
+                    pathHull.start = enemyPos
+                    pathHull.endpos = enemyPos + offset
+                    pathHull.mask = MASK_SOLID_BRUSHONLY
+                    pathHull.mins = mymins
+                    pathHull.maxs = mymaxs
+
+                    local whereToInterceptTr = util.TraceHull( pathHull )
+                    if self:primaryPathIsValid() then
+                        self:InvalidatePath( "im closing in on my enemy!" )
+
+                    end
+
+                    -- default, just run up to enemy
+                    local gotoPos = enemyPos
+                    local angy = self:IsAngry()
+                    -- if we mad though, predict where they will go, and surprise them
+                    if self.HasBrains and angy then
+                        local flat = enemy:GetAimVector()
+                        flat.z = 0
+                        flat:Normalize()
+                        gotoPos = enemyPos + -flat
+
+                    elseif angy then
+                        gotoPos = whereToInterceptTr.HitPos
+
+                    end
+
+                    gotoPos = gotoPos + VectorRand() * 15
+
+                    --debugoverlay.Cross( gotoPos, 10, 1, Color( 255,255,0 ) )
+                    self:GotoPosSimple( gotoPos, 35 )
+
+                end
             end,
-            ShouldWalk = function( self, data )
-                return not ( self.ShouldJog or supercopJog:GetBool() )
+        },
+
+        ["movement_frenzy"] = {
+            OnStart = function( self, data )
+                data.quitCount = 0
+                data.currentFrenzyFocus = nil
+                data.startingBoredom = 0
+                data.maxDist = 500
+                data.everFocused = nil
+                data.validBeatup = nil
+            end,
+            BehaveUpdateMotion = function( self, data )
+                local focus = data.currentFrenzyFocus
+                local validFocus = IsValid( focus )
+                local maxDist = data.maxDist
+                if not validFocus then
+                    local bestScore = 0
+                    for _, curr in ipairs( self.awarenessSubstantialStuff ) do
+                        if not IsValid( curr ) then continue end -- this tbl is usually outdated
+                        if not curr:IsSolid() then continue end
+                        if curr.zamb_NeverFrenzyCurious then continue end
+                        if curr.isTerminatorHunterChummy and curr.isTerminatorHunterChummy == self.isTerminatorHunterChummy then continue end
+
+                        local range = self:GetRangeTo( curr )
+                        if range > maxDist then continue end
+
+                        local currsBoredom = self.frenzyBoredomEnts[ curr ] or 1
+                        local entsBoredom = curr.zamb_entsBoredom or 0
+                        local boredom = currsBoredom + entsBoredom
+                        local score = math.max( maxDist - range, 0 )
+                        score = score / boredom
+                        if score > bestScore then
+                            data.currentFrenzyFocus = curr
+                            data.startingBoredom = boredom
+
+                        end
+                    end
+                    if IsValid( data.currentFrenzyFocus ) and bestScore > 10 then
+                        data.everFocused = true
+                        debugoverlay.Text( data.currentFrenzyFocus, tostring( bestScore ), 5, false )
+                        data.maxDist = 500
+                        validFocus = true
+                        focus = data.currentFrenzyFocus
+
+                    else
+                        data.maxDist = data.maxDist + 100
+
+                    end
+                end
+
+                local boredToQuit = data.startingBoredom
+                local boredAdd = 1
+                local quitAdd = 0
+                if self.NothingOrBreakableBetweenEnemy then
+                    quitAdd = quitAdd + 5
+
+                end
+                if not validFocus then
+                    if data.everFocused then
+                        quitAdd = quitAdd + 10
+
+                    else
+                        quitAdd = quitAdd + 50
+
+                    end
+                else
+                    boredToQuit = boredToQuit + 25
+
+                    local memory = self:getMemoryOfObject( focus )
+                    if not data.validBeatup then
+                        boredAdd = boredAdd + 5
+
+                    elseif memory == MEMORY_BREAKABLE then
+                        quitAdd = quitAdd + -1
+                        boredAdd = 0.1
+                        boredToQuit = boredToQuit + 50
+
+                    elseif memory == MEMORY_VOLATILE and not self:IsReallyAngry() then -- anger clouds "judgement"
+                        boredAdd = boredAdd + 10
+                        quitAdd = quitAdd + -1
+                        boredToQuit = boredToQuit + 25
+
+                    else
+                        quitAdd = quitAdd + 1
+                        boredAdd = boredAdd + 1
+
+                    end
+                    local obj = focus:GetPhysicsObject()
+                    if IsValid( obj ) and not obj:IsMotionEnabled() then
+                        boredAdd = boredAdd + 1
+                        local old = focus.zamb_entsBoredom or 0
+                        focus.zamb_entsBoredom = old + 0.1
+
+                    end
+
+                    local oldBored = self.frenzyBoredomEnts[ focus ] or 0
+                    self.frenzyBoredomEnts[ focus ] = math.Clamp( oldBored + boredAdd, 0, math.huge )
+                    if self.frenzyBoredomEnts[ focus ] > boredToQuit then
+                        data.currentFrenzyFocus = nil
+                        return
+
+                    end
+                end
+
+                local enemy = self:GetEnemy()
+                local validEnemy = IsValid( enemy )
+                local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
+                local goodEnemy = validEnemy and aliveOrHp
+
+                local enemyIsReachable
+                if goodEnemy then
+                    local result = terminator_Extras.getNearestPosOnNav( enemyPos )
+                    enemyIsReachable = self:areaIsReachable( result.area )
+                end
+
+                if enemyIsReachable then
+                    quitAdd = quitAdd + 10
+
+                end
+
+                data.quitCount = math.Clamp( data.quitCount + quitAdd, 0, math.huge )
+
+                if data.quitCount > 100 then
+                    if self.IsSeeEnemy then
+                        self:TaskComplete( "movement_frenzy" )
+                        self:StartTask2( "movement_followenemy", nil, "got bored" )
+
+                    else
+                        self:TaskComplete( "movement_frenzy" )
+                        self:StartTask2( "movement_wander", nil, "got bored" )
+
+                    end
+                else
+                    data.validBeatup = self:beatUpEnt( focus )
+
+                end
+            end,
+        },
+
+        -- complex wander, preserves areas already explored, makes bot cross entire map pretty much
+        ["movement_wander"] = {
+            OnStart = function( self, data )
+                self.nextInterceptTry = math.max( CurTime() + 1, self.nextInterceptTry + 1 )
+                data.nextWander = CurTime() + math.Rand( 0.05, 0.25 )
+                if not self.isUnstucking then
+                    self:InvalidatePath( "followenemy" )
+                end
+            end,
+            BehaveUpdateMotion = function( self, data )
+                local enemy = self:GetEnemy()
+                local validEnemy = IsValid( enemy )
+                local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
+                local goodEnemy = validEnemy and aliveOrHp
+
+                local enemyIsReachable
+                if goodEnemy then
+                    local result = terminator_Extras.getNearestPosOnNav( enemy:GetPos() )
+                    enemyIsReachable = self:areaIsReachable( result.area )
+
+                end
+
+                if not data.toPos and data.nextWander < CurTime() then
+                    data.nextWander = CurTime() + math.Rand( 0.05, 0.25 )
+                    local smellySpot = terminator_Extras.zamb_SmelliestRottingArea
+                    local foundSomewhereNotBeen = nil
+                    if IsValid( smellySpot ) and self:areaIsReachable( smellySpot ) and math.random( 1, 100 ) < 50 then
+                        data.toPos = smellySpot:GetCenter()
+
+                    else
+                        data.beenAreas = data.beenAreas or self.wanderPreserveAreas or {}
+
+                        self.wanderPreserveAreas = nil
+
+                        local canDoUnderWater = self:WaterLevel() > 0
+                        local myNavArea = self:GetCurrentNavArea()
+                        if not IsValid( myNavArea ) then return end
+
+                        local anotherHuntersPos = self.HasBrains and self:GetOtherHuntersProbableEntrance() or nil
+
+                        --normal path
+                        local dir = data.dir or self:GetForward()
+                        dir = -dir
+                        local scoreData = {}
+                        local wanderAreasTraversed = {}
+                        scoreData.canDoUnderWater = canDoUnderWater
+                        scoreData.self = self
+                        scoreData.hasBrains = self.HasBrains
+                        scoreData.forward = dir:Angle()
+                        scoreData.startArea = myNavArea
+                        scoreData.startPos = scoreData.startArea:GetCenter()
+                        scoreData.beenAreas = data.beenAreas
+                        scoreData.ignoreBearing = data.ignoreBearing
+                        if anotherHuntersPos then
+                            scoreData.doSpreadOut = true
+                            scoreData.spreadOutAvoidAreas = {}
+                            local areasFound = navmesh.Find( anotherHuntersPos, 500, 100, 100 )
+
+                            for _, currArea in ipairs( areasFound ) do
+                                scoreData.spreadOutAvoidAreas[currArea:GetID()] = true
+
+                            end
+                        end
+
+                        local scoreFunction = function( scoreData, area1, area2 ) -- this is the function that determines the score of a navarea
+                            local dropToArea = area2:ComputeAdjacentConnectionHeightChange( area1 )
+                            local area2sCenter = area2:GetCenter()
+                            local score = area2sCenter:DistToSqr( scoreData.startPos ) * math.Rand( 0.8, 1.4 )
+
+                            if scoreData.hasBrains and dropToArea > self.loco:GetJumpHeight() then
+                                return 0
+
+                            end
+                            local area2sId = area2:GetID()
+
+                            if scoreData.beenAreas[area2sId] then -- avoid already been areas
+                                score = score * 0.0001
+
+                            else
+                                foundSomewhereNotBeen = true
+
+                            end
+                            -- dont group up!
+                            if scoreData.doSpreadOut and scoreData.spreadOutAvoidAreas[area2sId] then
+                                score = score * 0.001
+
+                            end
+                            -- go forward
+                            if not data.ignoreBearing and math.abs( terminator_Extras.BearingToPos( scoreData.startPos, scoreData.forward, area2sCenter, scoreData.forward ) ) < 22.5 then
+                                score = score^1.5
+
+                            end
+                            if not scoreData.canDoUnderWater and area2:IsUnderwater() then
+                                score = score * 0.001
+
+                            end
+                            if math.abs( dropToArea ) > 100 then
+                                score = score * 0.001
+
+                            end
+                            if area2 == data.lastToArea then
+                                score = score * 0.001
+
+                            end
+
+                            --debugoverlay.Text( area2sCenter, tostring( math.Round( score ) ), 8, false )
+
+                            wanderAreasTraversed[area2sId] = true
+
+                            return score
+
+                        end
+
+                        data.toPos, data.lastToArea = self:findValidNavResult( scoreData, self:GetPos(), math.random( 1000, 2000 ), scoreFunction )
+
+                        table.Merge( data.beenAreas, wanderAreasTraversed )
+
+                    end
+
+                    if not data.toPos then
+                        data.nextWander = CurTime() + 5
+                        data.ignoreBearing = true
+
+                    end
+
+                    if not foundSomewhereNotBeen then
+                        data.beenAreas = nil
+                        data.ignoreBearing = true
+
+                    else
+                        self.wanderPreserveAreas = data.beenAreas
+                        data.ignoreBearing = nil
+
+                    end
+                end
+                coroutine_yield()
+                if data.toPos and self:primaryPathInvalidOrOutdated( data.toPos ) then
+                    local result = terminator_Extras.getNearestPosOnNav( data.toPos )
+                    local reachable = self:areaIsReachable( result.area )
+                    if not reachable then
+                        data.nextWander = CurTime() + 5
+                        data.toPos = nil
+                        coroutine_yield( "wait" )
+                        return
+
+                    end
+
+                    if self.HasBrains and math.random( 1, 100 ) > 25 then
+                        -- split up!
+                        local otherHuntersHalfwayPoint = self:GetOtherHuntersProbableEntrance()
+                        local splitUpResult
+                        local splitUpPos
+                        local splitUpBubble
+                        if otherHuntersHalfwayPoint then
+                            splitUpPos = otherHuntersHalfwayPoint
+                            splitUpBubble = self:GetPos():Distance( otherHuntersHalfwayPoint ) * 0.7
+                            splitUpResult = terminator_Extras.getNearestPosOnNav( splitUpPos )
+
+                        end
+
+                        if splitUpResult and self:areaIsReachable( splitUpResult.area ) then
+                            -- flank em!
+                            self:SetupFlankingPath( enemyPos, splitUpResult.area, splitUpBubble )
+                            coroutine_yield()
+
+                        end
+                    end
+                    -- cant flank
+                    if not self:primaryPathIsValid() then
+                        self:SetupPathShell( result.pos )
+                        coroutine_yield()
+
+                    end
+                    if not self:primaryPathIsValid() then
+                        data.nextWander = CurTime() + 5
+                        data.toPos = nil
+                        coroutine_yield( "wait" )
+                        return
+
+                    end
+                end
+
+                local lookAtGoal = self.zamb_LookAheadWhenRunning or not ( self.IsSeeEnemy and self.HasBrains )
+                local result = self:ControlPath2( lookAtGoal )
+
+                if lookAtGoal then
+                    self.blockAimingAtEnemy = CurTime() + 0.15
+
+                end
+
+                if false and self:CanBashLockedDoor( self:GetPos(), 1000 ) then
+                    --self:BashLockedDoor( "movement_wander" )
+                elseif IsValid( self:GetCachedDisrespector() ) and self.zamb_nextRandomFrenzy < CurTime() then
+                    local add = 60
+                    if self:IsReallyAngry() then
+                        add = 5
+
+                    elseif self:IsAngry() then
+                        add = 30
+
+                    end
+                    self.zamb_nextRandomFrenzy = CurTime() + add
+
+                    self:TaskComplete( "movement_wander" )
+                    self:StartTask2( "movement_frenzy", nil, "i want to attack random stuff" )
+
+                elseif self.HasBrains and self:beatupVehicleIfWeCan( "movement_wander" ) then
+                    return
+
+                elseif self.nextInterceptTry < CurTime() and self:interceptIfWeCan( nil, data ) then
+                    self.nextInterceptTry = CurTime() + 1
+                    if not self.HasBrains then
+                        local areasNearby = navmesh.Find( self.lastInterceptPos, 250, 100, 100 )
+                        local randomArea = areasNearby[math.random( 1, #areasNearby )]
+                        if IsValid( randomArea ) and self:areaIsReachable( randomArea ) then
+                            self.nextInterceptTry = CurTime() + 5
+                            local randomPosNearby = randomArea:GetRandomPoint()
+                            self:TaskComplete( "movement_wander" )
+                            self:StartTask2( "movement_followenemy", { overridePos = randomPosNearby }, "i can intercept someone" )
+                            self.lastInterceptPos = nil
+
+                        end
+                    else
+                        local nearestArea = terminator_Extras.getNearestNav( self.lastInterceptPos )
+                        if IsValid( nearestArea ) and self:areaIsReachable( nearestArea ) then
+                            self.nextInterceptTry = CurTime() + 15
+                            local pos = nearestArea:GetRandomPoint()
+                            self:TaskComplete( "movement_wander" )
+                            self:StartTask2( "movement_followenemy", { overridePos = pos }, "i can intercept someone" )
+                            self.lastInterceptPos = nil
+
+                        end
+                    end
+                elseif goodEnemy and enemyIsReachable then
+                    self:TaskFail( "movement_wander" )
+                    self:StartTask2( "movement_followenemy", nil, "new enemy!" )
+                elseif result then
+                    data.toPos = nil
+                    data.nextWander = CurTime() + 1
+                    coroutine_yield( "wait" )
+                end
             end,
         },
     }
