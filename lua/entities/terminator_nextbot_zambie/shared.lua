@@ -575,7 +575,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         self:StartTask2( "movement_followenemy", nil, "got bored" )
 
                     end
-                else -- the dueling in question
+                elseif validEnemy then -- the dueling in question
                     local enemVel = enemy:GetVelocity()
                     enemVel.z = enemVel.z * 0.15
                     local velProduct = math.Clamp( enemVel:Length() * 1.4, 0, self.DistToEnemy * 0.8 )
@@ -604,7 +604,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     local gotoPos = enemyPos
                     local angy = self:IsAngry()
                     -- if we mad though, predict where they will go, and surprise them
-                    if self.HasBrains and angy then
+                    if self.HasBrains and angy and enemy.GetAimVector then
                         local flat = enemy:GetAimVector()
                         flat.z = 0
                         flat:Normalize()
