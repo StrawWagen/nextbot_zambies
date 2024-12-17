@@ -1,6 +1,4 @@
 --CREDITS
--- fast zomb pm with headcrab https://steamcommunity.com/sharedfiles/filedetails/?id=2941435647
--- poison zomb pm with headcrab https://steamcommunity.com/sharedfiles/filedetails/?id=974932116
 -- zombine pm with headcrab https://steamcommunity.com/sharedfiles/filedetails/?id=265424952
 
 -- resource.AddWorkshop( "" ) -- TODO:Impliment
