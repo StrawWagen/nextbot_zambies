@@ -35,29 +35,35 @@ hook.Add( "Think", "zambnextbots_rottingareasthink", function()
     local bestRotArea
     local bestRot = 0
     for area, currRot in pairs( rotting ) do
-        local since = cur - lastRot[area]
-        local mul = since^1.11 / 10
-        mul = mul + 1
-        local bite = math_rand( -0.1, -0.05 ) * mul
-        local newRot = currRot + bite
-        if newRot <= 0 then
-            rotting[area] = nil
+        if IsValid( area ) then
+            local since = cur - lastRot[area]
+            local mul = since^1.11 / 10
+            mul = mul + 1
+            local bite = math_rand( -0.1, -0.05 ) * mul
+            local newRot = currRot + bite
+            if newRot <= 0 then
+                rotting[area] = nil
 
-        else
-            rotting[area] = newRot
-            indexed[#indexed + 1] = area
-            if newRot > bestRot and math.random( 1, 100 ) > 50 then
-                bestRotArea = area
-                bestRot = newRot
+            else
+                rotting[area] = newRot
+                indexed[#indexed + 1] = area
+                if newRot > bestRot and math.random( 1, 100 ) > 50 then
+                    bestRotArea = area
+                    bestRot = newRot
 
+                end
             end
+        else
+            rotting[area] = nil
+            continue
+
         end
     end
 
     terminator_Extras.zamb_IndexedRottingAreas = indexed
     terminator_Extras.zamb_SmelliestRottingArea = bestRotArea
 
-    if bestRotArea then
+    if IsValid( bestRotArea ) then
         local sndPos = bestRotArea:GetRandomPoint()
         sndPos = sndPos + up * math.random( 5, 25 )
 
