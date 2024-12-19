@@ -2,10 +2,10 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiefast"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Zombie Grunt Fast"
+ENT.PrintName = "Zombie Fast Elite"
 ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambiefastgrunt", {
-    Name = "Zombie Grunt Fast",
+    Name = "Zombie Fast Elite",
     Class = "terminator_nextbot_zambiefastgrunt",
     Category = "Nexbot Zambies",
 } )
@@ -22,7 +22,6 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0005
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 450

@@ -28,7 +28,7 @@ end
 
 local coroutine_yield = coroutine.yield
 
-ENT.CoroutineThresh = 0.00015
+ENT.CoroutineThresh = 0.0001
 ENT.MaxPathingIterations = 5000
 
 ENT.JumpHeight = 80
@@ -104,14 +104,13 @@ function ENT:canDoRun()
     local nearObstacleBlockRunning = self.nearObstacleBlockRunning or 0
     if nearObstacleBlockRunning > CurTime() and not self.IsSeeEnemy then return end
     local area = self:GetCurrentNavArea()
-    if not area then return end
+    if not IsValid( area ) then return end
     if area:HasAttributes( NAV_MESH_CLIFF ) then return end
     if area:HasAttributes( NAV_MESH_CROUCH ) then return end
     local nextArea = self:GetNextPathArea()
     if self:getMaxPathCurvature( area, self.MoveSpeed ) > 0.45 then return end
     if self:confinedSlope( area, nextArea ) == true then return end
-    if not nextArea then return true end
-    if not nextArea:IsValid() then return true end
+    if not IsValid( nextArea ) then return true end
     local myPos = self:GetPos()
     if myPos:DistToSqr( nextArea:GetClosestPointOnArea( myPos ) ) > ( self.MoveSpeed * 1.25 ) ^ 2 then return true end
     if nextArea:HasAttributes( NAV_MESH_CLIFF ) then return end
@@ -338,6 +337,7 @@ function ENT:DoCustomTasks( defaultTasks )
         ["enemy_handler"] = defaultTasks["enemy_handler"],
         ["inform_handler"] = defaultTasks["inform_handler"],
         ["reallystuck_handler"] = defaultTasks["reallystuck_handler"],
+        ["movement_wait"] = defaultTasks["movement_wait"],
         ["zambstuff_handler"] = {
             ZambOnGrumpy = function( self, data )
                 if self.HasBrains or math.random( 1, 100 ) > 25 then
@@ -402,7 +402,18 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
 
             ShouldRun = function( self, data )
-                return self:IsAngry() and self:canDoRun()
+                local goodToRun = self:IsAngry() and self:canDoRun()
+                if not goodToRun then return false end
+
+                local enem = self:GetEnemy()
+                if not IsValid( enem ) then
+                    local creationId = self:GetCreationID()
+                    local fraction = creationId % 5
+                    local offsettedCur = CurTime() + creationId
+                    local timing = 20 + ( creationId % 20 )
+                    return ( offsettedCur % timing ) < ( timing / fraction )
+                end
+                return goodToRun
             end,
             ShouldWalk = function( self, data )
                 return ( not self.HasBrains and not self:IsAngry() ) or self:shouldDoWalk()
@@ -901,7 +912,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     local result = terminator_Extras.getNearestPosOnNav( data.toPos )
                     local reachable = self:areaIsReachable( result.area )
                     if not reachable then
-                        data.nextWander = CurTime() + 5
+                        data.nextWander = CurTime() + math.random( 1, 5 )
                         data.toPos = nil
                         coroutine_yield( "wait" )
                         return

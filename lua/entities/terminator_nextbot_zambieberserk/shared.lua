@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0007
+ENT.CoroutineThresh = 0.0004
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 300

@@ -164,7 +164,7 @@ function ENT:AdditionalThink()
     local myEnem = self:GetEnemy()
     local reachable
     if IsValid( myEnem ) then
-        desiredAliveCount = 4
+        desiredAliveCount = 2
 
         local result = terminator_Extras.getNearestPosOnNav( myEnem:GetPos() )
         reachable = self:areaIsReachable( result.area )
@@ -177,6 +177,7 @@ function ENT:AdditionalThink()
     local nearDeath
     if self:IsReallyAngry() and self:Health() < self:GetMaxHealth() * 0.35 then
         nearDeath = true
+        desiredAliveCount = desiredAliveCount + 2
         desiredAliveCount = desiredAliveCount * 2
         desiredAliveCount = math.max( desiredAliveCount, 4 )
 

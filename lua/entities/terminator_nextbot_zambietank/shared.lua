@@ -22,7 +22,7 @@ if CLIENT then
     return
 end
 
-ENT.CoroutineThresh = 0.0005
+ENT.CoroutineThresh = 0.0004
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18

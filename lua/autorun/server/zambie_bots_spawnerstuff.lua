@@ -2,11 +2,13 @@
 terminator_Extras = terminator_Extras or {}
 
 terminator_Extras.zamb_PotentialSpawnPositions = terminator_Extras.zamb_PotentialSpawnPositions or {}
-terminator_Extras.zamb_Spawnpoints = terminator_Extras.zamb_Spawnpoints or nil
 terminator_Extras.zamb_SpawnOverrideQueue = terminator_Extras.zamb_SpawnOverrideQueue or {}
 
-local defaultMaxZambs = 35
-local maxZambsVar = CreateConVar( "zambie_director_maxzambs", -1, FCVAR_ARCHIVE, "Max zombies the ai \"Director\" will spawn. -1 for default," .. defaultMaxZambs, 0, 999 )
+terminator_Extras.zamb_Spawnpoints = terminator_Extras.zamb_Spawnpoints or nil
+terminator_Extras.zamb_PlayerParticipatingFor = terminator_Extras.zamb_PlayerParticipatingFor or nil
+
+local defaultMaxZambs = 30
+local maxZambsVar = CreateConVar( "zambie_director_maxzambs", -1, FCVAR_ARCHIVE, "Max zombies the ai \"Director\" will spawn. -1 for default, " .. defaultMaxZambs, -1, 999 )
 local maxZambs
 
 local function doMaxZambs()
@@ -21,14 +23,32 @@ local function doMaxZambs()
 end
 
 doMaxZambs()
-
 cvars.AddChangeCallback( "zambie_director_maxzambs", function() doMaxZambs() end, "updatelocal" )
+
+
+local defaultDifficultyMul = 1
+local difficultyMulVar = CreateConVar( "zambie_director_difficultymul", -1, FCVAR_ARCHIVE, "Difficulty multiplier for the ai \"Director\". -1 for default, " .. defaultDifficultyMul, -1, 99 )
+local difficultyMul
+
+local function doDifficultyMul()
+    local var = difficultyMulVar:GetInt()
+    if var <= -1 then
+        difficultyMul = defaultDifficultyMul
+
+    else
+        difficultyMul = var
+
+    end
+end
+
+doDifficultyMul()
+cvars.AddChangeCallback( "zambie_director_difficultymul", function() doDifficultyMul() end, "updatelocal" )
 
 local difficultyBeingExperienced
 local targetDifficulty
 local difference
 local zamCount
-local plyCount
+local participatingCount
 local gettingHandsDirty
 local nextGlobalThink
 
@@ -37,7 +57,7 @@ local ease = math.ease
 local curves = {
     calm = {
         { timing = 20, ease = ease.InOutSine, steps = { 5, 10, 5 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 10, 20, 20, 5 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 10, 20, 15, 5 } },
         { timing = 20, ease = ease.InOutSine, steps = { 5, 18, 10, 10 } },
         { timing = 20, ease = ease.InOutSine, steps = { 3, 3, 5, 6 } },
         { timing = 20, ease = ease.InOutSine, steps = { 10, 6, 4 } },
@@ -45,20 +65,21 @@ local curves = {
 
     rampup = {
         { timing = 20, ease = ease.InOutSine, steps = { 10, 20, 30, 40 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 20, 30, 40, 50 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 20, 30, 35, 40 } },
         { timing = 20, ease = ease.InOutSine, steps = { 10, 11, 35, 45 } },
         { timing = 20, ease = ease.InOutSine, steps = { 25, 30, 40 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 5, 30, 60, 5, 70 } },
-        { timing = 10, ease = ease.InOutSine, steps = { 50, 80 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 5, 30, 20, 5, 40 } },
+        { timing = 10, ease = ease.InOutSine, steps = { 20, 20, 25, 40 } },
+        { timing = 10, ease = ease.InOutSine, steps = { 5, 10, 15, 20, 25, 30 } },
     },
 
     peak = {
-        { timing = 20, ease = ease.InOutSine, steps = { 80, 90, 160, 100, 110 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 40, 50, 60, 70, 80 } },
         { timing = 20, ease = ease.InOutSine, steps = { 90, 80, 90, 100, 100 } },
         { timing = 20, ease = ease.InOutSine, steps = { 70, 80, 90, 100, 100 } },
         { timing = 20, ease = ease.InOutSine, steps = { 75, 85, 100 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 80, 100, 5, 100, 150, 150 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 5, 90, 100, 100, 200 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 80, 80, 5, 80, 90, 100 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 5, 90, 80, 80, 100 } },
     }
 }
 
@@ -67,7 +88,7 @@ local highestSegTime
 local sameCurveChainLength
 local segmentStack
 local lastTypeAdded
-local currCurveType
+local currCurveType -- for debug
 
 local function easedLerp( fraction, from, to, func )
     return Lerp( func( fraction ), from, to )
@@ -89,13 +110,17 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
             else
                 local calmChance = 25
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
-                if tooDifficult and math.abs( difference ) > 25 then
-                    calmChance = 75
+                if tooDifficult and math.abs( difference ) > 100 then -- we probably are dealing with the wake of a peak segment, or they just died
+                    calmChance = 101
 
-                elseif tooDifficult and math.abs( difference ) > 60 then
-                    calmChance = 90
+                elseif tooDifficult and math.abs( difference ) > 70 then
+                    calmChance = 80
+
+                elseif tooDifficult and math.abs( difference ) > 25 then
+                    calmChance = 50
 
                 end
+
                 if math.random( 1, 100 ) < calmChance then
                     toAdd = "calm"
 
@@ -106,8 +131,25 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
             end
 
         elseif lastTypeAdded == "rampup" then
-            toAdd = "peak"
+            if sameCurveChainLength < 0 then
+                local tooDifficult = difficultyBeingExperienced > targetDifficulty
+                if tooDifficult and math.abs( difference ) > 100 then -- they died or something?
+                    toAdd = "calm"
 
+                else
+                    toAdd = "rampup"
+
+                end
+            else
+                local tooDifficult = difficultyBeingExperienced > targetDifficulty
+                if tooDifficult and math.abs( difference ) > math.random( 40, 60 ) then -- they aren't ready!
+                    toAdd = "rampup"
+
+                else
+                    toAdd = "peak"
+
+                end
+            end
         elseif lastTypeAdded == "peak" then
             if sameCurveChainLength >= 1 then
                 toAdd = "calm"
@@ -166,6 +208,7 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
     local currentEase = currSeg.ease
     targetDifficulty = easedLerp( fraction, currSeg.diff, nextSeg.diff, currentEase )
     targetDifficulty = math.Round( targetDifficulty, 2 )
+    targetDifficulty = targetDifficulty * difficultyMul
 
     currCurveType = currSeg.segType
 
@@ -177,8 +220,8 @@ end
 
 function terminator_Extras.zamb_HandleDifficultyDecay()
     local averageHealthPercent = 0
-    plyCount = 0
-    for _, ply in player.Iterator() do
+    local plyCount = 0
+    for ply, _ in pairs( terminator_Extras.zamb_PlayerParticipatingFor ) do
         plyCount = plyCount + 1
         local healthPercent = ply:Health() / ply:GetMaxHealth()
         healthPercent = healthPercent * 100
@@ -220,6 +263,24 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
 
     --print( difficultyBeingExperienced, targetDifficulty, currCurveType )
 
+end
+
+function terminator_Extras.zamb_HandleParticipation()
+    local participators = terminator_Extras.zamb_PlayerParticipatingFor
+    participatingCount = 0
+    local cur = CurTime()
+    for ply, whenStop in pairs( participators ) do
+        if not IsValid( ply ) or whenStop < cur then
+            terminator_Extras.zamb_PlayerParticipatingFor[ply] = nil
+            return
+
+        end
+
+        if ply:Health() > 0 then
+            participatingCount = participatingCount + 1
+
+        end
+    end
 end
 
 function terminator_Extras.zamb_HandleOnDamaged( target, damage )
@@ -269,20 +330,20 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
         difficultyFelt = damageDealt * 0.05
         local engageDist = attacker:GetPos():Distance( target:GetPos() )
 
-        if attackerIsPlayer and engageDist < 100 and gettingHandsDirty > CurTime() then
+        if attackerIsPlayer and engageDist < 120 and gettingHandsDirty > CurTime() then
             difficultyFelt = difficultyFelt + 1
             difficultyFelt = difficultyFelt * 2
 
             gettingHandsDirty = math.max( CurTime() + ( damageDealt * 0.25 ), CurTime() + ( gettingHandsDirty * 0.1 ) )
 
-        elseif engageDist > 600 then
-            difficultyFelt = -difficultyFelt * 0.5
+        elseif engageDist > 2500 then
+            difficultyFelt = -difficultyFelt * 2.5
 
         elseif engageDist > 1500 then
             difficultyFelt = -difficultyFelt * 1.5
 
-        elseif engageDist > 2500 then
-            difficultyFelt = -difficultyFelt * 2.5
+        elseif engageDist > 600 then
+            difficultyFelt = -difficultyFelt * 0.5
 
         end
         if not attackerIsPlayer then
@@ -298,6 +359,13 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 0.25
 
             end
+        else
+            local oldParticipating = terminator_Extras.zamb_PlayerParticipatingFor[attacker]
+            terminator_Extras.zamb_PlayerParticipatingFor[attacker] = CurTime() + 190
+            if not oldParticipating then
+                participatingCount = participatingCount + 1
+
+            end
         end
         if attacker.IsTerminatorZambie then
             difficultyFelt = 0
@@ -310,6 +378,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     end
 
     if difficultyFelt then
+        difficultyFelt = difficultyFelt / math.Clamp( participatingCount, 1, math.huge )
         difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced + difficultyFelt, 0, math.huge )
 
     end
@@ -321,9 +390,11 @@ function terminator_Extras.zamb_SetupManager()
 
     end
 
+    terminator_Extras.zamb_PlayerParticipatingFor = {}
+
     difficultyBeingExperienced = 0
     zamCount = 0
-    plyCount = 0
+    participatingCount = 0
     gettingHandsDirty = 0
     targetDifficulty = 0
 
@@ -341,6 +412,8 @@ function terminator_Extras.zamb_SetupManager()
     hook.Add( "Think", "zambies_nextbot_spawningmanager", function()
         if nextGlobalThink > CurTime() then return end
         nextGlobalThink = CurTime() + 1
+
+        terminator_Extras.zamb_HandleParticipation()
 
         terminator_Extras.zamb_HandleTargetDifficulty()
 
@@ -363,9 +436,10 @@ end
 
 function terminator_Extras.zamb_TearDownManager()
     terminator_Extras.zamb_Spawnpoints = nil
+    terminator_Extras.zamb_PlayerParticipatingFor = nil
 
     zamCount = nil
-    plyCount = nil
+    participatingCount = nil
     difficultyBeingExperienced = nil
     targetDifficulty = nil
 
@@ -386,8 +460,8 @@ end
 terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambie",              diffAdded = 3, diffNeeded = 0, passChance = 0 },
 
-    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 0, passChance = 90 },
-    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 10 },
+    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 0, passChance = 92 },
+    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 30 },
     { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 99, batchSize = 8 },
 
     { class = "terminator_nextbot_zambieacid",         diffAdded = 6, diffNeeded = 0, passChance = 95 },
@@ -406,8 +480,8 @@ terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, maxDiff = 10, passChance = 99, batchSize = 10 },
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, maxDiff = 10, passChance = 95 },
 
-    { class = "terminator_nextbot_zambietank",          diffAdded = 20, diffNeeded = 90, passChance = 50, maxAtOnce = 1 },
-    { class = "terminator_nextbot_zambienecro",         diffAdded = 20, diffNeeded = 90, passChance = 50, maxAtOnce = 1 },
+    { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 50, maxAtOnce = 1 },
+    { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 50, maxAtOnce = 1 },
 
 }
 
@@ -622,7 +696,7 @@ function terminator_Extras.zamb_RegisterSpawner( spawner, configData )
 
     local creator = spawner:GetCreator()
     if IsValid( creator ) then
-        local desiredCount = 20
+        local desiredCount = 15
         local msg
         if not IsValid( validArea ) then
             msg = "Hint: The navmesh doesn't reach here..."
