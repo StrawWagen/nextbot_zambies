@@ -29,25 +29,29 @@ ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.SpawnHealth = 5000
-ENT.ExtraSpawnHealthPerPlayer = 1000
+ENT.SpawnHealth = 8000
+ENT.ExtraSpawnHealthPerPlayer = 2000
 ENT.AimSpeed = 400
 ENT.WalkSpeed = 60
-ENT.MoveSpeed = 80
-ENT.RunSpeed = 120
-ENT.AccelerationSpeed = 1500
+ENT.MoveSpeed = 150
+ENT.RunSpeed = 350
+ENT.AccelerationSpeed = 1000
 ENT.neverManiac = true
 
 ENT.zamb_LookAheadWhenRunning = nil
 ENT.zamb_MeleeAttackSpeed = 1
+ENT.zamb_MeleeAttackHitFrameMul = 1.25
+ENT.zamb_AttackAnim = ACT_GMOD_GESTURE_RANGE_ZOMBIE_SPECIAL -- ACT_RANGE_ATTACK1
 
-ENT.FistDamageMul = 12
+ENT.FistDamageMul = 15
 ENT.FistForceMul = 12
+ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CRUSH )
 ENT.DuelEnemyDist = 350
 
 local TANK_ZAMBIE_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = TANK_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.35
+ENT.CollisionBounds = { Vector( -15, -15, 0 ), Vector( 15, 15, 50 ) }
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
@@ -56,13 +60,14 @@ ENT.Term_StepSoundTimeMul = 1.05
 
 
 ENT.Models = { TANK_ZAMBIE_MODEL }
+ENT.term_AnimsWithIdealSpeed = true
 
 local IdleActivity = ACT_HL2MP_IDLE_ZOMBIE
 ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
     [ACT_MP_STAND_IDLE]                 = IdleActivity,
-    [ACT_MP_WALK]                       = ACT_HL2MP_WALK_CROUCH,
-    [ACT_MP_RUN]                        = ACT_HL2MP_WALK_ZOMBIE_02,
+    [ACT_MP_WALK]                       = ACT_HL2MP_WALK_ZOMBIE_06,
+    [ACT_MP_RUN]                        = ACT_HL2MP_WALK_ZOMBIE_06,
     [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,
     [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
     [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity+5,
@@ -82,11 +87,21 @@ function ENT:AdditionalAvoidAreas()
 end
 
 function ENT:canDoRun()
-    if self:Health() < self:GetMaxHealth() * 0.5 then
+    if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio and not self.zamb_HasArmor then
         return BaseClass.canDoRun( self )
 
     else
         return false
+
+    end
+end
+
+function ENT:shouldDoWalk()
+    if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio and not self.zamb_HasArmor then
+        return BaseClass.shouldDoWalk( self )
+
+    else
+        return true
 
     end
 end
@@ -116,7 +131,7 @@ function ENT:AdditionalInitialize()
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = math.huge
 
-    self.term_SoundPitchShift = -30
+    self.term_SoundPitchShift = -45
     self.term_SoundLevelShift = 10
 
     self.term_LoseEnemySound = "NPC_PoisonZombie.Idle"
@@ -124,16 +139,16 @@ function ENT:AdditionalInitialize()
     self.term_CallingSmallSound = "npc/zombie_poison/pz_throw3.wav"
     self.term_FindEnemySound = "NPC_PoisonZombie.Alert"
     self.term_AttackSound = { "NPC_PoisonZombie.Attack" }
-    self.term_AngerSound = "NPC_PoisonZombie.AlertNear"
+    self.term_AngerSound = "NPC_PoisonZombie.Alert"
     self.term_DamagedSound = "NPC_PoisonZombie.Pain"
-    self.term_DieSound = "NPC_PoisonZombie.Die"
+    self.term_DieSound = "NPC_AntlionGuard.Die"
     self.term_JumpSound = "npc/zombie_poison/pz_left_foot1.wav"
     self.IdleLoopingSounds = {
-        "NPC_AntlionGuard.GrowlIdle",
+        "npc/zombie_poison/pz_breathe_loop2.wav",
 
     }
     self.AngryLoopingSounds = {
-        "npc/zombie_poison/pz_breathe_loop2.wav",
+        "npc/antlion_guard/growl_idle.wav",
 
     }
 
@@ -146,7 +161,45 @@ function ENT:AdditionalInitialize()
 
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/antlion/antlionhigh_sheet" )
+    self.zamb_HasArmor = true
+    self.zamb_LoseCoolRatio = 0.45
+    self.zamb_UnderArmorMat = "models/flesh"
 
+end
+
+function ENT:BreakArmor()
+    self.zamb_HasArmor = nil
+    self:SetSubMaterial( 0, self.zamb_UnderArmorMat )
+    self:ZAMB_AngeringCall()
+    self:StopMoving()
+    self.Term_BaseTimeBetweenSteps = 400
+    self.Term_StepSoundTimeMul = 0.8
+
+
+    self.JumpHeight = 200
+
+    self.zamb_LookAheadWhenRunning = true
+    self.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_ZOMBIE_FAST
+
+    self:StopSound( self.AngryLoopingSounds[1] )
+    self.AccelerationSpeed = 250
+    self.loco:SetAcceleration( self.AccelerationSpeed )
+
+    self.AlwaysPlayLooping = true
+    self.AngryLoopingSounds = { -- berserker sound
+        "npc/antlion_guard/confused1.wav",
+
+    }
+
+    local timerName = "zamb_crackedarmor" .. self:GetCreationID()
+    local done = 0
+    timer.Create( timerName, 0.01, 30, function()
+        if not IsValid( self ) then return end
+        if math.random( 0, 100 ) < done then return end
+        done = done + 1
+        self:EmitSound( "npc/antlion_guard/antlion_guard_shellcrack" .. math.random( 1, 2 ) .. ".wav", math.random( 75, 79 ) + done, math.random( 80, 90 ) - done )
+
+    end )
 end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
@@ -158,11 +211,36 @@ function ENT:OnFootstep( pos, foot, sound, volume, filter )
         lvl = 76
 
     end
-    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_STATIC, sndFlags )
+    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_BODY, sndFlags )
     return true
 
 end
 
--- does not flinch
-function ENT:HandleFlinching()
+function ENT:IsImmuneToDmg( dmg )
+    if not self.zamb_HasArmor then return end
+    if dmg:GetDamage() <= math.Rand( 5, 12 ) then
+        self:SetBloodColor( DONT_BLEED )
+        self:EmitSound( "npc/antlion/shell_impact" .. math.random( 1, 4 ) .. ".wav", math.random( 75, 79 ), math.random( 120, 140 ), 1, CHAN_ITEM )
+        return true
+
+    end
+end
+
+function ENT:PostTookDamage( dmg )
+    if self.zamb_HasArmor then
+        if self:Health() <= self:GetMaxHealth() * self.zamb_LoseCoolRatio then
+            self:BreakArmor()
+
+        else
+            dmg:ScaleDamage( 0.75 )
+            self:SetBloodColor( BLOOD_COLOR_ANTLION )
+            self:EmitSound( "npc/antlion_guard/antlion_guard_shellcrack" .. math.random( 1, 2 ) .. ".wav", math.random( 75, 79 ), math.random( 90, 110 ), 1, CHAN_ITEM )
+
+        end
+    else
+        self:SetBloodColor( BLOOD_COLOR_ZOMBIE )
+
+    end
+    BaseClass.PostTookDamage( self, dmg )
+
 end

@@ -33,7 +33,7 @@ ENT.AccelerationSpeed = ENT.calm_AccelerationSpeed
 
 ENT.CanUseStuff = true
 
-ENT.zamb_LookAheadWhenRunning = true
+ENT.zamb_LookAheadWhenRunning = true -- running anim doesnt support different move/look angles
 
 ENT.FistDamageMul = 3
 ENT.zamb_MeleeAttackSpeed = 2
@@ -74,6 +74,7 @@ ENT.IdleActivityTranslations = {
 }
 
 function ENT:AdditionalInitialize()
+    self:SetBloodColor( BLOOD_COLOR_ZOMBIE )
     self:SetModel( GRUNT_MODEL )
 
     self.isTerminatorHunterChummy = "zambies"
@@ -84,7 +85,7 @@ function ENT:AdditionalInitialize()
     self.term_NextIdleTaunt = CurTime() + 4
 
     self.term_SoundPitchShift = -35
-    self.term_SoundLevelShift = 20
+    self.term_SoundLevelShift = 25
 
     self.term_LoseEnemySound = "Zombie.Idle"
     self.term_CallingSound = "ambient/creatures/town_zombie_call1.wav"
@@ -93,7 +94,7 @@ function ENT:AdditionalInitialize()
     self.term_AttackSound = { "npc/fast_zombie/fz_scream1.wav", "npc/fast_zombie/fz_frenzy1.wav" }
     self.term_AngerSound = { "npc/fast_zombie/fz_scream1.wav", "npc/fast_zombie/fz_frenzy1.wav" }
     self.term_DamagedSound = "Zombie.Pain"
-    self.term_DieSound = "npc/antlion_guard/antlion_guard_die1.wav"
+    self.term_DieSound = "npc/antlion_guard/antlion_guard_die2.wav"
     self.term_JumpSound = "npc/zombie/foot1.wav"
     self.IdleLoopingSounds = {
         "npc/antlion_guard/growl_high.wav",

@@ -96,7 +96,7 @@ function ENT:AdditionalInitialize()
     self.term_CallingSmallSound = "npc/zombie_poison/pz_throw3.wav"
     self.term_FindEnemySound = "NPC_PoisonZombie.Alert"
     self.term_AttackSound = { "NPC_PoisonZombie.Attack" }
-    self.term_AngerSound = "NPC_PoisonZombie.AlertNear"
+    self.term_AngerSound = "NPC_PoisonZombie.Alert"
     self.term_DamagedSound = "NPC_PoisonZombie.Pain"
     self.term_DieSound = "NPC_PoisonZombie.Die"
     self.term_JumpSound = "npc/zombie_poison/pz_left_foot1.wav"
@@ -121,6 +121,15 @@ function ENT:AdditionalInitialize()
 
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/flesh" )
+    self.zamb_LoseCoolRatio = 0.5
+
+    hook.Add( "zamb_OnBecomeTorso", self, function( died, newTorso )
+        local diedsOwner = died:GetOwner()
+        if diedsOwner ~= self then return end
+        newTorso:SetOwner( self )
+        table.insert( self.ZAMBIE_MINIONS, newTorso )
+
+    end )
 
 end
 
@@ -237,7 +246,7 @@ function ENT:AdditionalThink()
                 minion:SetAngles( Angle( 0, math.random( -180, 180 ), 0 ) )
                 minion.HealthRegen = 0
                 minion:Spawn()
-                minion.HealthRegen = 0
+                minion.HealthRegen = 0 -- here also for good measure
                 minion:SetSubMaterial( 0, "models/flesh" )
                 minion:SetHealth( minion:GetMaxHealth() / 2 )
 

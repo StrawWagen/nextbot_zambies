@@ -31,7 +31,7 @@ ENT.MoveSpeed = 300
 ENT.RunSpeed = 400
 ENT.AccelerationSpeed = 450
 
-ENT.zamb_LookAheadWhenRunning = true
+ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles
 ENT.zamb_MeleeAttackSpeed = 1.15
 
 ENT.FistDamageMul = 0.35

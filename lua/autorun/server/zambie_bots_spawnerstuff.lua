@@ -6,6 +6,9 @@ terminator_Extras.zamb_SpawnOverrideQueue = terminator_Extras.zamb_SpawnOverride
 
 terminator_Extras.zamb_Spawnpoints = terminator_Extras.zamb_Spawnpoints or nil
 terminator_Extras.zamb_PlayerParticipatingFor = terminator_Extras.zamb_PlayerParticipatingFor or nil
+terminator_Extras.zamb_EntsParticipatingFor = terminator_Extras.zamb_EntsParticipatingFor or nil
+terminator_Extras.zamb_OccupiedSpawnSlots = terminator_Extras.zamb_OccupiedSpawnSlots or nil
+
 
 local defaultMaxZambs = 30
 local maxZambsVar = CreateConVar( "zambie_director_maxzambs", -1, FCVAR_ARCHIVE, "Max zombies the ai \"Director\" will spawn. -1 for default, " .. defaultMaxZambs, -1, 999 )
@@ -44,10 +47,21 @@ end
 doDifficultyMul()
 cvars.AddChangeCallback( "zambie_director_difficultymul", function() doDifficultyMul() end, "updatelocal" )
 
+local debuggingVar = CreateConVar( "zambie_director_debug", 0, FCVAR_ARCHIVE, "enable/disable debug prints", 0, 1 )
+local debugging = debuggingVar:GetBool()
+cvars.AddChangeCallback( "zambie_director_debug", function( _, _, new ) debugging = tobool( new ) end, "updatelocal" )
+
+local function debugPrint( ... )
+    if not debugging then return end
+    print( ... )
+
+end
+
 local difficultyBeingExperienced
 local targetDifficulty
 local difference
 local zamCount
+local noPlayerParticipators
 local participatingCount
 local gettingHandsDirty
 local nextGlobalThink
@@ -57,7 +71,7 @@ local ease = math.ease
 local curves = {
     calm = {
         { timing = 20, ease = ease.InOutSine, steps = { 5, 10, 5 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 10, 20, 15, 5 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 10, 12, 15, 5 } },
         { timing = 20, ease = ease.InOutSine, steps = { 5, 18, 10, 10 } },
         { timing = 20, ease = ease.InOutSine, steps = { 3, 3, 5, 6 } },
         { timing = 20, ease = ease.InOutSine, steps = { 10, 6, 4 } },
@@ -98,7 +112,7 @@ end
 function terminator_Extras.zamb_HandleTargetDifficulty()
     local cur = CurTime()
 
-    if #segmentStack <= 3 then
+    if #segmentStack <= 2 then
         local toAdd
         if not lastTypeAdded then
             toAdd = "calm"
@@ -182,8 +196,8 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 
         end
 
-        --print( "added ", toAdd )
-        --print( sameCurveChainLength, lastTypeAdded, toAdd )
+        debugPrint( "added ", toAdd )
+        debugPrint( sameCurveChainLength, lastTypeAdded, toAdd )
 
         if lastTypeAdded == toAdd then
             sameCurveChainLength = sameCurveChainLength + 1
@@ -251,7 +265,10 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     end
 
     if zamCount <= 1 then
-        decay = decay * 2
+        if gettingHandsDirty < CurTime() then -- dont decay as fast if they have taken damage up close
+            decay = decay * 3
+
+        end
         decay = decay + 1
 
     end
@@ -261,15 +278,15 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     zamCount = #ents.FindByClass( "terminator_nextbot_zambie*" )
     difference = targetDifficulty - difficultyBeingExperienced
 
-    --print( difficultyBeingExperienced, targetDifficulty, currCurveType )
+    debugPrint( difficultyBeingExperienced, targetDifficulty, currCurveType )
 
 end
 
 function terminator_Extras.zamb_HandleParticipation()
-    local participators = terminator_Extras.zamb_PlayerParticipatingFor
+    local plyParticipators = terminator_Extras.zamb_PlayerParticipatingFor
     participatingCount = 0
     local cur = CurTime()
-    for ply, whenStop in pairs( participators ) do
+    for ply, whenStop in pairs( plyParticipators ) do
         if not IsValid( ply ) or whenStop < cur then
             terminator_Extras.zamb_PlayerParticipatingFor[ply] = nil
             return
@@ -277,6 +294,23 @@ function terminator_Extras.zamb_HandleParticipation()
         end
 
         if ply:Health() > 0 then
+            participatingCount = participatingCount + 1
+
+        end
+    end
+
+    if participatingCount >= 1 then return end -- there are players participating, focus on them!
+
+    local entParticipators = terminator_Extras.zamb_EntsParticipatingFor
+    participatingCount = 0
+    for ent, whenStop in pairs( entParticipators ) do
+        if not IsValid( ent ) or whenStop < cur then
+            terminator_Extras.zamb_EntsParticipatingFor[ent] = nil
+            return
+
+        end
+
+        if ent:Health() > 0 then
             participatingCount = participatingCount + 1
 
         end
@@ -323,7 +357,8 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 4
 
             end
-            gettingHandsDirty = math.max( CurTime() + damageDealt, CurTime() + ( gettingHandsDirty * 0.25 ) )
+            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.5 ), CurTime() + ( damageDealt * 0.25 ) )
+            debugPrint( "dirtyhands", gettingHandsDirty - CurTime() )
 
         end
     elseif zambGotAttacked then
@@ -334,16 +369,23 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
             difficultyFelt = difficultyFelt + 1
             difficultyFelt = difficultyFelt * 2
 
-            gettingHandsDirty = math.max( CurTime() + ( damageDealt * 0.25 ), CurTime() + ( gettingHandsDirty * 0.1 ) )
+            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.25 ), CurTime() + ( damageDealt * 0.1 ) )
+            debugPrint( "dirtyhands", gettingHandsDirty - CurTime() )
 
-        elseif engageDist > 2500 then
+        elseif engageDist > 4000 then -- negative!
             difficultyFelt = -difficultyFelt * 2.5
 
-        elseif engageDist > 1500 then
+        elseif engageDist > 2500 then -- negative!
             difficultyFelt = -difficultyFelt * 1.5
 
-        elseif engageDist > 600 then
-            difficultyFelt = -difficultyFelt * 0.5
+        elseif engageDist > 1500 then -- negative!
+            difficultyFelt = -difficultyFelt * 0.75
+
+        elseif engageDist > 1000 then -- negative!
+            difficultyFelt = -difficultyFelt * 0.15
+
+        elseif engageDist > 500 then -- positive!
+            difficultyFelt = difficultyFelt * 0.75
 
         end
         if not attackerIsPlayer then
@@ -357,6 +399,10 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
             end
             if gettingHandsDirty < CurTime() then
                 difficultyFelt = difficultyFelt * 0.25
+
+            end
+            if not attacker.IsTerminatorZambie and attacker.GetShootPos and attacker:GetShootPos() ~= nil then
+                terminator_Extras.zamb_EntsParticipatingFor[attacker] = CurTime() + 190
 
             end
         else
@@ -391,9 +437,12 @@ function terminator_Extras.zamb_SetupManager()
     end
 
     terminator_Extras.zamb_PlayerParticipatingFor = {}
+    terminator_Extras.zamb_EntsParticipatingFor = {}
+    terminator_Extras.zamb_OccupiedSpawnSlots = {}
 
     difficultyBeingExperienced = 0
     zamCount = 0
+    noPlayerParticipators = false
     participatingCount = 0
     gettingHandsDirty = 0
     targetDifficulty = 0
@@ -437,8 +486,11 @@ end
 function terminator_Extras.zamb_TearDownManager()
     terminator_Extras.zamb_Spawnpoints = nil
     terminator_Extras.zamb_PlayerParticipatingFor = nil
+    terminator_Extras.zamb_EntsParticipatingFor = nil
+    terminator_Extras.zamb_OccupiedSpawnSlots = nil
 
     zamCount = nil
+    noPlayerParticipators = nil
     participatingCount = nil
     difficultyBeingExperienced = nil
     targetDifficulty = nil
@@ -457,6 +509,19 @@ function terminator_Extras.zamb_TearDownManager()
 
 end
 
+--[[
+
+diffAdded, difficulty added when this is spawned, prevents it from spawning 300 tanks at once, getting ahead of itself
+diffNeeded, target difficulty neeeded, only spawn this when its supposed to be difficult, or easy
+diffMax, dont spawn this when target difficulty is above this.
+passChance, kinda unintitive, the code goes thru this table in a loop, so stuff at the bottom will override stuff at the top,
+            basically this is the chance to NOT override what came before
+batchSize, makes this into a batch spawn, so like 6 of one thing
+randomSpawnAnyway,   randomly spawn this even if none of the conditions are met
+maxAtOnce, max count of this on the field at once, checks class
+
+--]]
+
 terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambie",              diffAdded = 3, diffNeeded = 0, passChance = 0 },
 
@@ -465,23 +530,24 @@ terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 99, batchSize = 8 },
 
     { class = "terminator_nextbot_zambieacid",         diffAdded = 6, diffNeeded = 0, passChance = 95 },
-    { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 20 },
+    { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 45 },
     { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 99, batchSize = 8 },
 
     { class = "terminator_nextbot_zambiefast",          diffAdded = 6, diffNeeded = 25, passChance = 25, randomSpawnAnyway = 5 },
+    { class = "terminator_nextbot_zambietorsofast",     diffAdded = 3, diffNeeded = 25, passChance = 45, spawnSlot = "torsofast" },
     { class = "terminator_nextbot_zambiefastgrunt",     diffAdded = 12, diffNeeded = 75, passChance = 95 },
 
     { class = "terminator_nextbot_zambiegrunt",         diffAdded = 10, diffNeeded = 50, passChance = 95 },
 
     { class = "terminator_nextbot_zambieberserk",       diffAdded = 20, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 100, diffNeeded = 120, maxDiff = 90, passChance = 99, batchSize = 10 },
+    { class = "terminator_nextbot_zambiewraith",        diffAdded = 100, diffNeeded = 120, diffMax = 90, passChance = 99, batchSize = 10 },
 
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 92 },
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, maxDiff = 10, passChance = 99, batchSize = 10 },
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, maxDiff = 10, passChance = 95 },
+    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 99, batchSize = 10 },
+    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 95 },
 
-    { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 50, maxAtOnce = 1 },
-    { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 50, maxAtOnce = 1 },
+    { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
+    { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
 
 }
 
@@ -490,10 +556,14 @@ function terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, targetDi
     local bestData
     local myData = terminator_Extras.zamb_SpawnData
     for _, data in ipairs( myData ) do
-        local maxDiff = data.maxDiff or math.huge
-        local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < maxDiff and ( data.passChance <= 0 or math.random( 0, 100 ) > data.passChance )
+        local diffMax = data.diffMax or math.huge
+        local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < diffMax and ( data.passChance <= 0 or math.random( 0, 100 ) > data.passChance )
         local passAnyway = data.randomSpawnAnyway and math.random( 0, 100 ) < data.randomSpawnAnyway
         local wouldBeTooMany = data.maxAtOnce and #ents.FindByClass( data.class ) >= data.maxAtOnce
+        if not wouldBeTooMany and data.spawnSlot then
+            wouldBeTooMany = IsValid( terminator_Extras.zamb_OccupiedSpawnSlots[data.spawnSlot] )
+
+        end
         if not wouldBeTooMany and ( traditionallyGood or passAnyway ) then
             bestData = data
 
@@ -511,7 +581,15 @@ local hitTooClose = 150^2
 
 local function blockedByPly( checkPos, doSee, tooClose, tooFar )
     local anyWasCloseEnough
-    for _, ply in player.Iterator() do
+    local participators
+    if not noPlayerParticipators then
+        participators = terminator_Extras.zamb_PlayerParticipatingFor
+
+    else
+        participators = terminator_Extras.zamb_EntsParticipatingFor
+
+    end
+    for ply, _ in pairs( participators ) do
         local plysShoot = ply:GetShootPos()
         local dist = plysShoot:DistToSqr( checkPos )
         if dist > tooFar then continue end
@@ -554,13 +632,13 @@ function terminator_Extras.zamb_HandleSpawning()
     local maxToDo = 400 / math.Clamp( player.GetCount(), 20, 400 )
     local countDone = 0
 
-    for ind, currDat in ipairs( spawnPositions ) do
+    for ind, currDat in ipairs( spawnPositions ) do -- pick, or trim positions
         if countDone > maxToDo then
             break
 
         end
         local spawner = currDat.spawnerResponsible
-        if not IsValid( spawner ) or not spawner:GetOn() then
+        if not IsValid( spawner ) or not spawner:GetOn() then -- trim, its off!
             countDone = countDone + 1
             table.remove( spawnPositions, ind )
             continue
@@ -568,7 +646,7 @@ function terminator_Extras.zamb_HandleSpawning()
         end
         local currShoot = currDat.pos + shootPosOffset
         local isBlocked, anyWasCloseEnough = blockedByPly( currShoot, true, tooClose, tooFar )
-        if isBlocked or not anyWasCloseEnough then
+        if isBlocked or not anyWasCloseEnough then -- too far or close, trim!
             countDone = countDone + 1
             table.remove( spawnPositions, ind )
 
@@ -613,9 +691,11 @@ local offsetToSpawnAt = Vector( 0,0,5 )
 
 function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     local queue = terminator_Extras.zamb_SpawnOverrideQueue
-    if zamCount >= 1 and ( #queue >= 1 or math.max( difficultyBeingExperienced, zamCount ) > targetDifficulty ) then return end
 
     if zamCount >= maxZambs then return end
+
+    local tooManySoftCutoff = zamCount >= 1 and math.max( difficultyBeingExperienced, zamCount ) > targetDifficulty
+    if #queue <= 0 and tooManySoftCutoff then return end -- queue must be purged
 
     difference = targetDifficulty - difficultyBeingExperienced
 
@@ -651,9 +731,16 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     zamb:Spawn()
     difficultyBeingExperienced = difficultyBeingExperienced + data.diffAdded
 
+    if data.spawnSlot then
+        terminator_Extras.zamb_OccupiedSpawnSlots[data.spawnSlot] = zamb
+
+    end
+
     terminator_Extras.zamb_DoForwardSpawnStuff( spawner, zamb )
 
     spawner:Zamb_OnZambSpawned( zamb )
+
+    debugPrint( "Spawned!", zamb )
 
 end
 

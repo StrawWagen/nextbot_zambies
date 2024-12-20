@@ -10,8 +10,31 @@ list.Set( "NPC", "terminator_nextbot_zambie", {
     Category = "Nexbot Zambies",
 } )
 
+local function copyMatsOver( from, to )
+    for ind = 0, #from:GetMaterials() do
+        local mat = from:GetSubMaterial( ind )
+        if mat and mat ~= "" then
+            to:SetSubMaterial( ind, mat )
+
+        end
+    end
+    local myMat = from:GetMaterial()
+    if myMat and myMat ~= "" then
+        to:SetMaterial( myMat )
+
+    end
+end
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambie", ENT.PrintName )
+
+    hook.Add( "CreateClientsideRagdoll", "zambie_fixcorpsemats", function( ent, newRagdoll )
+        if not string.find( ent:GetClass(), "zambie" ) then return end
+        copyMatsOver( ent, newRagdoll )
+
+        -- tried setting mdlscale here too, didnt work
+
+    end )
 
     function ENT:AdditionalClientInitialize()
         local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
@@ -48,6 +71,7 @@ ENT.InformRadius = 20000
 ENT.CanUseStuff = nil
 
 ENT.FistDamageMul = 0.35
+ENT.NoAnimLayering = nil -- this is what makes it stop moving forward when attacking
 ENT.DuelEnemyDist = 350
 ENT.CloseEnemyDistance = 500
 
@@ -183,6 +207,7 @@ ENT.IdleActivityTranslations = {
 
 ENT.zamb_CallAnim = nil
 ENT.zamb_AttackAnim = nil
+ENT.zamb_CantCall = nil
 
 function ENT:OnKilledGenericEnemyLine( enemyLost )
 end
@@ -322,6 +347,11 @@ ENT.AngryLoopingSounds = {
 
 }
 
+local CUTTING_MDLS = {
+    ["models/props_junk/sawblade001a.mdl"] = true,
+    ["models/props_c17/trappropeller_blade.mdl"] = true,
+}
+
 local MEMORY_MEMORIZING = 1
 local MEMORY_INERT = 2
 local MEMORY_BREAKABLE = 4
@@ -340,7 +370,7 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_wait"] = defaultTasks["movement_wait"],
         ["zambstuff_handler"] = {
             ZambOnGrumpy = function( self, data )
-                if self.HasBrains or math.random( 1, 100 ) > 25 then
+                if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
                     self:Term_SpeakSound( self.term_FindEnemySound )
                     return
 
@@ -369,15 +399,86 @@ function ENT:DoCustomTasks( defaultTasks )
                 self:Term_SpeakSound( self.term_AngerSound )
 
             end,
-            OnJump = function( self, damage )
+            OnJump = function( self, data )
                 self:EmitSound( self.term_JumpSound, 75 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
 
             end,
-            OnDamaged = function( self, damage )
+            OnDamaged = function( self, data, damage )
                 self:EmitSound( self.term_DamagedSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
 
             end,
-            OnKilled = function( self, damage )
+            PreventBecomeRagdollOnKilled = function( self, data, damage ) -- handle becoming zombie torso
+                local torsoData = terminator_Extras.zamb_TorsoZombieClasses[self:GetClass()]
+                if not torsoData then return end
+
+                local cur = CurTime()
+                local oldDensity = terminator_Extras.zamb_TorsoDensityNum
+                if oldDensity > math.random( cur, cur + 60 ) then return end
+
+                local becomeTorso
+                if damage:IsExplosionDamage() and damage:GetDamage() < math.max( self:Health() + 75, 75 ) then
+                    becomeTorso = true
+
+                end
+                if not becomeTorso then
+                    local inflictor = damage:GetInflictor()
+                    local dmgPos = damage:GetDamagePosition()
+                    local hitDistToHead = dmgPos and self:NearestPoint( dmgPos ):Distance( self:GetShootPos() )
+                    if IsValid( inflictor ) and IsValid( inflictor:GetPhysicsObject() ) and inflictor:GetModel() and CUTTING_MDLS[string.lower( inflictor:GetModel() )] and hitDistToHead > 25 then
+                        becomeTorso = true
+
+                    elseif damage:IsBulletDamage() and hitDistToHead > 40 then
+                        becomeTorso = true
+
+                    end
+                end
+
+                if becomeTorso then
+                    local torso = ents.Create( torsoData.class )
+                    if not IsValid( torso ) then return end
+                    local myPos = self:GetPos()
+
+                    local footDistToShoot = self:GetShootPos() - myPos
+                    local torsoSpawnPos = myPos + footDistToShoot / 1.75
+                    toroSpawnPos = torsoSpawnPos + self:GetForward() * footDistToShoot:Length() / 3
+                    torso:SetPos( toroSpawnPos )
+
+                    torso:SetAngles( self:GetAngles() )
+                    torso:Spawn()
+
+                    hook.Run( "zamb_OnBecomeTorso", self, torso )
+                    undo.ReplaceEntity( self, torso )
+                    copyMatsOver( self, torso )
+
+                    terminator_Extras.zamb_TorsoDensityNum = math.max( oldDensity + torso:Health() / 2, cur + torso:Health() / 2 )
+
+                    if torsoData.legs then
+                        if self:GetShouldServerRagdoll() then
+                            local legs = ents.Create( "prop_ragdoll" )
+                            if IsValid( legs ) then
+                                SafeRemoveEntityDelayed( legs, 15 )
+                                torso:DeleteOnRemove( legs )
+                                legs:SetModel( torsoData.legs )
+                                legs:SetPos( self:GetPos() )
+                                legs:SetAngles( self:GetAngles() )
+                                legs:Spawn()
+                                copyMatsOver( self, legs )
+                                legs:SetVelocity( damage:GetDamageForce() )
+
+                            end
+                        else
+                            self:SetModel( torsoData.legs ) -- this little hack is much better than networking this ragdoll creation imo
+                            return
+
+                        end
+                    else
+                        SafeRemoveEntity( self )
+                        return true
+
+                    end
+                end
+            end,
+            OnKilled = function( self, data, damage, rag )
                 self:EmitSound( "common/null.wav", 80 + self.term_SoundLevelShift, 100, 1, CHAN_VOICE )
                 self:EmitSound( self.term_DieSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
                 local b1, b2 = self:GetCollisionBounds()
@@ -447,7 +548,9 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
 
-                if data.nextPathAttempt < CurTime() and toPos and not data.Unreachable and self:primaryPathInvalidOrOutdated( toPos ) then
+                local nextPathAttempt = data.nextPathAttempt or 0 -- HACK
+
+                if nextPathAttempt < CurTime() and toPos and not data.Unreachable and self:primaryPathInvalidOrOutdated( toPos ) then
                     data.nextPathAttempt = CurTime() + math.Rand( 0.1, 0.5 )
                     if self.term_ExpensivePath then
                         data.nextPathAttempt = CurTime() + math.Rand( 0.5, 1.5 )
@@ -635,7 +738,7 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
         },
 
-        ["movement_frenzy"] = {
+        ["movement_frenzy"] = { -- break props!
             OnStart = function( self, data )
                 data.quitCount = 0
                 data.currentFrenzyFocus = nil

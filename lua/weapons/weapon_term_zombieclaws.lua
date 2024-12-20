@@ -306,8 +306,10 @@ function SWEP:PrimaryAttack()
     end
     seqSpeed = owner.zamb_MeleeAttackSpeed
 
+    local additionalDelay = owner.zamb_MeleeAttackAdditionalDelay or 0
     local meleeTime = owner:SequenceDuration( seq ) / seqSpeed
-    self:SetNextPrimaryFire( CurTime() + meleeTime - 0.1 * seqSpeed )
+    local nextMeleeTime = CurTime() + ( ( meleeTime - 0.1 ) * seqSpeed ) + additionalDelay
+    self:SetNextPrimaryFire( nextMeleeTime )
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         if not IsValid( owner ) then return end
@@ -316,7 +318,11 @@ function SWEP:PrimaryAttack()
 
     end )
 
-    timer.Simple( meleeTime - 0.7 * seqSpeed, function()
+    local hitframeMul = owner.zamb_MeleeAttackHitFrameMul or 1
+
+    local dmgTime = ( meleeTime - 0.7 * seqSpeed ) * hitframeMul
+
+    timer.Simple( dmgTime, function()
         if not IsValid( self ) then return end
         self:DealDamage()
 
@@ -428,8 +434,15 @@ function SWEP:DealDamage()
             if damageToDeal > 40 or string.find( class, "prop" ) then
                 local lvl = 75 + damageToDeal * 0.1
                 local pitch = math.Clamp( 120 + -( damageToDeal * 0.25 ), 85, 120 )
-                self:EmitSound( "npc/zombie/zombie_pound_door.wav", lvl, pitch )
+                owner:EmitSound( "npc/zombie/zombie_pound_door.wav", lvl, pitch, 1, CHAN_STATIC )
                 util.ScreenShake( self:GetPos(), damageToDeal * 0.1, 20, 0.15, damageToDeal * 5 )
+
+            end
+            if damageToDeal > 200 then
+                local lvl = 80 + damageToDeal * 0.1
+                local pitch = math.Clamp( 120 + -( damageToDeal * 0.35 ), 85, 120 )
+                owner:EmitSound( "npc/antlion_guard/shove1.wav", lvl, pitch, 1, CHAN_STATIC )
+                util.ScreenShake( self:GetPos(), damageToDeal * 0.005, 2, 3, damageToDeal * 5 )
 
             end
 

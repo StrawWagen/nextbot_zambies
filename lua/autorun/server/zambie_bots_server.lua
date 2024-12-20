@@ -1,7 +1,8 @@
 --CREDITS
 -- zombine pm with headcrab https://steamcommunity.com/sharedfiles/filedetails/?id=265424952
 
--- resource.AddWorkshop( "" ) -- TODO:Impliment
+resource.AddWorkshop( "3385851087" )
+
 local nextThink = 10
 local math_rand = math.Rand
 local up = Vector( 0, 0, 1 )
@@ -81,3 +82,11 @@ hook.Add( "PostCleanupMap", "zamb_clear_rottingsmell", function()
     terminator_Extras.zamb_SmelliestRottingArea = nil
 
 end )
+
+
+terminator_Extras.zamb_TorsoZombieClasses = {
+    ["terminator_nextbot_zambie"] = { class = "terminator_nextbot_zambietorso", legs = "models/zombie/classic_legs.mdl" },
+    ["terminator_nextbot_zambiefast"] = { class = "terminator_nextbot_zambietorsofast", legs = "models/gibs/fast_zombie_legs.mdl" },
+}
+
+terminator_Extras.zamb_TorsoDensityNum = 0
