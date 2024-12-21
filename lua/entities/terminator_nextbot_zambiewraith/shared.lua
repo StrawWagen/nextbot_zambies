@@ -34,7 +34,7 @@ ENT.RunSpeed = 450
 ENT.AccelerationSpeed = 350
 
 ENT.zamb_AlwaysFlank = true
-ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles
+ENT.zamb_LookAheadWhenRunning = true -- turn this on since we do big bursts of damage unlike the normal fast z
 ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.neverManiac = true

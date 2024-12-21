@@ -87,3 +87,9 @@ function ENT:Zamb_OnZambSpawned( spawnedZamb )
 
     end
 end
+
+function ENT:ACF_PreDamage()
+    -- can't be broken by ACF
+    return false
+
+end

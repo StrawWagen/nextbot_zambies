@@ -51,7 +51,7 @@ ENT.DuelEnemyDist = 350
 local TANK_ZAMBIE_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = TANK_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.35
-ENT.CollisionBounds = { Vector( -15, -15, 0 ), Vector( 15, 15, 50 ) }
+ENT.CollisionBounds = { Vector( -13, -13, 0 ), Vector( 13, 13, 40 ) }
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
@@ -65,7 +65,7 @@ ENT.term_AnimsWithIdealSpeed = true
 local IdleActivity = ACT_HL2MP_IDLE_ZOMBIE
 ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
-    [ACT_MP_STAND_IDLE]                 = IdleActivity,
+    [ACT_MP_STAND_IDLE]                 = ACT_HL2MP_IDLE_CROUCH,
     [ACT_MP_WALK]                       = ACT_HL2MP_WALK_ZOMBIE_06,
     [ACT_MP_RUN]                        = ACT_HL2MP_WALK_ZOMBIE_06,
     [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,

@@ -21,8 +21,8 @@ ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.SpawnHealth = 3000
-ENT.ExtraSpawnHealthPerPlayer = 750
+ENT.SpawnHealth = 4000
+ENT.ExtraSpawnHealthPerPlayer = 1000
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 400
@@ -41,7 +41,7 @@ ENT.NoAnimLayering = true
 local NECRO_ZAMBIE_MODEL = "models/Zombie/Poison.mdl"
 ENT.ARNOLD_MODEL = NECRO_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.35
-ENT.CollisionBounds = { Vector( -16, -16, 0 ), Vector( 16, 16, 50 ) }
+ENT.CollisionBounds = { Vector( -16, -16, 0 ), Vector( 16, 16, 40 ) }
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 

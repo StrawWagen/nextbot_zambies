@@ -9,6 +9,8 @@ terminator_Extras.zamb_PlayerParticipatingFor = terminator_Extras.zamb_PlayerPar
 terminator_Extras.zamb_EntsParticipatingFor = terminator_Extras.zamb_EntsParticipatingFor or nil
 terminator_Extras.zamb_OccupiedSpawnSlots = terminator_Extras.zamb_OccupiedSpawnSlots or nil
 
+maxDifficulty = 9999999 -- just a big number thats not math.huge
+
 
 local defaultMaxZambs = 30
 local maxZambsVar = CreateConVar( "zambie_director_maxzambs", -1, FCVAR_ARCHIVE, "Max zombies the ai \"Director\" will spawn. -1 for default, " .. defaultMaxZambs, -1, 999 )
@@ -233,7 +235,6 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 end
 
 function terminator_Extras.zamb_HandleDifficultyDecay()
-    local averageHealthPercent = 0
     local plyCount = 0
     for ply, _ in pairs( terminator_Extras.zamb_PlayerParticipatingFor ) do
         plyCount = plyCount + 1
@@ -243,8 +244,13 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
         averageHealthPercent = averageHealthPercent + healthPercent
 
     end
+    if plyCount <= 0 then
+        averageHealthPercent = 100
 
-    averageHealthPercent = averageHealthPercent / plyCount
+    else
+        averageHealthPercent = averageHealthPercent / plyCount
+
+    end
 
     local healthFullnessDecay
     local decay
@@ -265,6 +271,14 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     end
 
     if zamCount <= 1 then
+        if difficultyBeingExperienced > math.max( targetDifficulty * 10, 1000 ) then -- dont blow up pls
+            decay = decay + difficultyBeingExperienced / 5
+            debugPrint( "difficulty has blown up, reeling in!" )
+
+        elseif difficultyBeingExperienced > targetDifficulty then
+            decay = decay + difficultyBeingExperienced / 10
+
+        end
         if gettingHandsDirty < CurTime() then -- dont decay as fast if they have taken damage up close
             decay = decay * 3
 
@@ -274,11 +288,11 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     end
 
     difficultyBeingExperienced = difficultyBeingExperienced + -decay
-    difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced, zamCount / 2, math.huge )
+    difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced, zamCount / 2, maxDifficulty )
     zamCount = #ents.FindByClass( "terminator_nextbot_zambie*" )
     difference = targetDifficulty - difficultyBeingExperienced
 
-    debugPrint( difficultyBeingExperienced, targetDifficulty, currCurveType )
+    debugPrint( difficultyBeingExperienced, targetDifficulty, decay, currCurveType )
 
 end
 
@@ -299,10 +313,11 @@ function terminator_Extras.zamb_HandleParticipation()
         end
     end
 
-    if participatingCount >= 1 then return end -- there are players participating, focus on them!
+    if participatingCount > 0 then return end -- there are players participating, focus on them!
+
+    noPlayerParticipators = true
 
     local entParticipators = terminator_Extras.zamb_EntsParticipatingFor
-    participatingCount = 0
     for ent, whenStop in pairs( entParticipators ) do
         if not IsValid( ent ) or whenStop < cur then
             terminator_Extras.zamb_EntsParticipatingFor[ent] = nil
@@ -322,8 +337,9 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     if not IsValid( attacker ) then return end
 
     local damageDealt = damage:GetDamage()
-    damageDealt = math.Clamp( damageDealt, 0, target:Health() )
+    damageDealt = math.Clamp( damageDealt, 0, target:GetMaxHealth() ) -- this was blowing up using ent:Health(), since we're in post took damage
 
+    local cur = CurTime()
     local difficultyFelt
 
     local plyGotAttacked = target:IsPlayer()
@@ -357,20 +373,20 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 4
 
             end
-            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.5 ), CurTime() + ( damageDealt * 0.25 ) )
-            debugPrint( "dirtyhands", gettingHandsDirty - CurTime() )
+            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.5 ), cur + ( damageDealt * 0.25 ) )
+            debugPrint( "dirtyhands", gettingHandsDirty - cur )
 
         end
     elseif zambGotAttacked then
         difficultyFelt = damageDealt * 0.05
         local engageDist = attacker:GetPos():Distance( target:GetPos() )
 
-        if attackerIsPlayer and engageDist < 120 and gettingHandsDirty > CurTime() then
+        if attackerIsPlayer and engageDist < 120 and gettingHandsDirty > cur then
             difficultyFelt = difficultyFelt + 1
             difficultyFelt = difficultyFelt * 2
 
-            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.25 ), CurTime() + ( damageDealt * 0.1 ) )
-            debugPrint( "dirtyhands", gettingHandsDirty - CurTime() )
+            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.25 ), cur + ( damageDealt * 0.1 ) )
+            debugPrint( "dirtyhands", gettingHandsDirty - cur )
 
         elseif engageDist > 4000 then -- negative!
             difficultyFelt = -difficultyFelt * 2.5
@@ -397,17 +413,17 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 0.05
 
             end
-            if gettingHandsDirty < CurTime() then
+            if gettingHandsDirty < cur then
                 difficultyFelt = difficultyFelt * 0.25
 
             end
             if not attacker.IsTerminatorZambie and attacker.GetShootPos and attacker:GetShootPos() ~= nil then
-                terminator_Extras.zamb_EntsParticipatingFor[attacker] = CurTime() + 190
+                terminator_Extras.zamb_EntsParticipatingFor[attacker] = cur + 190
 
             end
         else
             local oldParticipating = terminator_Extras.zamb_PlayerParticipatingFor[attacker]
-            terminator_Extras.zamb_PlayerParticipatingFor[attacker] = CurTime() + 190
+            terminator_Extras.zamb_PlayerParticipatingFor[attacker] = cur + 190
             if not oldParticipating then
                 participatingCount = participatingCount + 1
 
@@ -424,8 +440,8 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     end
 
     if difficultyFelt then
-        difficultyFelt = difficultyFelt / math.Clamp( participatingCount, 1, math.huge )
-        difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced + difficultyFelt, 0, math.huge )
+        difficultyFelt = difficultyFelt / math.Clamp( participatingCount, 1, maxDifficulty )
+        difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced + difficultyFelt, 0, maxDifficulty )
 
     end
 end
@@ -556,7 +572,7 @@ function terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, targetDi
     local bestData
     local myData = terminator_Extras.zamb_SpawnData
     for _, data in ipairs( myData ) do
-        local diffMax = data.diffMax or math.huge
+        local diffMax = data.diffMax or maxDifficulty
         local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < diffMax and ( data.passChance <= 0 or math.random( 0, 100 ) > data.passChance )
         local passAnyway = data.randomSpawnAnyway and math.random( 0, 100 ) < data.randomSpawnAnyway
         local wouldBeTooMany = data.maxAtOnce and #ents.FindByClass( data.class ) >= data.maxAtOnce
@@ -579,18 +595,19 @@ end
 
 local hitTooClose = 150^2
 
-local function blockedByPly( checkPos, doSee, tooClose, tooFar )
+local function blockedByParticipator( checkPos, doSee, tooClose, tooFar )
     local anyWasCloseEnough
     local participators
-    if not noPlayerParticipators then
-        participators = terminator_Extras.zamb_PlayerParticipatingFor
-
-    else
+    if noPlayerParticipators then
         participators = terminator_Extras.zamb_EntsParticipatingFor
 
+    else
+        participators = terminator_Extras.zamb_PlayerParticipatingFor
+
     end
-    for ply, _ in pairs( participators ) do
-        local plysShoot = ply:GetShootPos()
+    for ent, _ in pairs( participators ) do
+        if not IsValid( ent ) or not ent.GetShootPos then participators[ent] = nil continue end
+        local plysShoot = ent:GetShootPos()
         local dist = plysShoot:DistToSqr( checkPos )
         if dist > tooFar then continue end
         anyWasCloseEnough = true
@@ -632,7 +649,7 @@ function terminator_Extras.zamb_HandleSpawning()
     local maxToDo = 400 / math.Clamp( player.GetCount(), 20, 400 )
     local countDone = 0
 
-    for ind, currDat in ipairs( spawnPositions ) do -- pick, or trim positions
+    for ind, currDat in ipairs( spawnPositions ) do -- check/trim positions placed by zombies that were killed by participators!
         if countDone > maxToDo then
             break
 
@@ -645,7 +662,7 @@ function terminator_Extras.zamb_HandleSpawning()
 
         end
         local currShoot = currDat.pos + shootPosOffset
-        local isBlocked, anyWasCloseEnough = blockedByPly( currShoot, true, tooClose, tooFar )
+        local isBlocked, anyWasCloseEnough = blockedByParticipator( currShoot, true, tooClose, tooFar )
         if isBlocked or not anyWasCloseEnough then -- too far or close, trim!
             countDone = countDone + 1
             table.remove( spawnPositions, ind )
@@ -658,19 +675,26 @@ function terminator_Extras.zamb_HandleSpawning()
         end
     end
 
-    if not spawnPos then
+    local activeCount = 0
+    local badCount = 0
+
+    if not spawnPos then -- no valid zombie placed spawnpoints
         for _, spawner in ipairs( terminator_Extras.zamb_Spawnpoints ) do
             if not spawner:GetOn() then continue end
-            if spawner.zamb_NextCanSpawnCheck > cur then continue end
+            activeCount = activeCount + 1
+
+            if spawner.zamb_NextCanSpawnCheck > cur then badCount = badCount + 1 continue end
 
             local doSee = spawner.zamb_SpawnerConfig.spawnsOnlyIfHidden
 
             local myPos = spawner:GetPos()
             local myShootPos = myPos + shootPosOffset
-            local isBlocked = blockedByPly( myShootPos, doSee, tooClose, tooFar )
+            local isBlocked = blockedByParticipator( myShootPos, doSee, tooClose, tooFar )
 
             if isBlocked then
-                spawner.zamb_NextCanSpawnCheck = cur + 10
+                badCount = badCount + 1
+                local add = math.random( math.max( 5, player.GetCount() ), math.max( 12, player.GetCount() * 2 ) )
+                spawner.zamb_NextCanSpawnCheck = cur + add
 
             else
                 finalSpawner = spawner
@@ -682,6 +706,9 @@ function terminator_Extras.zamb_HandleSpawning()
 
     if spawnPos then
         terminator_Extras.zamb_TryToSpawn( finalSpawner, spawnPos )
+
+    elseif badCount >= activeCount then
+        debugPrint( "!!!!All checked spawnpoints are likely exposed!!!!" )
 
     end
 end
@@ -729,7 +756,11 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     zamb:SetPos( spawnPos + offsetToSpawnAt )
     zamb:SetAngles( Angle( 0, math.random( -180, 180 ), 0 ) )
     zamb:Spawn()
-    difficultyBeingExperienced = difficultyBeingExperienced + data.diffAdded
+
+    if data.diffAdded then
+        difficultyBeingExperienced = difficultyBeingExperienced + data.diffAdded
+
+    end
 
     if data.spawnSlot then
         terminator_Extras.zamb_OccupiedSpawnSlots[data.spawnSlot] = zamb
