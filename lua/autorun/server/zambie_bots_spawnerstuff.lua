@@ -95,6 +95,7 @@ local curves = {
         { timing = 20, ease = ease.InOutSine, steps = { 70, 80, 90, 100, 100 } },
         { timing = 20, ease = ease.InOutSine, steps = { 75, 85, 100 } },
         { timing = 20, ease = ease.InOutSine, steps = { 80, 80, 5, 80, 90, 100 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 50, 60, 70, 80, 100, 100 } },
         { timing = 20, ease = ease.InOutSine, steps = { 5, 90, 80, 80, 100 } },
     }
 }
@@ -116,7 +117,7 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 
     if #segmentStack <= 2 then
         local toAdd
-        if not lastTypeAdded then
+        if not lastTypeAdded or participatingCount <= 0 then -- start as calm, or if no enemies, force calm to save session resources
             toAdd = "calm"
 
         elseif lastTypeAdded == "calm" then
@@ -556,7 +557,6 @@ terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambiegrunt",         diffAdded = 10, diffNeeded = 50, passChance = 95 },
 
     { class = "terminator_nextbot_zambieberserk",       diffAdded = 20, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 100, diffNeeded = 120, diffMax = 90, passChance = 99, batchSize = 10 },
 
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 92 },
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 99, batchSize = 10 },
@@ -564,6 +564,11 @@ terminator_Extras.zamb_SpawnData = {
 
     { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
     { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
+
+    { class = "terminator_nextbot_zambiewraith",        diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 20, spawnslot = "miniboss" }, -- rare hell wraith wave
+    { class = "terminator_nextbot_zambieberserk",       diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 20, spawnslot = "miniboss" }, -- rare hell berserk wave
+    { class = "terminator_nextbot_zambietank",          diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 2, spawnslot = "miniboss" }, -- rare 2 tank spawn
+    { class = "terminator_nextbot_zambietank",          diffAdded = 200, diffNeeded = 99, passChance = 99.9, batchSize = 4, spawnslot = "miniboss" }, -- rare 4 tank spawn
 
 }
 
@@ -573,8 +578,8 @@ function terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, targetDi
     local myData = terminator_Extras.zamb_SpawnData
     for _, data in ipairs( myData ) do
         local diffMax = data.diffMax or maxDifficulty
-        local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < diffMax and ( data.passChance <= 0 or math.random( 0, 100 ) > data.passChance )
-        local passAnyway = data.randomSpawnAnyway and math.random( 0, 100 ) < data.randomSpawnAnyway
+        local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < diffMax and ( data.passChance <= 0 or math.Rand( 0, 100 ) > data.passChance )
+        local passAnyway = data.randomSpawnAnyway and math.Rand( 0, 100 ) < data.randomSpawnAnyway
         local wouldBeTooMany = data.maxAtOnce and #ents.FindByClass( data.class ) >= data.maxAtOnce
         if not wouldBeTooMany and data.spawnSlot then
             wouldBeTooMany = IsValid( terminator_Extras.zamb_OccupiedSpawnSlots[data.spawnSlot] )
