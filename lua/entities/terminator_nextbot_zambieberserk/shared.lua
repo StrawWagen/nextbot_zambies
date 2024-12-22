@@ -86,7 +86,7 @@ function ENT:AdditionalInitialize()
     self.term_NextIdleTaunt = CurTime() + 4
 
     self.term_SoundPitchShift = -35
-    self.term_SoundLevelShift = 25
+    self.term_SoundLevelShift = 20
 
     self.term_LoseEnemySound = "Zombie.Idle"
     self.term_CallingSound = "ambient/creatures/town_zombie_call1.wav"

@@ -69,7 +69,8 @@ hook.Add( "Think", "zambnextbots_rottingareasthink", function()
         sndPos = sndPos + up * math.random( 5, 25 )
 
         local lvl = 75 + bestRot / 8
-        sound.Play( "ambient/creatures/flies" .. math.random( 1, 5 ) .. ".wav", sndPos, lvl, bestRot / 5, math.random( 95, 105 ) )
+        local pit = math.random( 95, 105 )
+        sound.Play( "ambient/creatures/flies" .. math.random( 1, 5 ) .. ".wav", sndPos, lvl, pit )
 
     end
 end )

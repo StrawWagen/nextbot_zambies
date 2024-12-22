@@ -566,9 +566,8 @@ terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
 
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 20, spawnslot = "miniboss" }, -- rare hell wraith wave
-    { class = "terminator_nextbot_zambieberserk",       diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 20, spawnslot = "miniboss" }, -- rare hell berserk wave
+    { class = "terminator_nextbot_zambieberserk",       diffAdded = 50, diffNeeded = 99, passChance = 99, batchSize = 10, spawnslot = "miniboss" }, -- rare hell berserk wave
     { class = "terminator_nextbot_zambietank",          diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 2, spawnslot = "miniboss" }, -- rare 2 tank spawn
-    { class = "terminator_nextbot_zambietank",          diffAdded = 200, diffNeeded = 99, passChance = 99.9, batchSize = 4, spawnslot = "miniboss" }, -- rare 4 tank spawn
 
 }
 
