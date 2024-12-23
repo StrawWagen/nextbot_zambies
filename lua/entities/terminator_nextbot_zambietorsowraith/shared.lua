@@ -1,44 +1,44 @@
 AddCSLuaFile()
 
-ENT.Base = "terminator_nextbot_zambie"
+ENT.Base = "terminator_nextbot_zambiewraith"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Zombie Torso"
+ENT.PrintName = "Zombie Torso Wraith"
 ENT.Spawnable = false
-list.Set( "NPC", "terminator_nextbot_zambietorso", {
-    Name = "Zombie Torso",
-    Class = "terminator_nextbot_zambietorso",
+list.Set( "NPC", "terminator_nextbot_zambietorsowraith", {
+    Name = "Zombie Torso Wraith",
+    Class = "terminator_nextbot_zambietorsowraith",
     Category = "Nexbot Zambies",
 } )
 if CLIENT then
-    language.Add( "terminator_nextbot_zambietorso", ENT.PrintName )
+    language.Add( "terminator_nextbot_zambietorsowraith", ENT.PrintName )
     return
 
 end
 
-ENT.CoroutineThresh = 0.00005 -- worst thresh of them all
+ENT.CoroutineThresh = 0.0001
 
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 16, 16, 15 ) }
 ENT.AlwaysCrouching = true
 
-ENT.WalkSpeed = 25
-ENT.MoveSpeed = 40
-ENT.RunSpeed = 50
-ENT.JumpHeight = 20
-ENT.StepHeight = 15
+ENT.WalkSpeed = 100
+ENT.MoveSpeed = 125
+ENT.RunSpeed = 250
+ENT.JumpHeight = 30
+ENT.StepHeight = 20
 
-ENT.SpawnHealth = 50
+ENT.SpawnHealth = 25
 ENT.FistDamageMul = 1
-ENT.NoAnimLayering = true
-ENT.zamb_MeleeAttackAdditionalDelay = 1
 ENT.zamb_MeleeAttackHitFrameMul = 4
+ENT.zamb_MeleeAttackSpeed = 1.75
+ENT.FistDamageMul = 0.1
 ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1
 
 ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles
-local TORSO_MDL = "models/zombie/classic_torso.mdl"
-ENT.ARNOLD_MODEL = TORSO_MDL
-ENT.MyPhysicsMass = 35
+local FAST_TORSO_MDL = "models/zombie/fast_torso.mdl"
+ENT.ARNOLD_MODEL = FAST_TORSO_MDL
+ENT.MyPhysicsMass = 30
 
-ENT.Models = { TORSO_MDL }
+ENT.Models = { FAST_TORSO_MDL }
 
 ENT.IdleActivityTranslations = {
     [ACT_MP_STAND_IDLE]                 = ACT_IDLE,
@@ -58,6 +58,6 @@ ENT.zamb_CantCall = true
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
-    self:SetModel( TORSO_MDL )
+    self:SetModel( FAST_TORSO_MDL )
 
 end

@@ -51,6 +51,7 @@ local GRUNT_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = GRUNT_MODEL
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.1, 1.15 ) end
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 14, 14, 55 ) } -- this is then scaled by modelscale
+ENT.MyPhysicsMass = 100
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 

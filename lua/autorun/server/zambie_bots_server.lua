@@ -88,6 +88,7 @@ end )
 terminator_Extras.zamb_TorsoZombieClasses = {
     ["terminator_nextbot_zambie"] = { class = "terminator_nextbot_zambietorso", legs = "models/zombie/classic_legs.mdl" },
     ["terminator_nextbot_zambiefast"] = { class = "terminator_nextbot_zambietorsofast", legs = "models/gibs/fast_zombie_legs.mdl" },
+    ["terminator_nextbot_zambiewraith"] = { class = "terminator_nextbot_zambietorsowraith", legs = "models/gibs/fast_zombie_legs.mdl" },
 }
 
 terminator_Extras.zamb_TorsoDensityNum = 0

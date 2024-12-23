@@ -45,12 +45,13 @@ ENT.zamb_AttackAnim = ACT_GMOD_GESTURE_RANGE_ZOMBIE_SPECIAL -- ACT_RANGE_ATTACK1
 ENT.FistDamageMul = 15
 ENT.FistForceMul = 12
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CRUSH )
-ENT.DuelEnemyDist = 350
+ENT.DuelEnemyDist = 550
 
 local TANK_ZAMBIE_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = TANK_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.35
-ENT.CollisionBounds = { Vector( -13, -13, 0 ), Vector( 13, 13, 40 ) }
+ENT.CollisionBounds = { Vector( -12, -12, 0 ), Vector( 12, 12, 40 ) }
+ENT.MyPhysicsMass = 2500
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
@@ -131,7 +132,7 @@ function ENT:AdditionalInitialize()
     self.term_NextIdleTaunt = math.huge
 
     self.term_SoundPitchShift = -45
-    self.term_SoundLevelShift = 10
+    self.term_SoundLevelShift = 20
 
     self.term_LoseEnemySound = "NPC_PoisonZombie.Idle"
     self.term_CallingSound = "npc/zombie_poison/pz_call1.wav"
@@ -167,6 +168,7 @@ function ENT:AdditionalInitialize()
 end
 
 function ENT:BreakArmor()
+
     self.zamb_HasArmor = nil
     self:SetSubMaterial( 0, self.zamb_UnderArmorMat )
     self:ZAMB_AngeringCall()
@@ -175,7 +177,8 @@ function ENT:BreakArmor()
     self.Term_StepSoundTimeMul = 0.8
 
 
-    self.JumpHeight = 200
+    self.JumpHeight = 300
+    self.UnreachableAreas = {}
 
     self.zamb_LookAheadWhenRunning = true
     self.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_ZOMBIE_FAST

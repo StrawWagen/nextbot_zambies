@@ -39,6 +39,7 @@ ENT.DuelEnemyDist = 450
 
 local FAST_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
 ENT.ARNOLD_MODEL = FAST_ZAMBIE_MODEL
+ENT.MyPhysicsMass = 60
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 

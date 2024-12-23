@@ -40,6 +40,7 @@ ENT.FistDamageMul = 0.65
 local FAST_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
 ENT.ARNOLD_MODEL = FAST_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.15, 1.25 ) end
+ENT.MyPhysicsMass = 85
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 

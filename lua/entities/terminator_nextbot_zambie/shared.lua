@@ -96,6 +96,7 @@ ENT.CanSpeak = true
 local ZAMBIE_MODEL = "models/player/zombie_classic.mdl"
 ENT.ARNOLD_MODEL = ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.05 ) end
+ENT.MyPhysicsMass = 80
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
@@ -174,6 +175,7 @@ function ENT:AdditionalAvoidAreas( costs )
 
     local rotAmounts = terminator_Extras.zamb_RottingAreas
     for _, area in ipairs( terminator_Extras.zamb_IndexedRottingAreas ) do
+        if not IsValid( area ) then continue end
         local oldMul = costs[ area:GetID() ] or 0
         costs[ area:GetID() ] = oldMul + rotAmounts[ area ] * scale
 
@@ -368,6 +370,7 @@ function ENT:DoCustomTasks( defaultTasks )
         ["inform_handler"] = defaultTasks["inform_handler"],
         ["reallystuck_handler"] = defaultTasks["reallystuck_handler"],
         ["movement_wait"] = defaultTasks["movement_wait"],
+        ["playercontrol_handler"] = defaultTasks["playercontrol_handler"],
         ["zambstuff_handler"] = {
             ZambOnGrumpy = function( self, data )
                 if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
@@ -383,11 +386,31 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
             end,
+            OnBlockingAlly = function( self, data, theAlly, sinceStarted )
+                local myOffset = self:GetCreationID() % 5
+                if self:IsCrouching() and sinceStarted >= myOffset then
+                    self:Anger( math.random( 5, 10 ) )
+
+                elseif self.IsSeeEnemy then
+                    if self.DistToEnemy < 500 and sinceStarted >= myOffset then
+                        self:RunTask( "ZambOnGrumpy" )
+
+                    elseif sinceStarted >= myOffset then
+                        self:Anger( math.random( 5, 10 ) )
+
+                    end
+                elseif sinceStarted >= myOffset then
+                    self:Anger( math.random( 1, 5 ) )
+
+                end
+            end,
             EnemyLost = function( self, data )
                 self:Term_SpeakSound( self.term_LoseEnemySound )
+
             end,
             EnemyFound = function( self, data )
                 self:RunTask( "ZambOnGrumpy" )
+
             end,
             OnAttack = function( self, data )
                 self:Term_SpeakSound( self.term_AttackSound )
@@ -404,7 +427,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
             end,
             OnDamaged = function( self, data, damage )
-                self:EmitSound( self.term_DamagedSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+                self:Term_SpeakSoundNow( self.term_DamagedSound, self.term_SoundPitchShift )
 
             end,
             PreventBecomeRagdollOnKilled = function( self, data, damage ) -- handle becoming zombie torso
@@ -416,7 +439,8 @@ function ENT:DoCustomTasks( defaultTasks )
                 if oldDensity > math.random( cur, cur + 60 ) then return end
 
                 local becomeTorso
-                if damage:IsExplosionDamage() and damage:GetDamage() < math.max( self:Health() + 75, 75 ) then
+                local ratio = math.random( 25, 75 )
+                if damage:IsExplosionDamage() and damage:GetDamage() < math.min( self:Health() + ratio, ratio ) then
                     becomeTorso = true
 
                 end
@@ -656,6 +680,10 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 local badAdd = 0
 
+                if not self.NothingOrBreakableBetweenEnemy and self:GetCurrentSpeed() <= 5 then
+                    badAdd = badAdd + 5
+
+                end
                 if not self.IsSeeEnemy and not self.NothingOrBreakableBetweenEnemy then
                     badAdd = badAdd + 1
 

@@ -40,6 +40,7 @@ ENT.zamb_MeleeAttackSpeed = 1
 ENT.neverManiac = true
 
 ENT.FistDamageMul = 3
+ENT.FistRangeMul = 1.5
 ENT.DuelEnemyDist = 450
 
 local FAST_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
@@ -49,7 +50,8 @@ ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
 
 ENT.Models = { FAST_ZAMBIE_MODEL }
-ENT.TERM_MODELSCALE = function() return math.Rand( 1.05, 1.1 ) end
+ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1 ) end
+ENT.MyPhysicsMass = 70
 ENT.NoAnimLayering = true
 
 ENT.IdleActivityTranslations = {
@@ -115,6 +117,7 @@ function ENT:AdditionalInitialize()
     self.HeightToStartTakingDamage = 400
     self.FallDamagePerHeight = 0.015
     self.DeathDropHeight = 1500
+    self.zambwraith_InvisGraceMul = 1
 
 end
 
@@ -125,6 +128,7 @@ function ENT:CloakedMatFlicker()
         if not IsValid( self ) then return end
         if self:IsSolid() then return end
         self:SetRenderMode( RENDERMODE_TRANSALPHA )
+        self:RemoveAllDecals() -- evil
         self:SetMaterial( "effects/combineshield/comshieldwall" )
 
 
@@ -151,7 +155,7 @@ function ENT:DoHiding( hide )
     else
         self:CloakedMatFlicker()
         self.zamb_NextHidingSwap = CurTime() + 0.25
-        timer.Simple( 0.25, function()
+        timer.Simple( 0.25 * self.zambwraith_InvisGraceMul, function()
             if not IsValid( self ) then return end
             self:SetCollisionGroup( COLLISION_GROUP_NPC )
             self:SetSolidMask( MASK_NPCSOLID )
@@ -163,7 +167,7 @@ function ENT:DoHiding( hide )
             self:EmitSound( "buttons/combine_button_locked.wav", 76, 50 )
             self:Term_SpeakSoundNow( { "NPC_FastZombie.Frenzy", "NPC_FastZombie.Scream" } )
             self:SetRenderMode( RENDERMODE_NORMAL ) -- cfc jid
-            self.zamb_NextHidingSwap = CurTime() + math.Rand( 2.5, 3.5 )
+            self.zamb_NextHidingSwap = CurTime() + ( math.Rand( 2.5, 3.5 ) * self.zambwraith_InvisGraceMul )
 
         end )
     end
@@ -175,7 +179,7 @@ function ENT:AdditionalThink()
     local enemDist = self.DistToEnemy
     local allyCount = #self:GetNearbyAllies()
     if doHide and self.IsSeeEnemy and math.random( 0, allyCount * 20 ) < 1 and allyCount >= 1 then
-        if enemDist < 2000 and enemDist > 600 and not self:IsReallyAngry() then
+        if enemDist < 2500 and enemDist > 800 and not self:IsReallyAngry() and not self.zamb_CantCall then
             self:ZAMB_AngeringCall()
             self:ReallyAnger( 45 )
             doHide = false

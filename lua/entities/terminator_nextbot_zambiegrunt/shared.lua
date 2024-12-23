@@ -36,6 +36,7 @@ ENT.CanSpeak = true
 local GRUNT_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = GRUNT_MODEL
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.05, 1.15 ) end
+ENT.MyPhysicsMass = 150
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 

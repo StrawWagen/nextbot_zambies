@@ -42,6 +42,7 @@ local NECRO_ZAMBIE_MODEL = "models/Zombie/Poison.mdl"
 ENT.ARNOLD_MODEL = NECRO_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.35
 ENT.CollisionBounds = { Vector( -16, -16, 0 ), Vector( 16, 16, 40 ) }
+ENT.MyPhysicsMass = 1000
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
@@ -251,12 +252,12 @@ function ENT:AdditionalThink()
                 minion:SetHealth( minion:GetMaxHealth() / 2 )
 
                 local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
-                timer.Create( timerId, 5, 0, function()
+                timer.Create( timerId, math.Rand( 3, 6 ), 0, function()
                     if not IsValid( minion ) then timer.Remove( timerId ) return end
                     if minion:Health() <= 0 then timer.Remove( timerId ) return end
 
                     local owner = minion:GetOwner()
-                    if not IsValid( owner ) then minion:Ignite( 999 ) return end
+                    if not IsValid( owner ) or owner:Health() <= 0 then minion:Ignite( 999 ) return end
 
                     minion:TakeDamage( 1, minion, minion ) -- slowly die
                     if not IsValid( minion:GetEnemy() ) and IsValid( owner:GetEnemy() ) then minion:SetEnemy( owner:GetEnemy() ) end

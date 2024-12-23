@@ -50,6 +50,7 @@ ENT.IsStupid = true
 ENT.CanSpeak = true
 
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.08, 1.10 ) end
+ENT.MyPhysicsMass = 85
 
 local ACIDIC_COLOR = Color( 10, 250, 0 )
 
@@ -134,7 +135,7 @@ function ENT:DoAoeAcidDamage( ent, rad )
     rad = rad or 200
 
     for _, aoeEnt in ipairs( ents.FindInSphere( areaDamagePos, rad ) ) do
-        if IsValid( aoeEnt:GetOwner() ) then continue end
+        if IsValid( aoeEnt:GetParent() ) then continue end
         if aoeEnt == ent then continue end
         if aoeEnt == self then continue end
 
@@ -142,8 +143,9 @@ function ENT:DoAoeAcidDamage( ent, rad )
 
         local isSignificant = aoeEnt:IsNPC() or aoeEnt:IsPlayer()
         local dmg = rad - aoeEnt:NearestPoint( areaDamagePos ):Distance( areaDamagePos )
-        if isSignificant then
-            dmg = dmg / 10
+        dmg = dmg * 4
+        if isSignificant then -- deal crazy damage to props, not much damage to players/npcs
+            dmg = dmg / 100
 
         end
         self:DealAcidDamageTo( aoeEnt, dmg, areaDamagePos )

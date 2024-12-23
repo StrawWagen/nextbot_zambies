@@ -320,10 +320,12 @@ function SWEP:PrimaryAttack()
 
     local hitframeMul = owner.zamb_MeleeAttackHitFrameMul or 1
 
-    local dmgTime = ( meleeTime - 0.7 * seqSpeed ) * hitframeMul
+    local dmgTime = ( ( meleeTime - 0.7 ) / seqSpeed ) * hitframeMul
 
     timer.Simple( dmgTime, function()
         if not IsValid( self ) then return end
+        if not IsValid( owner ) then return end
+        if not owner:IsSolid() then return end
         self:DealDamage()
 
         self:SetClip1( self:Clip1() - 1 )
@@ -335,25 +337,43 @@ function SWEP:DealDamage()
 
     local owner = self:GetOwner()
     local strength = owner.FistDamageMul or 1
+    local rangeMul = owner.FistRangeMul or 1
 
-    local sizeMul = 1 + ( strength / 5 )
-
-    local tr = util.TraceLine( {
+    local sizeMul = 1 + ( strength / 8 )
+    local range = self.Range * rangeMul
+    local trDat = {
         start = owner:GetShootPos(),
-        endpos = owner:GetShootPos() + owner:GetAimVector() * self.Range,
+        endpos = owner:GetShootPos() + owner:GetAimVector() * range,
         filter = owner,
         mask = bit.bor( self.HitMask ),
-    } )
+    }
+
+    local tr = util.TraceLine( trDat )
+
+    if strength > 10 and not IsValid( tr.Entity ) then -- half sized one
+        trDat = {
+            start = owner:GetShootPos(),
+            endpos = owner:GetShootPos() + owner:GetAimVector() * range,
+            filter = owner,
+            mins = Vector( -10, -10, -8 ) * sizeMul / 2,
+            maxs = Vector( 10, 10, 8 ) * sizeMul / 2,
+            mask = bit.bor( self.HitMask ),
+        }
+        tr = util.TraceHull( trDat )
+        --debugoverlay.SweptBox( trDat.start, trDat.endpos, trDat.mins, trDat.maxs, Angle( 0,0,0 ), 5 )
+    end
 
     if not IsValid( tr.Entity ) then
-        tr = util.TraceHull( {
+        trDat = {
             start = owner:GetShootPos(),
-            endpos = owner:GetShootPos() + owner:GetAimVector() * self.Range,
+            endpos = owner:GetShootPos() + owner:GetAimVector() * range,
             filter = owner,
             mins = Vector( -10, -10, -8 ) * sizeMul,
             maxs = Vector( 10, 10, 8 ) * sizeMul,
             mask = bit.bor( self.HitMask ),
-        } )
+        }
+        tr = util.TraceHull( trDat )
+        --debugoverlay.SweptBox( trDat.start, trDat.endpos, trDat.mins, trDat.maxs, Angle( 0,0,0 ), 5 )
     end
 
     local scale = 3

@@ -236,7 +236,9 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 end
 
 function terminator_Extras.zamb_HandleDifficultyDecay()
+    local cur = CurTime()
     local plyCount = 0
+    local averageHealthPercent = 0
     for ply, _ in pairs( terminator_Extras.zamb_PlayerParticipatingFor ) do
         plyCount = plyCount + 1
         local healthPercent = ply:Health() / ply:GetMaxHealth()
@@ -255,6 +257,8 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
 
     local healthFullnessDecay
     local decay
+    local minDifficulty = zamCount / 2
+
     if targetDifficulty < 50 then
         healthFullnessDecay = averageHealthPercent / 100
         decay = healthFullnessDecay + 0.5
@@ -268,6 +272,15 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     if difficultyBeingExperienced > 100 then
         decay = decay * 2
         decay = decay + 1
+
+    end
+
+    if gettingHandsDirty < ( cur + -30 ) then
+        decay = decay * 2
+        minDifficulty = 0
+
+    else
+        minDifficulty = zamCount / 4
 
     end
 
@@ -289,8 +302,7 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     end
 
     difficultyBeingExperienced = difficultyBeingExperienced + -decay
-    difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced, zamCount / 2, maxDifficulty )
-    zamCount = #ents.FindByClass( "terminator_nextbot_zambie*" )
+    difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced, minDifficulty, maxDifficulty )
     difference = targetDifficulty - difficultyBeingExperienced
 
     debugPrint( difficultyBeingExperienced, targetDifficulty, decay, currCurveType )
@@ -298,6 +310,8 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
 end
 
 function terminator_Extras.zamb_HandleParticipation()
+    noPlayerParticipators = false
+
     local plyParticipators = terminator_Extras.zamb_PlayerParticipatingFor
     participatingCount = 0
     local cur = CurTime()
@@ -340,6 +354,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     local damageDealt = damage:GetDamage()
     damageDealt = math.Clamp( damageDealt, 0, target:GetMaxHealth() ) -- this was blowing up using ent:Health(), since we're in post took damage
 
+    local clampedParticipating = math.Clamp( participatingCount, 1, maxDifficulty )
     local cur = CurTime()
     local difficultyFelt
 
@@ -374,7 +389,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 4
 
             end
-            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.5 ), cur + ( damageDealt * 0.25 ) )
+            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.5 / clampedParticipating ), cur + ( damageDealt * 0.25 / clampedParticipating ) )
             debugPrint( "dirtyhands", gettingHandsDirty - cur )
 
         end
@@ -386,7 +401,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
             difficultyFelt = difficultyFelt + 1
             difficultyFelt = difficultyFelt * 2
 
-            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.25 ), cur + ( damageDealt * 0.1 ) )
+            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.25 / clampedParticipating ), cur + ( damageDealt * 0.1 / clampedParticipating ) )
             debugPrint( "dirtyhands", gettingHandsDirty - cur )
 
         elseif engageDist > 4000 then -- negative!
@@ -423,6 +438,10 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
 
             end
         else
+            if gettingHandsDirty < cur then
+                difficultyFelt = difficultyFelt * 0.75
+
+            end
             local oldParticipating = terminator_Extras.zamb_PlayerParticipatingFor[attacker]
             terminator_Extras.zamb_PlayerParticipatingFor[attacker] = cur + 190
             if not oldParticipating then
@@ -441,7 +460,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     end
 
     if difficultyFelt then
-        difficultyFelt = difficultyFelt / math.Clamp( participatingCount, 1, maxDifficulty )
+        difficultyFelt = difficultyFelt / clampedParticipating
         difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced + difficultyFelt, 0, maxDifficulty )
 
     end
@@ -634,6 +653,9 @@ end
 local shootPosOffset = Vector( 0,0,45 )
 
 function terminator_Extras.zamb_HandleSpawning()
+
+    zamCount = #ents.FindByClass( "terminator_nextbot_zambie*" )
+
     local cur = CurTime()
     local spawnPositions = terminator_Extras.zamb_PotentialSpawnPositions
 
@@ -650,17 +672,16 @@ function terminator_Extras.zamb_HandleSpawning()
     local spawnDist = 750
     local tooClose = spawnDist ^ 2
     local tooFar = ( spawnDist * 10 ) ^ 2
-    local maxToDo = 400 / math.Clamp( player.GetCount(), 20, 400 )
-    local countDone = 0
+    local maxToDo = 800 / math.Clamp( participatingCount, 40, 800 )
+    local expensiveDone = 0
 
     for ind, currDat in ipairs( spawnPositions ) do -- check/trim positions placed by zombies that were killed by participators!
-        if countDone > maxToDo then
+        if expensiveDone > maxToDo then
             break
 
         end
         local spawner = currDat.spawnerResponsible
         if not IsValid( spawner ) or not spawner:GetOn() then -- trim, its off!
-            countDone = countDone + 1
             table.remove( spawnPositions, ind )
             continue
 
@@ -668,7 +689,7 @@ function terminator_Extras.zamb_HandleSpawning()
         local currShoot = currDat.pos + shootPosOffset
         local isBlocked, anyWasCloseEnough = blockedByParticipator( currShoot, true, tooClose, tooFar )
         if isBlocked or not anyWasCloseEnough then -- too far or close, trim!
-            countDone = countDone + 1
+            expensiveDone = expensiveDone + 1
             table.remove( spawnPositions, ind )
 
         else

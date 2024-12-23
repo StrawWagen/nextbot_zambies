@@ -16,14 +16,15 @@ if CLIENT then
 end
 
 ENT.CoroutineThresh = 0.0001
+
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 16, 16, 15 ) }
+ENT.AlwaysCrouching = true
 
 ENT.WalkSpeed = 100
 ENT.MoveSpeed = 125
 ENT.RunSpeed = 250
 ENT.JumpHeight = 30
 ENT.StepHeight = 20
-ENT.AlwaysCrouching = true
 
 ENT.SpawnHealth = 25
 ENT.FistDamageMul = 1
@@ -35,6 +36,7 @@ ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1
 ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles
 local FAST_TORSO_MDL = "models/zombie/fast_torso.mdl"
 ENT.ARNOLD_MODEL = FAST_TORSO_MDL
+ENT.MyPhysicsMass = 25
 
 ENT.Models = { FAST_TORSO_MDL }
 
