@@ -162,7 +162,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/antlion/antlionhigh_sheet" )
     self.zamb_HasArmor = true
-    self.zamb_LoseCoolRatio = 0.45
+    self.zamb_LoseCoolRatio = 0.25
     self.zamb_UnderArmorMat = "models/flesh"
 
 end
