@@ -56,12 +56,12 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RUN]                        = ACT_RUN,
     [ACT_MP_CROUCH_IDLE]                = ACT_IDLE,
     [ACT_MP_CROUCHWALK]                 = ACT_RUN,
-    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity+5,
-    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity+5,
-    [ACT_MP_RELOAD_STAND]               = IdleActivity+6,
-    [ACT_MP_RELOAD_CROUCH]              = IdleActivity+7,
+    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
+    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
+    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
+    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
     [ACT_MP_JUMP]                       = ACT_RANGE_ATTACK1,
-    [ACT_MP_SWIM]                       = IdleActivity+9,
+    [ACT_MP_SWIM]                       = IdleActivity + 9,
     [ACT_LAND]                          = 2089,
 }
 
@@ -113,7 +113,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, _foot, _sound, volume, _filter )
     local lvl = 75
     local snd = "NPC_FastHeadcrab.Footstep"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then

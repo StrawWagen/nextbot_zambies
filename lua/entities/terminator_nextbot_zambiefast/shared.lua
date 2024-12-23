@@ -63,9 +63,6 @@ ENT.IdleActivityTranslations = {
 ENT.zamb_CallAnim = "BR2_Roar"
 ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1 -- ACT_RANGE_ATTACK1
 
-function ENT:OnKilledGenericEnemyLine( enemyLost )
-end
-
 function ENT:AdditionalInitialize()
     self:SetModel( FAST_ZAMBIE_MODEL )
     self:SetBodygroup( 1, 1 )
@@ -115,7 +112,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
     local lvl = 85
     local snd = foot and "NPC_FastZombie.GallopRight" or "NPC_FastZombie.GallopLeft"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then

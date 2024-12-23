@@ -93,7 +93,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
     local lvl = 77
     local pit = math.random( 75, 85 )
     local snd = foot and "npc/zombie_poison/pz_left_foot1.wav" or "npc/zombie_poison/pz_right_foot1.wav"

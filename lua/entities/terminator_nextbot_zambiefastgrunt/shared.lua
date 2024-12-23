@@ -85,7 +85,7 @@ function ENT:AdditionalInitialize()
 
 end
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, _foot, _sound, volume, _filter )
     local lvl = 88
     local snd = "npc/fast_zombie/foot" .. math.random( 1, 4 ) .. ".wav"
     local moveSpeed = self:GetVelocity():Length()
@@ -96,7 +96,8 @@ function ENT:OnFootstep( pos, foot, sound, volume, filter )
         local speedNormalized = moveSpeed / self.RunSpeed
         local secPit = math.random( 45, 55 ) + speedNormalized * 50
         local secSnd = "npc/antlion/foot" .. math.random( 1, 4 ) .. ".wav"
-        self:EmitSound( secSnd, lvl, secPit, ( speedNormalized * 0.5 )^1.1, CHAN_STATIC )
+        local secVolume = ( speedNormalized * 0.5 ) ^ 1.1
+        self:EmitSound( secSnd, lvl, secPit, secVolume, CHAN_STATIC )
         util.ScreenShake( self:GetPos(), 1 + speedNormalized * 2, 20, 0.15, 200 + moveSpeed )
 
     end

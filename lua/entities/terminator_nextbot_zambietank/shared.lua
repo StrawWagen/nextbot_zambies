@@ -70,17 +70,14 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RUN]                        = ACT_HL2MP_WALK_ZOMBIE_06,
     [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,
     [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
-    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity+5,
-    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity+5,
-    [ACT_MP_RELOAD_STAND]               = IdleActivity+6,
-    [ACT_MP_RELOAD_CROUCH]              = IdleActivity+7,
+    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
+    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
+    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
+    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
     [ACT_MP_JUMP]                       = ACT_HL2MP_JUMP_FIST,
-    [ACT_MP_SWIM]                       = IdleActivity+9,
+    [ACT_MP_SWIM]                       = IdleActivity + 9,
     [ACT_LAND]                          = ACT_LAND,
 }
-
-function ENT:OnKilledGenericEnemyLine( enemyLost )
-end
 
 -- tanks dont care about body smell
 function ENT:AdditionalAvoidAreas()
@@ -206,7 +203,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
     local lvl = 83
     local snd = foot and "npc/antlion_guard/foot_heavy1.wav" or "npc/antlion_guard/foot_light2.wav"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then

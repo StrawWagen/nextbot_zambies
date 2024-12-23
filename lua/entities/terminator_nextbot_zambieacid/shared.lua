@@ -167,7 +167,7 @@ end
 function ENT:HandleFlinching()
 end
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( pos, foot, _sound, volume, _filter )
     local lvl = 85
     local pit = 100
     local snd = foot and "Zombie.FootstepRight" or "Zombie.FootstepLeft"

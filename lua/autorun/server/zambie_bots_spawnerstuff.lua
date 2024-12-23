@@ -590,7 +590,7 @@ terminator_Extras.zamb_SpawnData = {
 
 }
 
-function terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, targetDifficultyInt, differenceInt )
+function terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, _targetDifficultyInt, _differenceInt )
 
     local bestData
     local myData = terminator_Extras.zamb_SpawnData

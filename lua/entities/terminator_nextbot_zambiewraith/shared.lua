@@ -220,7 +220,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
     local lvl
     local snd
     if self:IsSolid() then

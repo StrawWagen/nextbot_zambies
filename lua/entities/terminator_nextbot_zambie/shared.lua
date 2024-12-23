@@ -211,9 +211,6 @@ ENT.zamb_CallAnim = nil
 ENT.zamb_AttackAnim = nil
 ENT.zamb_CantCall = nil
 
-function ENT:OnKilledGenericEnemyLine( enemyLost )
-end
-
 function ENT:DoHardcodedRelations()
     self.term_HardCodedRelations = {
         ["npc_zombie"] = { D_LI, D_LI, 1000 },
@@ -268,7 +265,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, sound, volume, filter )
+function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
     local lvl = 85
     local snd = foot and "Zombie.FootstepRight" or "Zombie.FootstepLeft"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
@@ -354,13 +351,13 @@ local CUTTING_MDLS = {
     ["models/props_c17/trappropeller_blade.mdl"] = true,
 }
 
-local MEMORY_MEMORIZING = 1
-local MEMORY_INERT = 2
+--local MEMORY_MEMORIZING = 1
+--local MEMORY_INERT = 2
 local MEMORY_BREAKABLE = 4
 local MEMORY_VOLATILE = 8
 --local MEMORY_THREAT = 16
-local MEMORY_WEAPONIZEDNPC = 32
-local MEMORY_DAMAGING = 64
+--local MEMORY_WEAPONIZEDNPC = 32
+--local MEMORY_DAMAGING = 64
 
 function ENT:DoCustomTasks( defaultTasks )
     self.TaskList = {
