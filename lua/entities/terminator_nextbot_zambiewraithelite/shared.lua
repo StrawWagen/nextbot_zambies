@@ -26,11 +26,10 @@ ENT.MoveSpeed = 350
 ENT.RunSpeed = 500
 ENT.AccelerationSpeed = 450
 ENT.DecelerationSpeed = 1000
+ENT.neverManiac = true
 
 ENT.zamb_AlwaysFlank = true
 ENT.zamb_LookAheadWhenRunning = true -- turn this on since we do big bursts of damage unlike the normal fast z
-
-ENT.neverManiac = true
 
 ENT.FistDamageMul = 6
 ENT.FistRangeMul = 2

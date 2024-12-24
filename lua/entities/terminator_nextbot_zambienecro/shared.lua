@@ -22,7 +22,7 @@ ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in m
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
 ENT.SpawnHealth = 4000
-ENT.ExtraSpawnHealthPerPlayer = 500
+ENT.ExtraSpawnHealthPerPlayer = 750
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 400
@@ -226,7 +226,7 @@ function ENT:AdditionalThink()
                     class = "terminator_nextbot_zambiefast"
 
                 end
-                if nearDeath and math.random( 1, 100 ) < 25 then
+                if nearDeath and math.random( 1, 100 ) < 15 then
                     class = "terminator_nextbot_zambieberserk"
 
                 end
@@ -251,7 +251,7 @@ function ENT:AdditionalThink()
                 local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
                 timer.Create( timerId, math.Rand( 3, 6 ), 0, function()
                     if not IsValid( minion ) then timer.Remove( timerId ) return end
-                    if minion:Health() <= 0 then timer.Remove( timerId ) return end
+                    if minion:Health() <= 0 then SafeRemoveEntity( minion ) timer.Remove( timerId ) return end
 
                     local owner = minion:GetOwner()
                     if not IsValid( owner ) or owner:Health() <= 0 then minion:Ignite( 999 ) return end

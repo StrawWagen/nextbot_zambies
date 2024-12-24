@@ -16,7 +16,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0005
+ENT.CoroutineThresh = 0.00005
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 600
@@ -32,14 +32,15 @@ ENT.WalkSpeed = 100
 ENT.MoveSpeed = 300
 ENT.RunSpeed = 450
 ENT.AccelerationSpeed = 350
+ENT.neverManiac = true
+
+ENT.CanUseStuff = true
 
 ENT.zamb_AlwaysFlank = true
 ENT.zamb_LookAheadWhenRunning = true -- turn this on since we do big bursts of damage unlike the normal fast z
 ENT.zamb_MeleeAttackSpeed = 1
 
-ENT.neverManiac = true
-
-ENT.FistDamageMul = 3
+ENT.FistDamageMul = 2.25
 ENT.FistRangeMul = 1.5
 ENT.DuelEnemyDist = 450
 

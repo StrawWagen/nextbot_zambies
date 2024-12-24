@@ -22,20 +22,21 @@ if CLIENT then
     return
 end
 
-ENT.CoroutineThresh = 0.0004
+ENT.CoroutineThresh = 0.00004
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.SpawnHealth = 8000
+ENT.SpawnHealth = 7000
 ENT.ExtraSpawnHealthPerPlayer = 1000
 ENT.AimSpeed = 400
 ENT.WalkSpeed = 60
 ENT.MoveSpeed = 150
 ENT.RunSpeed = 350
 ENT.AccelerationSpeed = 1000
+ENT.neverManiac = true
 
 ENT.zamb_LookAheadWhenRunning = nil
 ENT.zamb_MeleeAttackSpeed = 1
@@ -159,7 +160,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/antlion/antlionhigh_sheet" )
     self.zamb_HasArmor = true
-    self.zamb_LoseCoolRatio = 0.25
+    self.zamb_LoseCoolRatio = 0.35
     self.zamb_UnderArmorMat = "models/flesh"
 
 end

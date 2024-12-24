@@ -63,6 +63,7 @@ local difficultyBeingExperienced
 local targetDifficulty
 local difference
 local zamCount
+local participators
 local noPlayerParticipators
 local participatingCount
 local gettingHandsDirty
@@ -121,19 +122,19 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
             toAdd = "calm"
 
         elseif lastTypeAdded == "calm" then
-            if sameCurveChainLength < 0 then
+            if sameCurveChainLength < 0 then -- always at least two calms in a row please 
                 toAdd = "calm"
 
             else
                 local calmChance = 25
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
-                if tooDifficult and math.abs( difference ) > 100 then -- we probably are dealing with the wake of a peak segment, or they just died
+                if tooDifficult and math.abs( difference ) > 100 * difficultyMul then -- we probably are dealing with the wake of a peak segment, or they just died
                     calmChance = 101
 
-                elseif tooDifficult and math.abs( difference ) > 70 then
+                elseif tooDifficult and math.abs( difference ) > 70 * difficultyMul then
                     calmChance = 80
 
-                elseif tooDifficult and math.abs( difference ) > 25 then
+                elseif tooDifficult and math.abs( difference ) > 25 * difficultyMul then
                     calmChance = 50
 
                 end
@@ -149,8 +150,11 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 
         elseif lastTypeAdded == "rampup" then
             if sameCurveChainLength < 0 then
+                toAdd = "rampup"
+
+            elseif sameCurveChainLength < 1 then
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
-                if tooDifficult and math.abs( difference ) > 100 then -- they died or something?
+                if tooDifficult and math.abs( difference ) > 100 * difficultyMul then -- they died or something?
                     toAdd = "calm"
 
                 else
@@ -159,7 +163,7 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
                 end
             else
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
-                if tooDifficult and math.abs( difference ) > math.random( 40, 60 ) then -- they aren't ready!
+                if tooDifficult and math.abs( difference ) > math.random( 40, 60 ) * difficultyMul then -- they aren't ready!
                     toAdd = "rampup"
 
                 else
@@ -168,11 +172,12 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
                 end
             end
         elseif lastTypeAdded == "peak" then
-            if sameCurveChainLength >= 1 then
+            if sameCurveChainLength > 1 then -- always end after 2
                 toAdd = "calm"
 
             else
-                if difference > 25 or gettingHandsDirty < cur then
+                local tooEasy = difficultyBeingExperienced < targetDifficulty and math.abs( difference ) > 25 * difficultyMul
+                if tooEasy or gettingHandsDirty < cur then -- end early if we got em
                     toAdd = "peak"
 
                 else
@@ -290,7 +295,7 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
             debugPrint( "difficulty has blown up, reeling in!" )
 
         elseif difficultyBeingExperienced > targetDifficulty then
-            decay = decay + difficultyBeingExperienced / 10
+            decay = decay + difficultyBeingExperienced / 20
 
         end
         if gettingHandsDirty < CurTime() then -- dont decay as fast if they have taken damage up close
@@ -303,9 +308,10 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
 
     difficultyBeingExperienced = difficultyBeingExperienced + -decay
     difficultyBeingExperienced = math.Clamp( difficultyBeingExperienced, minDifficulty, maxDifficulty )
+    difficultyBeingExperienced = math.Round( difficultyBeingExperienced, 2 )
     difference = targetDifficulty - difficultyBeingExperienced
 
-    debugPrint( difficultyBeingExperienced, targetDifficulty, decay, currCurveType )
+    debugPrint( difficultyBeingExperienced, targetDifficulty, currCurveType )
 
 end
 
@@ -334,7 +340,7 @@ function terminator_Extras.zamb_HandleParticipation()
 
     local entParticipators = terminator_Extras.zamb_EntsParticipatingFor
     for ent, whenStop in pairs( entParticipators ) do
-        if not IsValid( ent ) or whenStop < cur then
+        if not IsValid( ent ) or whenStop < cur or ent.IsTerminatorZambie then
             terminator_Extras.zamb_EntsParticipatingFor[ent] = nil
             return
 
@@ -358,13 +364,14 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     local cur = CurTime()
     local difficultyFelt
 
-    local plyGotAttacked = target:IsPlayer()
+    local participatorGotAttacked = participators[target] -- players if a player is fighting them, npcs if there's no players and npcs are fighting them
     local attackerIsZamb = attacker.IsTerminatorZambie
 
     local zambGotAttacked = target.IsTerminatorZambie
+    local attackerIsParticipator = participators[attacker]
     local attackerIsPlayer = attacker:IsPlayer()
 
-    if plyGotAttacked then
+    if participatorGotAttacked then
         difficultyFelt = damageDealt * 0.75
 
         if not attackerIsZamb then
@@ -374,7 +381,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
             local nearbyStuff = ents.FindInSphere( attacker:GetPos(), 175 )
             for _, thing in ipairs( nearbyStuff ) do
                 if thing ~= attacker and thing.IsTerminatorZambie and thing.IsSeeEnemy then
-                    difficultyFelt = difficultyFelt + ( difficultyFelt * 0.15 )
+                    difficultyFelt = difficultyFelt + ( difficultyFelt * 0.18 )
 
                 end
             end
@@ -389,22 +396,27 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 4
 
             end
-            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.5 / clampedParticipating ), cur + ( damageDealt * 0.25 / clampedParticipating ) )
-            debugPrint( "dirtyhands", gettingHandsDirty - cur )
+            gettingHandsDirty = math.max( cur + ( damageDealt * 0.25 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.5 / clampedParticipating ) )
+            debugPrint( "dirtyhands1", gettingHandsDirty - cur )
 
         end
     elseif zambGotAttacked then
         difficultyFelt = damageDealt * 0.05
         local engageDist = attacker:GetPos():Distance( target:GetPos() )
 
-        if attackerIsPlayer and engageDist < 120 and gettingHandsDirty > cur then
-            difficultyFelt = difficultyFelt + 1
-            difficultyFelt = difficultyFelt * 2
+        if attackerIsParticipator and engageDist < 120 then
+            if gettingHandsDirty > cur then -- they were damaged up close earlier
+                difficultyFelt = difficultyFelt + 1
+                difficultyFelt = difficultyFelt * 2
 
-            gettingHandsDirty = math.max( gettingHandsDirty + ( damageDealt * 0.25 / clampedParticipating ), cur + ( damageDealt * 0.1 / clampedParticipating ) )
-            debugPrint( "dirtyhands", gettingHandsDirty - cur )
+                gettingHandsDirty = math.max( cur + ( damageDealt * 0.15 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.05 / clampedParticipating ) )
+                debugPrint( "dirtyhands2", gettingHandsDirty - cur )
 
-        elseif engageDist > 4000 then -- negative!
+            else -- they were NOT damaged up close earlier, this guy is good!
+                difficultyFelt = -difficultyFelt * 0.15 -- negative
+
+            end
+        elseif engageDist > 4000 then -- sniping from a distance feels easy, negate it to remove difficulty,
             difficultyFelt = -difficultyFelt * 2.5
 
         elseif engageDist > 2500 then -- negative!
@@ -478,9 +490,10 @@ function terminator_Extras.zamb_SetupManager()
 
     difficultyBeingExperienced = 0
     zamCount = 0
+    participators = {}
     noPlayerParticipators = false
     participatingCount = 0
-    gettingHandsDirty = 0
+    gettingHandsDirty = CurTime() + 15
     targetDifficulty = 0
 
     curveStartTime = 0
@@ -526,9 +539,11 @@ function terminator_Extras.zamb_TearDownManager()
     terminator_Extras.zamb_OccupiedSpawnSlots = nil
 
     zamCount = nil
+    participators = nil
     noPlayerParticipators = nil
     participatingCount = nil
     difficultyBeingExperienced = nil
+    gettingHandsDirty = nil
     targetDifficulty = nil
 
     sameCurveChainLength = nil
@@ -560,6 +575,8 @@ maxAtOnce, max count of this on the field at once, checks class
 
 terminator_Extras.zamb_SpawnData = {
     { class = "terminator_nextbot_zambie",              diffAdded = 3, diffNeeded = 0, passChance = 0 },
+    { class = "terminator_nextbot_zambie_slow",         diffAdded = 3, diffNeeded = 0, diffMax = 5, passChance = 25 },
+    { class = "terminator_nextbot_zambie_slow",         diffAdded = 3, diffNeeded = 0, diffMax = 15, passChance = 50 },
 
     { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 0, passChance = 92 },
     { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 30 },
@@ -575,7 +592,7 @@ terminator_Extras.zamb_SpawnData = {
 
     { class = "terminator_nextbot_zambiegrunt",         diffAdded = 10, diffNeeded = 50, passChance = 95 },
 
-    { class = "terminator_nextbot_zambieberserk",       diffAdded = 20, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
+    { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
 
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 92 },
     { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 99, batchSize = 10 },
@@ -583,10 +600,13 @@ terminator_Extras.zamb_SpawnData = {
 
     { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
     { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
+    { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 100, diffNeeded = 90, passChance = 99.5, spawnSlot = "miniboss" }, -- rare elite wraith duo
 
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 20, spawnslot = "miniboss" }, -- rare hell wraith wave
-    { class = "terminator_nextbot_zambieberserk",       diffAdded = 50, diffNeeded = 99, passChance = 99, batchSize = 10, spawnslot = "miniboss" }, -- rare hell berserk wave
-    { class = "terminator_nextbot_zambietank",          diffAdded = 100, diffNeeded = 99, passChance = 99, batchSize = 2, spawnslot = "miniboss" }, -- rare 2 tank spawn
+    { class = "terminator_nextbot_zambiewraith",        diffAdded = 25, diffNeeded = 99, passChance = 99, batchSize = 5, spawnSlot = "miniboss" }, -- smallish wraith wave
+    { class = "terminator_nextbot_zambiewraith",        diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 20, spawnSlot = "miniboss" }, -- rare hell wraith wave
+    { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 50, diffNeeded = 99, passChance = 99.9, batchSize = 3, spawnSlot = "miniboss" }, -- rare elite wraith duo
+    { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 5, spawnSlot = "miniboss" }, -- rare berserk wave
+    { class = "terminator_nextbot_zambietank",          diffAdded = 60, diffNeeded = 99, passChance = 99.5, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 tank spawn
 
 }
 
@@ -620,7 +640,7 @@ local hitTooClose = 150^2
 
 local function blockedByParticipator( checkPos, doSee, tooClose, tooFar )
     local anyWasCloseEnough
-    local participators
+    participators = {} -- rebuild this
     if noPlayerParticipators then
         participators = terminator_Extras.zamb_EntsParticipatingFor
 
@@ -704,8 +724,15 @@ function terminator_Extras.zamb_HandleSpawning()
     local badCount = 0
 
     if not spawnPos then -- no valid zombie placed spawnpoints
+        local spawnpoints = {}
         for _, spawner in ipairs( terminator_Extras.zamb_Spawnpoints ) do
+            if not IsValid( spawner ) then continue end
             if not spawner:GetOn() then continue end
+            table.insert( spawnpoints, spawner )
+
+        end
+
+        for _, spawner in RandomPairs( spawnpoints ) do
             activeCount = activeCount + 1
 
             if spawner.zamb_NextCanSpawnCheck > cur then badCount = badCount + 1 continue end
@@ -730,7 +757,8 @@ function terminator_Extras.zamb_HandleSpawning()
     end
 
     if spawnPos then
-        terminator_Extras.zamb_TryToSpawn( finalSpawner, spawnPos )
+        local spawned = terminator_Extras.zamb_TryToSpawn( finalSpawner, spawnPos )
+        return spawned
 
     elseif badCount >= activeCount then
         debugPrint( "!!!!All checked spawnpoints are likely exposed!!!!" )
@@ -797,6 +825,8 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     spawner:Zamb_OnZambSpawned( zamb )
 
     debugPrint( "Spawned!", zamb )
+
+    return true
 
 end
 
@@ -889,7 +919,9 @@ function terminator_Extras.zamb_DoForwardSpawnStuff( spawner, zamb )
         if not IsValid( zamb ) then timer.Remove( timerName ) return end
         if not IsValid( data.spawnerAssociated ) then timer.Remove( timerName ) return end
 
-        if zamb.IsSeeEnemy then
+        local enem = zamb:GetEnemy()
+
+        if zamb.IsSeeEnemy and IsValid( enem ) and not enem.IsTerminatorZambie then
             data.sawEnemy = true
             data.noEnemCount = 0
 

@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0001
+ENT.CoroutineThresh = BaseClass.CoroutineThresh / 4
 
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 16, 16, 15 ) }
 ENT.AlwaysCrouching = true
@@ -27,10 +27,9 @@ ENT.JumpHeight = 30
 ENT.StepHeight = 20
 
 ENT.SpawnHealth = 25
-ENT.FistDamageMul = 1
+ENT.FistDamageMul = 0.55
 ENT.zamb_MeleeAttackHitFrameMul = 4
 ENT.zamb_MeleeAttackSpeed = 1.75
-ENT.FistDamageMul = 0.1
 ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1
 
 ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles
@@ -57,6 +56,7 @@ ENT.IdleActivityTranslations = {
 ENT.zamb_CantCall = true
 
 function ENT:AdditionalInitialize()
+    self:SetModel( FAST_TORSO_MDL )
     BaseClass.AdditionalInitialize( self )
     self:SetModel( FAST_TORSO_MDL )
 

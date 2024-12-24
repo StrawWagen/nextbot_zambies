@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0004
+ENT.CoroutineThresh = 0.00004
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 300
@@ -30,14 +30,15 @@ ENT.calm_AccelerationSpeed = 150
 ENT.grumpy_AccelerationSpeed = 250
 ENT.angry_AccelerationSpeed = 1000
 ENT.AccelerationSpeed = ENT.calm_AccelerationSpeed
+ENT.neverManiac = true
 
 ENT.CanUseStuff = true
 
 ENT.zamb_LookAheadWhenRunning = true -- running anim doesnt support different move/look angles
 
-ENT.FistDamageMul = 3
+ENT.FistDamageMul = 2
 ENT.zamb_MeleeAttackSpeed = 2
-ENT.DuelEnemyDist = 350
+ENT.DuelEnemyDist = 600
 ENT.CloseEnemyDistance = 500
 
 ENT.Term_BaseTimeBetweenSteps = 400

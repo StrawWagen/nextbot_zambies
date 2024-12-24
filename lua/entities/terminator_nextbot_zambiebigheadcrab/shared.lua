@@ -19,7 +19,7 @@ if CLIENT then
 end
 
 ENT.IsFodder = nil
-ENT.CoroutineThresh = 0.0006
+ENT.CoroutineThresh = 0.0001
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 400
@@ -280,7 +280,7 @@ function ENT:AdditionalThink()
                 local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
                 timer.Create( timerId, math.Rand( 3, 6 ), 0, function()
                     if not IsValid( minion ) then timer.Remove( timerId ) return end
-                    if minion:Health() <= 0 then timer.Remove( timerId ) return end
+                    if minion:Health() <= 0 then SafeRemoveEntity( minion ) timer.Remove( timerId ) return end
 
                     local owner = minion:GetOwner()
                     if not IsValid( owner ) or owner:Health() <= 0 then minion:Ignite( 999 ) return end

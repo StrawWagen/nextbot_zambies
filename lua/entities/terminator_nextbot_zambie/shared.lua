@@ -51,7 +51,9 @@ end
 
 local coroutine_yield = coroutine.yield
 
-ENT.CoroutineThresh = 0.0001
+ENT.CoroutineThresh = 0.00001
+ENT.ThreshMulIfDueling = 2 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
+ENT.ThreshMulIfClose = 1.25 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 5000
 
 ENT.JumpHeight = 80
@@ -88,6 +90,7 @@ ENT.IsTerminatorZambie = true
 
 ENT.frenzyBoredomEnts = {}
 ENT.zamb_nextRandomFrenzy = 0
+ENT.zamb_BrainsChance = 20
 
 ENT.IsFodder = true
 ENT.IsStupid = true
@@ -232,7 +235,7 @@ function ENT:AdditionalInitialize()
     self.isTerminatorHunterChummy = "zambies"
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4
-    local hasBrains = math.random( 1, 100 ) < 20
+    local hasBrains = math.random( 1, 100 ) < self.zamb_BrainsChance
     if hasBrains then
         self.HasBrains = true
         terminator_Extras.RegisterListener( self )
@@ -321,6 +324,7 @@ function ENT:ZAMB_NormalCall()
 end
 
 local nextZombieCall = 0
+local nextLoneZombieCall = 0
 
 ENT.zamb_LookAheadWhenRunning = true
 ENT.zamb_MeleeAttackSpeed = 1.1
@@ -370,12 +374,19 @@ function ENT:DoCustomTasks( defaultTasks )
         ["playercontrol_handler"] = defaultTasks["playercontrol_handler"],
         ["zambstuff_handler"] = {
             ZambOnGrumpy = function( self, data )
+                local cur = CurTime()
                 if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
                     self:Term_SpeakSound( self.term_FindEnemySound )
                     return
 
-                elseif nextZombieCall < CurTime() and self.DistToEnemy > 750 then
-                    nextZombieCall = CurTime() + 40
+                elseif nextZombieCall < cur and self.DistToEnemy > 750 and #self:GetNearbyAllies() >= 8 then
+                    nextZombieCall = cur + 40
+                    nextLoneZombieCall = cur + 120
+                    self:ZAMB_AngeringCall()
+
+                elseif nextLoneZombieCall < CurTime() and self.DistToEnemy > 1000 then
+                    nextZombieCall = cur + 40
+                    nextLoneZombieCall = cur + 120
                     self:ZAMB_AngeringCall()
 
                 elseif self.DistToEnemy > 750 then
@@ -384,7 +395,8 @@ function ENT:DoCustomTasks( defaultTasks )
                 end
             end,
             OnBlockingAlly = function( self, data, theAlly, sinceStarted )
-                local myOffset = self:GetCreationID() % 5
+                local myOffset = self:GetCreationID() % 4
+                myOffset = myOffset
                 if self:IsCrouching() and sinceStarted >= myOffset then
                     self:Anger( math.random( 5, 10 ) )
 

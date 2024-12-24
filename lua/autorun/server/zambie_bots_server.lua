@@ -11,8 +11,8 @@ local table_count = table.Count
 
 terminator_Extras = terminator_Extras or {}
 
-terminator_Extras.zamb_AreasLastRot = {}
-terminator_Extras.zamb_RottingAreas = {}
+terminator_Extras.zamb_AreasLastRot = terminator_Extras.zamb_AreasLastRot or {}
+terminator_Extras.zamb_RottingAreas = terminator_Extras.zamb_RottingAreas or {}
 terminator_Extras.zamb_SmelliestRottingArea = nil
 
 hook.Add( "Think", "zambnextbots_rottingareasthink", function()
@@ -64,7 +64,7 @@ hook.Add( "Think", "zambnextbots_rottingareasthink", function()
     terminator_Extras.zamb_IndexedRottingAreas = indexed
     terminator_Extras.zamb_SmelliestRottingArea = bestRotArea
 
-    if IsValid( bestRotArea ) then
+    if IsValid( bestRotArea ) and bestRot > 5 then
         local sndPos = bestRotArea:GetRandomPoint()
         sndPos = sndPos + up * math.random( 5, 25 )
 
@@ -87,6 +87,7 @@ end )
 
 terminator_Extras.zamb_TorsoZombieClasses = {
     ["terminator_nextbot_zambie"] = { class = "terminator_nextbot_zambietorso", legs = "models/zombie/classic_legs.mdl" },
+    ["terminator_nextbot_zambie_slow"] = { class = "terminator_nextbot_zambietorso", legs = "models/zombie/classic_legs.mdl" },
     ["terminator_nextbot_zambiefast"] = { class = "terminator_nextbot_zambietorsofast", legs = "models/gibs/fast_zombie_legs.mdl" },
     ["terminator_nextbot_zambiewraith"] = { class = "terminator_nextbot_zambietorsowraith", legs = "models/gibs/fast_zombie_legs.mdl" },
 }

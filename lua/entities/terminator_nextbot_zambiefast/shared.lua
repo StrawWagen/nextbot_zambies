@@ -16,7 +16,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0005
+ENT.CoroutineThresh = 0.00005
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 200
@@ -34,7 +34,7 @@ ENT.AccelerationSpeed = 450
 ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles
 ENT.zamb_MeleeAttackSpeed = 1.15
 
-ENT.FistDamageMul = 0.35
+ENT.FistDamageMul = 0.25
 ENT.DuelEnemyDist = 450
 
 local FAST_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"

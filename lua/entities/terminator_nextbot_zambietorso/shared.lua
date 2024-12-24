@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.00005 -- worst thresh of them all
+ENT.CoroutineThresh = BaseClass.CoroutineThresh / 4
 
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 16, 16, 15 ) }
 ENT.AlwaysCrouching = true
@@ -27,7 +27,7 @@ ENT.JumpHeight = 20
 ENT.StepHeight = 15
 
 ENT.SpawnHealth = 50
-ENT.FistDamageMul = 1
+ENT.FistDamageMul = 0.55
 ENT.NoAnimLayering = true
 ENT.zamb_MeleeAttackAdditionalDelay = 1
 ENT.zamb_MeleeAttackHitFrameMul = 4
@@ -57,6 +57,7 @@ ENT.IdleActivityTranslations = {
 ENT.zamb_CantCall = true
 
 function ENT:AdditionalInitialize()
+    self:SetModel( TORSO_MDL )
     BaseClass.AdditionalInitialize( self )
     self:SetModel( TORSO_MDL )
 
