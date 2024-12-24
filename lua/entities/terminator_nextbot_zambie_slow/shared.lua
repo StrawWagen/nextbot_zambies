@@ -16,8 +16,8 @@ if CLIENT then
 end
 
 -- cheap asf
-ENT.CoroutineThresh = BaseClass.CoroutineThresh / 2
-ENT.MaxPathingIterations = BaseClass.MaxPathingIterations * 0.5
+ENT.CoroutineThresh = 0.000005
+ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 64
 ENT.SpawnHealth = 75

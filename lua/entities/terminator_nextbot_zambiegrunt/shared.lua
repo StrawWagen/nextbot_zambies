@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = BaseClass.CoroutineThresh
+ENT.CoroutineThresh = 0.00001
 
 ENT.SpawnHealth = 600
 ENT.WalkSpeed = 40
