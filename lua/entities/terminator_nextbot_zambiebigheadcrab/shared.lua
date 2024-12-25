@@ -47,7 +47,7 @@ ENT.zamb_AttackAnim = ACT_GMOD_GESTURE_RANGE_ZOMBIE_SPECIAL -- ACT_RANGE_ATTACK1
 ENT.FistDamageMul = 20
 ENT.FistForceMul = 20
 ENT.FistRangeMul = 4
-ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CRUSH )
+ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 800
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"
