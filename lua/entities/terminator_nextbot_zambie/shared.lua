@@ -654,11 +654,26 @@ function ENT:DoCustomTasks( defaultTasks )
                     data.overridePos = nil
                 elseif not self:primaryPathIsValid() and data.Unreachable then
                     data.overridePos = nil
-                    if math.random( 1, 100 ) < 50 or self:IsReallyAngry() then
+                    local justDuel = self.zamb_JustTryDuelingUnreachable or 0
+                    if justDuel > CurTime() then
+                        if not self.HasBrains or math.random( 0, 100 ) < 50 then
+                            self:ReallyAnger( 25 )
+                            self:TaskComplete( "movement_followenemy" )
+                            self:StartTask2( "movement_duelenemy_near", { overrideDist = self.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
+
+                        else
+                            self:Anger( 25 )
+                            self:TaskFail( "movement_followenemy" )
+                            self:StartTask2( "movement_wander", nil, "i cant get to them and i tried frenzying" )
+
+                        end
+                    elseif math.random( 1, 100 ) < 50 or self:IsReallyAngry() then
                         self:TaskFail( "movement_followenemy" )
                         self:StartTask2( "movement_frenzy", nil, "i cant get to them" )
+                        self.zamb_JustTryDuelingUnreachable = CurTime() + math.random( 1, 15 )
 
                     else
+                        self:Anger( 5 )
                         self:TaskFail( "movement_followenemy" )
                         self:StartTask2( "movement_wander", nil, "i cant get to them" )
 
@@ -685,7 +700,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local enemyPos = self.EnemyLastPos
                 local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
                 local goodEnemy = validEnemy and aliveOrHp
-                local maxDuelDist = self.DuelEnemyDist + 100
+                local maxDuelDist = data.overrideDist or self.DuelEnemyDist + 100
 
                 local badAdd = 0
 
