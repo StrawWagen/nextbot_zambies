@@ -177,15 +177,14 @@ function ENT:AdditionalThink()
         reachable = self:areaIsReachable( result.area )
 
         if not reachable then
-            desiredAliveCount = desiredAliveCount * 2
+            desiredAliveCount = desiredAliveCount + 1
 
         end
     end
     local nearDeath
     if self:IsReallyAngry() and self:Health() < self:GetMaxHealth() * 0.35 then
         nearDeath = true
-        desiredAliveCount = desiredAliveCount + 2
-        desiredAliveCount = desiredAliveCount * 2
+        desiredAliveCount = desiredAliveCount + 5
         desiredAliveCount = math.max( desiredAliveCount, 4 )
 
     elseif self:IsReallyAngry() then
@@ -196,6 +195,8 @@ function ENT:AdditionalThink()
         desiredAliveCount = math.max( desiredAliveCount, 2 )
 
     end
+
+    desiredAliveCount = math.Clamp( desiredAliveCount, 0, 8 )
 
     if aliveCount < desiredAliveCount then
         local diff = desiredAliveCount - aliveCount
@@ -226,7 +227,7 @@ function ENT:AdditionalThink()
                     class = "terminator_nextbot_zambiefast"
 
                 end
-                if nearDeath and math.random( 1, 100 ) < 15 then
+                if nearDeath and math.random( 1, 100 ) < 10 then
                     class = "terminator_nextbot_zambieberserk"
 
                 end

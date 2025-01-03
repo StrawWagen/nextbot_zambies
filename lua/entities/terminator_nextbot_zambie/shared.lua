@@ -91,6 +91,7 @@ ENT.IsTerminatorZambie = true
 ENT.frenzyBoredomEnts = {}
 ENT.zamb_nextRandomFrenzy = 0
 ENT.zamb_BrainsChance = 20
+ENT.zamb_NextPathAttempt = 0
 
 ENT.IsFodder = true
 ENT.IsStupid = true
@@ -448,6 +449,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 if oldDensity > math.random( cur, cur + 60 ) then return end
 
                 local becomeTorso
+                local sliced
                 local ratio = math.random( 25, 75 )
                 if damage:IsExplosionDamage() and damage:GetDamage() < math.min( self:Health() + ratio, ratio ) then
                     becomeTorso = true
@@ -459,6 +461,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     local hitDistToHead = dmgPos and self:NearestPoint( dmgPos ):Distance( self:GetShootPos() )
                     if IsValid( inflictor ) and IsValid( inflictor:GetPhysicsObject() ) and inflictor:GetModel() and CUTTING_MDLS[string.lower( inflictor:GetModel() )] and hitDistToHead > 25 then
                         becomeTorso = true
+                        sliced = true
 
                     elseif damage:IsBulletDamage() and hitDistToHead > 40 then
                         becomeTorso = true
@@ -484,6 +487,28 @@ function ENT:DoCustomTasks( defaultTasks )
                     copyMatsOver( self, torso )
 
                     terminator_Extras.zamb_TorsoDensityNum = math.max( oldDensity + torso:Health() / 2, cur + torso:Health() / 2 )
+
+                    if sliced then
+                        torso:EmitSound( "ambient/machines/slicer" .. math.random( 1, 4 ) .. ".wav", 75, math.random( 95, 105 ) )
+                    end
+
+                    local pos = damage:GetDamagePosition()
+                    if pos then
+                        timer.Simple( 0, function()
+                            local normal = VectorRand()
+                            normal.z = math.abs( normal.z )
+
+                            local Data = EffectData()
+                            Data:SetOrigin( pos )
+                            Data:SetColor( self:GetBloodColor() )
+                            Data:SetScale( math.random( 8, 12 ) )
+                            Data:SetFlags( 5 )
+                            Data:SetNormal( normal )
+                            util.Effect( "bloodspray", Data )
+                            self:EmitSound( "npc/antlion_grub/squashed.wav", 72, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
+
+                        end )
+                    end
 
                     if torsoData.legs then
                         if self:GetShouldServerRagdoll() then
@@ -563,7 +588,6 @@ function ENT:DoCustomTasks( defaultTasks )
         },
         ["movement_followenemy"] = {
             OnStart = function( self, data )
-                data.nextPathAttempt = 0
                 if not self.isUnstucking then
                     self:InvalidatePath( "followenemy" )
                 end
@@ -581,12 +605,12 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
 
-                local nextPathAttempt = data.nextPathAttempt or 0 -- HACK
+                local nextPathAttempt = self.zamb_NextPathAttempt
 
                 if nextPathAttempt < CurTime() and toPos and not data.Unreachable and self:primaryPathInvalidOrOutdated( toPos ) then
-                    data.nextPathAttempt = CurTime() + math.Rand( 0.1, 0.5 )
+                    self.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
                     if self.term_ExpensivePath then
-                        data.nextPathAttempt = CurTime() + math.Rand( 0.5, 1.5 )
+                        self.zamb_NextPathAttempt = CurTime() + math.Rand( 1, 4 )
 
                     end
                     local result = terminator_Extras.getNearestPosOnNav( toPos )
@@ -921,8 +945,13 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     end
                 else
-                    data.validBeatup = self:beatUpEnt( focus )
+                    if not self:primaryPathIsValid() and self.zamb_NextPathAttempt > CurTime() then
+                        coroutine_yield( "wait" )
 
+                    else
+                        data.validBeatup = self:beatUpEnt( focus )
+
+                    end
                 end
             end,
         },
@@ -931,7 +960,6 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_wander"] = {
             OnStart = function( self, data )
                 self.nextInterceptTry = math.max( CurTime() + 1, self.nextInterceptTry + 1 )
-                data.nextWander = CurTime() + math.Rand( 0.05, 0.25 )
                 if not self.isUnstucking then
                     self:InvalidatePath( "followenemy" )
                 end
@@ -949,8 +977,14 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
 
-                if not data.toPos and data.nextWander < CurTime() then
-                    data.nextWander = CurTime() + math.Rand( 0.05, 0.25 )
+                local nextPathAttempt = self.zamb_NextPathAttempt
+
+                if not data.toPos and nextPathAttempt < CurTime() then
+                    self.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
+                    if self.term_ExpensivePath then
+                        self.zamb_NextPathAttempt = CurTime() + math.Rand( 1, 4 )
+
+                    end
                     local smellySpot = terminator_Extras.zamb_SmelliestRottingArea
                     local foundSomewhereNotBeen = nil
                     if IsValid( smellySpot ) and self:areaIsReachable( smellySpot ) and math.random( 1, 100 ) < 50 then
@@ -1047,7 +1081,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
 
                     if not data.toPos then
-                        data.nextWander = CurTime() + 5
+                        self.zamb_NextPathAttempt = CurTime() + 5
                         data.ignoreBearing = true
 
                     end
@@ -1067,7 +1101,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     local result = terminator_Extras.getNearestPosOnNav( data.toPos )
                     local reachable = self:areaIsReachable( result.area )
                     if not reachable then
-                        data.nextWander = CurTime() + math.random( 1, 5 )
+                        self.zamb_NextPathAttempt = CurTime() + math.random( 1, 5 )
                         data.toPos = nil
                         coroutine_yield( "wait" )
                         return
@@ -1101,7 +1135,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     end
                     if not self:primaryPathIsValid() then
-                        data.nextWander = CurTime() + 5
+                        self.zamb_NextPathAttempt = CurTime() + 5
                         data.toPos = nil
                         coroutine_yield( "wait" )
                         return
@@ -1165,7 +1199,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     self:StartTask2( "movement_followenemy", nil, "new enemy!" )
                 elseif result then
                     data.toPos = nil
-                    data.nextWander = CurTime() + 1
+                    self.zamb_NextPathAttempt = CurTime() + 1
                     coroutine_yield( "wait" )
                 end
             end,
