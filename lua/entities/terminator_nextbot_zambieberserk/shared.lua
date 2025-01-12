@@ -26,17 +26,23 @@ ENT.HealthRegenInterval = 0.75
 ENT.WalkSpeed = 50
 ENT.MoveSpeed = 150
 ENT.RunSpeed = 600
+
 ENT.calm_AccelerationSpeed = 150
 ENT.grumpy_AccelerationSpeed = 250
 ENT.angry_AccelerationSpeed = 1000
 ENT.AccelerationSpeed = ENT.calm_AccelerationSpeed
+
+ENT.calm_MeleeAttackAdditionalDelay = 0
+ENT.grumpy_MeleeAttackAdditionalDelay = -0.5
+ENT.angry_MeleeAttackAdditionalDelay = -1
+
 ENT.neverManiac = true
 
 ENT.CanUseStuff = true
 
 ENT.zamb_LookAheadWhenRunning = true -- running anim doesnt support different move/look angles
 
-ENT.FistDamageMul = 2
+ENT.FistDamageMul = 1.25
 ENT.zamb_MeleeAttackSpeed = 2
 ENT.DuelEnemyDist = 600
 ENT.CloseEnemyDistance = 500
@@ -100,11 +106,11 @@ function ENT:AdditionalInitialize()
     self.term_DieSound = "npc/antlion_guard/antlion_guard_die2.wav"
     self.term_JumpSound = "npc/zombie/foot1.wav"
     self.IdleLoopingSounds = {
-        "npc/antlion_guard/growl_high.wav",
+        "npc/fast_zombie/breathe_loop1.wav",
 
     }
     self.AngryLoopingSounds = {
-        "npc/antlion_guard/confused1.wav",
+        "npc/fast_zombie/gurgle_loop1.wav",
 
     }
 
@@ -122,17 +128,22 @@ function ENT:AdditionalThink()
     local health = self:Health()
     local maxHealth = self:GetMaxHealth()
     local ideal = self.calm_AccelerationSpeed
+    local idealHit = self.calm_MeleeAttackAdditionalDelay
     if health < maxHealth * 0.3 then
         ideal = self.angry_AccelerationSpeed
+        idealHit = self.angry_MeleeAttackAdditionalDelay
         self.HasBrains = true
 
     elseif health < maxHealth * 0.75 then
         ideal = self.grumpy_AccelerationSpeed
+        idealHit = self.grumpy_MeleeAttackAdditionalDelay
 
     end
     if self.AccelerationSpeed ~= ideal then
         self.AccelerationSpeed = ideal
         self.loco:SetAcceleration( self.AccelerationSpeed )
+
+        self.zamb_MeleeAttackAdditionalDelay = idealHit
 
     end
 end

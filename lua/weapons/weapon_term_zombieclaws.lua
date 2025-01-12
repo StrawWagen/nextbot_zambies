@@ -63,35 +63,6 @@ local function ModelBoundSparks( ent )
 
 end
 
-hook.Add( "EntityTakeDamage", "term_busteddoorbreak", function( target, damage )
-    if not target.isBustedDoor then return end
-    local doorDamaged = damage:GetDamage()
-    target.bustedDoorHp = target.bustedDoorHp + -doorDamaged
-
-    local breakSound = "Breakable.MatWood"
-    local modelRad = target:GetModelRadius()
-
-    local trInfo = {
-        start = target:GetPos() + vector_up * modelRad * 2,
-        endpos = target:GetPos() + -vector_up * modelRad * 2,
-        ignoreworld = true,
-        filter = function( ent ) if ent == target then return true end return false end,
-    }
-    local result = util.TraceLine( trInfo )
-
-    local surfaceProps = result.SurfaceProps
-    local surfaceData = util.GetSurfaceData( surfaceProps )
-    if surfaceData.breakSound and surfaceData.breakSound ~= "" then
-        breakSound = surfaceData.breakSound
-
-    end
-    target:EmitSound( breakSound, 100, math.random( 80, 90 ) + target.bustedDoorHp / 100 )
-
-    if target.bustedDoorHp <= 0 then
-        SafeRemoveEntity( target )
-    end
-
-end )
 local lockOffset = Vector( 0, 42.6, -10 )
 
 local slidingDoors = {

@@ -560,60 +560,12 @@ function terminator_Extras.zamb_TearDownManager()
 
 end
 
---[[
-
-diffAdded, difficulty added when this is spawned, prevents it from spawning 300 tanks at once, getting ahead of itself
-diffNeeded, target difficulty neeeded, only spawn this when its supposed to be difficult, or easy
-diffMax, dont spawn this when target difficulty is above this.
-passChance, kinda unintitive, the code goes thru this table in a loop, so stuff at the bottom will override stuff at the top,
-            basically this is the chance to NOT override what came before
-batchSize, makes this into a batch spawn, so like 6 of one thing
-randomSpawnAnyway,   randomly spawn this even if none of the conditions are met
-maxAtOnce, max count of this on the field at once, checks class
-
---]]
-
-terminator_Extras.zamb_SpawnData = {
-    { class = "terminator_nextbot_zambie",              diffAdded = 3, diffNeeded = 0, passChance = 0 },
-    { class = "terminator_nextbot_zambie_slow",         diffAdded = 3, diffNeeded = 0, diffMax = 5, passChance = 25 },
-    { class = "terminator_nextbot_zambie_slow",         diffAdded = 3, diffNeeded = 0, diffMax = 15, passChance = 50 },
-
-    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 0, passChance = 92 },
-    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 30 },
-    { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 99, batchSize = 8 },
-
-    { class = "terminator_nextbot_zambieacid",         diffAdded = 6, diffNeeded = 0, passChance = 95 },
-    { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 45 },
-    { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 99, batchSize = 8 },
-
-    { class = "terminator_nextbot_zambiefast",          diffAdded = 6, diffNeeded = 25, passChance = 25, randomSpawnAnyway = 5 },
-    { class = "terminator_nextbot_zambietorsofast",     diffAdded = 3, diffNeeded = 25, passChance = 45, spawnSlot = "torsofast" },
-    { class = "terminator_nextbot_zambiefastgrunt",     diffAdded = 12, diffNeeded = 75, passChance = 95 },
-
-    { class = "terminator_nextbot_zambiegrunt",         diffAdded = 10, diffNeeded = 50, passChance = 95 },
-
-    { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
-
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 92 },
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 99, batchSize = 10 },
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 95 },
-
-    { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
-    { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
-    { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 100, diffNeeded = 90, passChance = 99.5, spawnSlot = "miniboss" }, -- rare elite wraith duo
-
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 25, diffNeeded = 99, passChance = 99, batchSize = 5, spawnSlot = "miniboss" }, -- smallish wraith wave
-    { class = "terminator_nextbot_zambiewraith",        diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 20, spawnSlot = "miniboss" }, -- rare hell wraith wave
-    { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 50, diffNeeded = 99, passChance = 99.9, batchSize = 3, spawnSlot = "miniboss" }, -- rare elite wraith duo
-    { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 5, spawnSlot = "miniboss" }, -- rare berserk wave
-    { class = "terminator_nextbot_zambietank",          diffAdded = 60, diffNeeded = 99, passChance = 99.5, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 tank spawn
-
-}
-
-function terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, _targetDifficultyInt, _differenceInt )
+function terminator_Extras.zamb_GetSpawnData( spawner, targetDifficultyWeighted, _targetDifficultyInt, _differenceInt )
+    local spawnerConfig = spawner.zamb_SpawnerConfig
 
     local bestData
-    local myData = terminator_Extras.zamb_SpawnData
+    local myData = spawnerConfig.spawnPool
+
     for _, data in ipairs( myData ) do
         local diffMax = data.diffMax or maxDifficulty
         local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < diffMax and ( data.passChance <= 0 or math.Rand( 0, 100 ) > data.passChance )
@@ -788,7 +740,7 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
         class = data.class
 
     else
-        class, data = terminator_Extras.zamb_GetSpawnData( targetDifficultyWeighted, targetDifficulty, difference )
+        class, data = terminator_Extras.zamb_GetSpawnData( spawner, targetDifficultyWeighted, targetDifficulty, difference )
 
         if data.batchSize and data.batchSize > 1 then
             for _ = 1, data.batchSize do

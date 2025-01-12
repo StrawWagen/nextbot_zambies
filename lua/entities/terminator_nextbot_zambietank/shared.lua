@@ -29,12 +29,12 @@ ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.SpawnHealth = 7000
-ENT.ExtraSpawnHealthPerPlayer = 1000
+ENT.SpawnHealth = 6000
+ENT.ExtraSpawnHealthPerPlayer = 500
 ENT.AimSpeed = 400
 ENT.WalkSpeed = 60
-ENT.MoveSpeed = 150
-ENT.RunSpeed = 350
+ENT.MoveSpeed = 350
+ENT.RunSpeed = 550
 ENT.AccelerationSpeed = 1000
 ENT.neverManiac = true
 
@@ -85,7 +85,7 @@ function ENT:AdditionalAvoidAreas()
 end
 
 function ENT:canDoRun()
-    if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio and not self.zamb_HasArmor then
+    if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) and not self.zamb_HasArmor then
         return BaseClass.canDoRun( self )
 
     else
@@ -160,7 +160,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/antlion/antlionhigh_sheet" )
     self.zamb_HasArmor = true
-    self.zamb_LoseCoolRatio = 0.35
+    self.zamb_LoseCoolRatio = 0.5
     self.zamb_UnderArmorMat = "models/flesh"
 
 end
@@ -172,7 +172,7 @@ function ENT:BreakArmor()
     self:ZAMB_AngeringCall()
     self:StopMoving()
     self.Term_BaseTimeBetweenSteps = 400
-    self.Term_StepSoundTimeMul = 0.8
+    self.Term_StepSoundTimeMul = 0.6
 
 
     self.JumpHeight = 300
