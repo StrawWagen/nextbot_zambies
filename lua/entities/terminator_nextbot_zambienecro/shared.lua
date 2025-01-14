@@ -185,22 +185,21 @@ function ENT:AdditionalThink()
     if self:IsReallyAngry() and self:Health() < self:GetMaxHealth() * 0.35 then
         nearDeath = true
         desiredAliveCount = desiredAliveCount + 5
-        desiredAliveCount = math.max( desiredAliveCount, 4 )
 
     elseif self:IsReallyAngry() then
-        desiredAliveCount = desiredAliveCount + 2
-        desiredAliveCount = math.max( desiredAliveCount, 4 )
+        desiredAliveCount = desiredAliveCount + 3
 
     elseif self:IsAngry() then
-        desiredAliveCount = math.max( desiredAliveCount, 2 )
+        desiredAliveCount = desiredAliveCount + 1
 
     end
 
-    desiredAliveCount = math.Clamp( desiredAliveCount, 0, 8 )
+    desiredAliveCount = math.Clamp( desiredAliveCount, 0, 12 )
 
     if aliveCount < desiredAliveCount then
         local diff = desiredAliveCount - aliveCount
         if diff > 2 or nearDeath then
+            self:Term_ClearStuffToSay()
             self:ZAMB_AngeringCall()
             if nearDeath then
                 self.zamb_NextMinionCheck = CurTime() + 2

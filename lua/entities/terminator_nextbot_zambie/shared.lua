@@ -283,13 +283,14 @@ function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
 end
 
 function ENT:ZAMB_AngeringCall()
-    self:StopMoving()
-    self:InvalidatePath( "angeringcall" )
-    self.nextNewPath = CurTime() + 0.5
-
     self:Term_SpeakSound( "blarg", function( me )
+        self:StopMoving()
+        self:InvalidatePath( "angeringcall" )
+        self.nextNewPath = CurTime() + 2
+
         local callAnim = me.zamb_CallAnim or ACT_GMOD_GESTURE_TAUNT_ZOMBIE
         me:DoGesture( callAnim, 0.8, true )
+
         local filterAllPlayers = RecipientFilter()
         filterAllPlayers:AddAllPlayers()
         me:EmitSound( self.term_CallingSound, 120 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 0.5, CHAN_STATIC, sndFlags, nil, filterAllPlayers )

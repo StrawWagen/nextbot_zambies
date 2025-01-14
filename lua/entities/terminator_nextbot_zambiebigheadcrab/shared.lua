@@ -88,6 +88,7 @@ ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 function ENT:canDoRun()
     if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then
         if not self.LostCoolCall then
+            self:Term_ClearStuffToSay()
             self:ZAMB_AngeringCall()
             self.LostCoolCall = true
 
@@ -242,6 +243,7 @@ function ENT:AdditionalThink()
     if aliveCount < desiredAliveCount then
         local diff = desiredAliveCount - aliveCount
         if diff > 2 or nearDeath then
+            self:Term_ClearStuffToSay()
             self:ZAMB_AngeringCall()
             if nearDeath then
                 self.zamb_NextMinionCheck = CurTime() + 2

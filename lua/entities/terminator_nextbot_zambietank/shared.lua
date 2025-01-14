@@ -169,6 +169,7 @@ function ENT:BreakArmor()
 
     self.zamb_HasArmor = nil
     self:SetSubMaterial( 0, self.zamb_UnderArmorMat )
+    self:Term_ClearStuffToSay()
     self:ZAMB_AngeringCall()
     self:StopMoving()
     self.Term_BaseTimeBetweenSteps = 400
