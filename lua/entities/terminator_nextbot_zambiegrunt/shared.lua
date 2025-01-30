@@ -15,18 +15,16 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.00001
-
 ENT.SpawnHealth = 600
 ENT.WalkSpeed = 40
-ENT.MoveSpeed = 125
-ENT.RunSpeed = 400
+ENT.MoveSpeed = 115
+ENT.RunSpeed = 350
 ENT.AccelerationSpeed = 350
 
 ENT.CanUseStuff = nil
 
 ENT.FistDamageMul = 1.5
-ENT.DuelEnemyDist = 350
+ENT.DuelEnemyDist = 550
 ENT.CloseEnemyDistance = 500
 
 ENT.IsFodder = true
@@ -35,7 +33,8 @@ ENT.CanSpeak = true
 
 local GRUNT_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = GRUNT_MODEL
-ENT.TERM_MODELSCALE = function() return math.Rand( 1.05, 1.15 ) end
+ENT.TERM_MODELSCALE = function() return math.Rand( 1.02, 1.05 ) end
+ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 14, 14, 65 ) } -- this is then scaled by modelscale
 ENT.MyPhysicsMass = 150
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
@@ -55,7 +54,7 @@ function ENT:AdditionalInitialize()
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4
 
-    self.term_SoundPitchShift = -30
+    self.term_SoundPitchShift = -20
     self.term_SoundLevelShift = 10
 
     self.term_LoseEnemySound = "Zombie.Idle"
@@ -161,4 +160,17 @@ function ENT:IsImmuneToDmg( dmg )
     if dmg:IsBulletDamage() then return end -- handled above
     dmg:ScaleDamage( 0.25 )
 
+end
+
+function ENT:AdditionalThink( myTbl )
+    local cur = CurTime() + self:GetCreationID()
+    local doAltRun = cur % 8 < 1.5
+
+    if doAltRun then
+        myTbl.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_PROTECTED
+
+    else
+        myTbl.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_ZOMBIE
+
+    end
 end

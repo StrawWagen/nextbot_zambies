@@ -93,3 +93,63 @@ terminator_Extras.zamb_TorsoZombieClasses = {
 }
 
 terminator_Extras.zamb_TorsoDensityNum = 0
+
+if not GLEE_SPAWNSETS then return end
+
+local zambSpawnSet = {
+    name = "zambies_glee", -- unique name
+    prettyName = "Zambie's Glee",
+    difficultyPerMin = "default", -- difficulty per minute
+    waveInterval = "default", -- time between spawn waves
+    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
+    startingBudget = "default", -- so budget isnt 0
+    spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
+    startingSpawnCount = "default",
+    maxSpawnCount = "default",
+    spawns = {
+        {
+            name = "zambie_easy", -- unique name
+            prettyName = "Zambie Slow",
+            class = "terminator_nextbot_zambie_slow", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 4 },
+            countClass = "terminator_nextbot_zambie*", -- class COUNTED
+            hardRandomChance = nil,
+            minCount = { 2 },
+            maxCount = { 5 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            name = "zambie", -- unique name
+            prettyName = "Zambie",
+            class = "terminator_nextbot_zambie", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 8 },
+            countClass = "terminator_nextbot_zambie*",
+            hardRandomChance = nil,
+            minCount = { 0 },
+            maxCount = { 10 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            name = "zambie_fast", -- unique name
+            prettyName = "Fast Zambie",
+            class = "terminator_nextbot_zambiefast", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = { 8 },
+            countClass = "terminator_nextbot_zambie*",
+            hardRandomChance = { 25, 35 },
+            minCount = { 0 },
+            maxCount = { 10 },
+            postSpawnedFuncs = nil,
+        },
+    }
+}
+
+-- workaround awful gamemode table shenanigans
+table.insert( GLEE_SPAWNSETS, zambSpawnSet )
+
+if GAMEMODE and GAMEMODE.IsReallyHuntersGlee then -- autorefresh
+    GAMEMODE:RegisterSpawnSet( zambSpawnSet )
+
+end

@@ -121,11 +121,11 @@ function ENT:AdditionalInitialize()
     self:SetSubMaterial( 0, "models/flesh" )
     self.zamb_LoseCoolRatio = 0.5
 
-    hook.Add( "zamb_OnBecomeTorso", self, function( died, newTorso )
+    hook.Add( "zamb_OnBecomeTorso", self, function( me, died, newTorso )
         local diedsOwner = died:GetOwner()
-        if diedsOwner ~= self then return end
-        newTorso:SetOwner( self )
-        table.insert( self.ZAMBIE_MINIONS, newTorso )
+        if diedsOwner ~= me then return end
+        newTorso:SetOwner( me )
+        table.insert( me.ZAMBIE_MINIONS, newTorso )
 
     end )
 
@@ -271,8 +271,9 @@ function ENT:OnRemove()
             minion:SetHealth( math.min( minion:Health(), 10 ) )
             timer.Simple( math.Rand( 0, 1 ), function()
                 if not IsValid( minion ) then return end
-                if minion:Health() <= 0 then return end
+                if minion:Health() <= 0 then SafeRemoveEntity( minion ) return end
                 minion:Ignite( 999 )
+                SafeRemoveEntityDelayed( minion, 60 ) -- BUGS
 
             end )
         end

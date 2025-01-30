@@ -45,6 +45,7 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambiefastgrunt",     diffAdded = 12, diffNeeded = 75, passChance = 95 },
 
         { class = "terminator_nextbot_zambiegrunt",         diffAdded = 10, diffNeeded = 50, passChance = 95 },
+        { class = "terminator_nextbot_zambiegruntelite",    diffAdded = 30, diffNeeded = 90, passChance = 98 },
 
         { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
 
@@ -81,7 +82,7 @@ if CLIENT then
 
     local function zambs_CanBeUgly()
         local ply = LocalPlayer()
-        --if IsValid( ply:GetActiveWeapon() ) and string.find( LocalPlayer():GetActiveWeapon():GetClass(), "camera" ) then return false end
+        if IsValid( ply:GetActiveWeapon() ) and string.find( LocalPlayer():GetActiveWeapon():GetClass(), "camera" ) then return false end
         return true
 
     end

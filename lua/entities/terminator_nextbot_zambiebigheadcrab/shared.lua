@@ -22,7 +22,7 @@ ENT.IsFodder = nil
 ENT.CoroutineThresh = 0.0001
 ENT.MaxPathingIterations = 25000
 
-ENT.JumpHeight = 400
+ENT.JumpHeight = 500
 ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
