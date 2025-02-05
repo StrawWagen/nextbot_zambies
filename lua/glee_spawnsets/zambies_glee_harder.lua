@@ -1,15 +1,20 @@
+-- credit to https://steamcommunity.com/id/TakeTheBeansIDontCare/
+
 local zambieSpawnSet = {
     name = "zambies_glee_harder", -- unique name
-    prettyName = "Ultra-Zambie-Violence",
-    description = "Jump right into the zombie action with no weak start and tougher zombies coming sooner.",
-    difficultyPerMin = "default", -- difficulty per minute
+    prettyName = "Specially Infected Hell",
+    description = "Zombies, everywhere!",
+    difficultyPerMin = { 250 / 10, 500 / 10 }, -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = "default", -- max of ten at 10 minutes
+    spawnCountPerDifficulty = { 1 }, -- go up to 20 fast pls
     startingSpawnCount = "default",
-    maxSpawnCount = "default",
+    maxSpawnCount = 25,
     maxSpawnDist = "default",
+    chanceToBeVotable = 50,
+    roundEndSound = "music/ravenholm_1.mp3",
+    roundStartSound = "ambient/creatures/town_zombie_call1.wav",
     spawns = {
         {
             hardRandomChance = nil,
@@ -19,7 +24,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 5, 50 },
             countClass = "terminator_nextbot_zambietank",
-            minCount = { 0 },
             maxCount = { 2 },
             postSpawnedFuncs = nil,
         },
@@ -31,7 +35,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 5 },
             countClass = "terminator_nextbot_zambie",
-            minCount = { 0 },
             maxCount = { 8 },
             postSpawnedFuncs = nil,
         },
@@ -43,7 +46,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 5 },
             countClass = "terminator_nextbot_zambiefast",
-            minCount = { 0 },
             maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
@@ -55,7 +57,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 20, 40 },
             countClass = "terminator_nextbot_zambieflame",
-            minCount = { 0 },
             maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
@@ -67,7 +68,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 30, 60 },
             countClass = "terminator_nextbot_zambieacid",
-            minCount = { 0 },
             maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
@@ -79,7 +79,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 30, 60 },
             countClass = "terminator_nextbot_zambiewraith",
-            minCount = { 0 },
             maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
@@ -91,7 +90,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 40, 80 },
             countClass = "terminator_nextbot_zambiefastgrunt",
-            minCount = { 0 },
             maxCount = { 3 },
             postSpawnedFuncs = nil,
         },
@@ -103,7 +101,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 60, 80 },
             countClass = "terminator_nextbot_zambiewraithelite",
-            minCount = { 0 },
             maxCount = { 3 },
             postSpawnedFuncs = nil,
         },
@@ -115,7 +112,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 60, 70 },
             countClass = "terminator_nextbot_zambiegrunt",
-            minCount = { 0 },
             maxCount = { 6 },
             postSpawnedFuncs = nil,
         },
@@ -127,7 +123,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 100, 120 },
             countClass = "terminator_nextbot_zambiegruntelite",
-            minCount = { 0 },
             maxCount = { 3 },
             postSpawnedFuncs = nil,
         },
@@ -139,7 +134,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 80, 90 },
             countClass = "terminator_nextbot_zambieberserk",
-            minCount = { 0 },
             maxCount = { 3 },
             postSpawnedFuncs = nil,
         },
@@ -151,7 +145,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 100, 120 },
             countClass = "terminator_nextbot_zambienecro",
-            minCount = { 0 },
             maxCount = { 2 },
             postSpawnedFuncs = nil,
         },
@@ -163,7 +156,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 150, 175 },
             countClass = "terminator_nextbot_zambiebigheadcrab",
-            minCount = { 0 },
             maxCount = { 1 },
             postSpawnedFuncs = nil,
         },

@@ -1,6 +1,8 @@
+-- credit to https://steamcommunity.com/id/TakeTheBeansIDontCare/
+
 local zambieSpawnSet = {
     name = "zambies_glee_wraiths", -- unique name
-    prettyName = "A Flicker In The Light",
+    prettyName = "Zambie Wraithmageddon",
     description = "Zombie Wraiths only.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
@@ -10,6 +12,9 @@ local zambieSpawnSet = {
     startingSpawnCount = "default",
     maxSpawnCount = "default",
     maxSpawnDist = "default",
+    roundEndSound = "music/ravenholm_1.mp3",
+    roundStartSound = "npc/fast_zombie/fz_alert_far1.wav",
+    chanceToBeVotable = 25,
     spawns = {
         {
             hardRandomChance = nil,
