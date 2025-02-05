@@ -50,6 +50,7 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 90, passChance = 85, maxAtOnce = 1 },
 
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 92 },
+        { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 100, diffNeeded = 95, passChance = 99.9 }, -- rare elite wraith solo
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 99, batchSize = 10 },
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 95 },
 
@@ -59,7 +60,7 @@ function ENT:DoSpawnPool()
 
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 25, diffNeeded = 99, passChance = 99, batchSize = 5, spawnSlot = "miniboss" }, -- smallish wraith wave
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 20, spawnSlot = "miniboss" }, -- rare hell wraith wave
-        { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 50, diffNeeded = 99, passChance = 99.9, batchSize = 3, spawnSlot = "miniboss" }, -- rare elite wraith duo
+        { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 50, diffNeeded = 99, passChance = 99.8, batchSize = 4, spawnSlot = "miniboss" }, -- rare elite wraith quad
         { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 5, spawnSlot = "miniboss" }, -- rare berserk wave
         { class = "terminator_nextbot_zambietank",          diffAdded = 60, diffNeeded = 99, passChance = 99.5, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 tank spawn
     }

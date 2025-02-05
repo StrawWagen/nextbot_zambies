@@ -413,7 +413,7 @@ function SWEP:DealDamage()
             end
 
             if owner.PostHitObject then
-                owner:PostHitObject( hitEnt )
+                owner:PostHitObject( hitEnt, damageToDeal )
 
             end
 
