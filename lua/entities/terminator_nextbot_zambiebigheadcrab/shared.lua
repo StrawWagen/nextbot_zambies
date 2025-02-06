@@ -49,6 +49,7 @@ ENT.FistForceMul = 20
 ENT.FistRangeMul = 4
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 800
+ENT.IsEldritch = true -- GLEE
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"
 ENT.ARNOLD_MODEL = GOD_CRAB_MODEL

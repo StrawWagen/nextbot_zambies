@@ -27,7 +27,7 @@ local zambieSpawnSet = {
     maxSpawnDist = { 8500, 10500 },
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "music/hl2_song11.mp3",
-    chanceToBeVotable = 10,
+    chanceToBeVotable = 1,
     spawns = {
         {
             hardRandomChance = nil,
