@@ -10,7 +10,7 @@ local zambieSpawnSet = {
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = { 1, 5 }, -- so budget isnt 0
-    spawnCountPerDifficulty = { 0.5 }, -- go up to 20 fast pls
+    spawnCountPerDifficulty = { 1 }, -- go up to 20 fast pls
     startingSpawnCount = { 4, 7 },
     maxSpawnCount = 20,
     roundEndSound = "music/ravenholm_1.mp3",
