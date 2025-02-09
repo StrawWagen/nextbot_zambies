@@ -82,7 +82,7 @@ ENT.MetallicMoveSounds = false
 ENT.ReallyStrong = false
 ENT.ReallyHeavy = false
 ENT.DontDropPrimary = true
-ENT.term_CanSwim = true
+ENT.CanSwim = true
 
 ENT.LookAheadOnlyWhenBlocked = nil
 ENT.alwaysManiac = nil -- always create feuds between us and other terms/supercops, when they damage us
