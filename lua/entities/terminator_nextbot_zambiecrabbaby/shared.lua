@@ -61,7 +61,7 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
     [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
     [ACT_MP_JUMP]                       = ACT_RANGE_ATTACK1,
-    [ACT_MP_SWIM]                       = IdleActivity + 9,
+    [ACT_MP_SWIM]                       = ACT_RUN,
     [ACT_LAND]                          = 2089,
 }
 

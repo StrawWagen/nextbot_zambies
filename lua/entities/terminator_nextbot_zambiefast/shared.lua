@@ -57,6 +57,7 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RELOAD_STAND]               = ACT_INVALID,
     [ACT_MP_RELOAD_CROUCH]              = ACT_INVALID,
     [ACT_MP_JUMP]                       = ACT_JUMP,
+    [ACT_MP_SWIM]                       = ACT_RUN,
     [ACT_LAND]                          = ACT_LAND,
 }
 

@@ -82,6 +82,7 @@ ENT.MetallicMoveSounds = false
 ENT.ReallyStrong = false
 ENT.ReallyHeavy = false
 ENT.DontDropPrimary = true
+ENT.term_CanSwim = true
 
 ENT.LookAheadOnlyWhenBlocked = nil
 ENT.alwaysManiac = nil -- always create feuds between us and other terms/supercops, when they damage us
@@ -207,7 +208,7 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
     [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
     [ACT_MP_JUMP]                       = ACT_HL2MP_JUMP_FIST,
-    [ACT_MP_SWIM]                       = IdleActivity + 9,
+    [ACT_MP_SWIM]                       = ACT_HL2MP_SWIM,
     [ACT_LAND]                          = ACT_LAND,
 }
 
@@ -680,6 +681,9 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.TaskFail( self, "movement_followenemy" )
                     myTbl.StartTask2( self, "movement_wander", nil, "i cant get to them/no enemy" )
                     data.overridePos = nil
+                elseif goodEnemy and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
+                    myTbl.TaskComplete( self, "movement_followenemy" )
+                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "they're swimming and im in the water!" )
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
                     data.overridePos = nil
                     local justDuel = myTbl.zamb_JustTryDuelingUnreachable or 0
@@ -742,8 +746,16 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
                 if goodEnemy and self:GetRangeTo( enemyPos ) > maxDuelDist then
-                    badAdd = badAdd + 2
+                    local waterFight = enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2
+                    if waterFight then
+                        if self.loco:IsOnGround() then
+                            self:Jump( self.loco:GetMaxJumpHeight() )
 
+                        end
+                    else
+                        badAdd = badAdd + 2
+
+                    end
                 end
                 if not goodEnemy then
                     badAdd = badAdd + 2
