@@ -54,7 +54,7 @@ local coroutine_yield = coroutine.yield
 ENT.CoroutineThresh = 0.00001
 ENT.ThreshMulIfDueling = 2 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 1.25 -- if we're closer than DuelEnemyDist * 2
-ENT.MaxPathingIterations = 5000
+ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18
@@ -83,6 +83,7 @@ ENT.ReallyStrong = false
 ENT.ReallyHeavy = false
 ENT.DontDropPrimary = true
 ENT.CanSwim = true
+ENT.BreathesAir = true
 
 ENT.LookAheadOnlyWhenBlocked = nil
 ENT.alwaysManiac = nil -- always create feuds between us and other terms/supercops, when they damage us
@@ -734,6 +735,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
                 local goodEnemy = validEnemy and aliveOrHp
                 local maxDuelDist = data.overrideDist or myTbl.DuelEnemyDist + 100
+                local waterFight = validEnemy and self:WaterLevel() >= 3 and enemy:GetPos().z - self:GetPos().z > 0
 
                 local badAdd = 0
 
@@ -746,16 +748,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
                 if goodEnemy and self:GetRangeTo( enemyPos ) > maxDuelDist then
-                    local waterFight = enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2
-                    if waterFight then
-                        if self.loco:IsOnGround() then
-                            self:Jump( self.loco:GetMaxJumpHeight() )
-
-                        end
-                    else
-                        badAdd = badAdd + 2
-
-                    end
+                    badAdd = badAdd + 2
                 end
                 if not goodEnemy then
                     badAdd = badAdd + 2
@@ -783,6 +776,10 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     end
                 elseif validEnemy then -- the dueling in question
+                    if waterFight and self.loco:IsOnGround() then
+                        self:StartSwimming()
+
+                    end
                     local enemVel = enemy:GetVelocity()
                     enemVel.z = enemVel.z * 0.15
                     local velProduct = math.Clamp( enemVel:Length() * 1.4, 0, myTbl.DistToEnemy * 0.8 )
