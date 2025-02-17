@@ -682,7 +682,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.TaskFail( self, "movement_followenemy" )
                     myTbl.StartTask2( self, "movement_wander", nil, "i cant get to them/no enemy" )
                     data.overridePos = nil
-                elseif goodEnemy and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
+                elseif IsValid( enemy ) and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask2( self, "movement_duelenemy_near", nil, "they're swimming and im in the water!" )
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
