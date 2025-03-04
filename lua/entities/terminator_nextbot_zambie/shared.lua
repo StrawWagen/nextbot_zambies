@@ -493,9 +493,11 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     if sliced then
                         torso:EmitSound( "ambient/machines/slicer" .. math.random( 1, 4 ) .. ".wav", 75, math.random( 95, 105 ) )
+
                     end
 
                     local pos = damage:GetDamagePosition()
+                    local color = self:GetBloodColor()
                     if pos then
                         timer.Simple( 0, function()
                             local normal = VectorRand()
@@ -503,13 +505,20 @@ function ENT:DoCustomTasks( defaultTasks )
 
                             local Data = EffectData()
                             Data:SetOrigin( pos )
-                            Data:SetColor( self:GetBloodColor() )
+                            Data:SetColor( color )
                             Data:SetScale( math.random( 8, 12 ) )
-                            Data:SetFlags( 5 )
+                            Data:SetFlags( 1 )
                             Data:SetNormal( normal )
                             util.Effect( "bloodspray", Data )
-                            self:EmitSound( "npc/antlion_grub/squashed.wav", 72, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
+                            local toPlay = self
+                            if not IsValid( toPlay ) then
+                                toPlay = torso
 
+                            end
+                            if IsValid( toPlay ) then
+                                toPlay:EmitSound( "npc/antlion_grub/squashed.wav", 72, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
+
+                            end
                         end )
                     end
 
@@ -527,6 +536,9 @@ function ENT:DoCustomTasks( defaultTasks )
                                 legs:SetVelocity( damage:GetDamageForce() )
 
                             end
+                            SafeRemoveEntity( self )
+                            return true
+
                         else
                             self:SetModel( torsoData.legs ) -- this little hack is much better than networking this ragdoll creation imo
                             return
@@ -534,6 +546,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         end
                     else
                         SafeRemoveEntity( self )
+                        SafeRemoveEntityDelayed( self, 5 )
                         return true
 
                     end
