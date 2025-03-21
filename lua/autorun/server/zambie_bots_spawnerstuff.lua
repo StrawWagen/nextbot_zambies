@@ -73,11 +73,11 @@ local ease = math.ease
 
 local curves = {
     calm = {
-        { timing = 20, ease = ease.InOutSine, steps = { 5, 10, 5 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 10, 12, 8 } },
         { timing = 20, ease = ease.InOutSine, steps = { 10, 12, 15, 5 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 5, 18, 10, 10 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 3, 3, 5, 6 } },
-        { timing = 20, ease = ease.InOutSine, steps = { 10, 6, 4 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 8, 18, 12, 10 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 10, 8, 11, 12 } },
+        { timing = 20, ease = ease.InOutSine, steps = { 10, 6, 15 } },
     },
 
     rampup = {
@@ -126,16 +126,16 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
                 toAdd = "calm"
 
             else
-                local calmChance = 25
+                local calmChance = 5
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
                 if tooDifficult and math.abs( difference ) > 100 * difficultyMul then -- we probably are dealing with the wake of a peak segment, or they just died
                     calmChance = 101
 
                 elseif tooDifficult and math.abs( difference ) > 70 * difficultyMul then
-                    calmChance = 80
-
-                elseif tooDifficult and math.abs( difference ) > 25 * difficultyMul then
                     calmChance = 50
+
+                elseif ( tooDifficult and math.abs( difference ) > 25 * difficultyMul ) or gettingHandsDirty > cur + 5 then
+                    calmChance = 25
 
                 end
 
@@ -154,8 +154,8 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
 
             elseif sameCurveChainLength < 1 then
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
-                if tooDifficult and math.abs( difference ) > 100 * difficultyMul then -- they died or something?
-                    toAdd = "calm"
+                if tooDifficult and math.abs( difference ) > ( 100 * difficultyMul ) then -- they died or something?
+                    toAdd = "rampup"
 
                 else
                     toAdd = "rampup"
@@ -163,7 +163,7 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
                 end
             else
                 local tooDifficult = difficultyBeingExperienced > targetDifficulty
-                if tooDifficult and math.abs( difference ) > math.random( 40, 60 ) * difficultyMul then -- they aren't ready!
+                if tooDifficult and math.abs( difference ) > ( math.random( 40, 60 ) * difficultyMul ) then -- they aren't ready!
                     toAdd = "rampup"
 
                 else
@@ -172,15 +172,21 @@ function terminator_Extras.zamb_HandleTargetDifficulty()
                 end
             end
         elseif lastTypeAdded == "peak" then
-            if sameCurveChainLength > 1 then -- always end after 2
+            local maxLength = 1
+            if gettingHandsDirty < cur then -- they arent feeling it
+                maxLength = math.abs( gettingHandsDirty - cur ) / 20
+
+            end
+
+            if sameCurveChainLength > maxLength then -- always end after 2
                 toAdd = "calm"
 
             else
-                local tooEasy = difficultyBeingExperienced < targetDifficulty and math.abs( difference ) > 25 * difficultyMul
-                if tooEasy or gettingHandsDirty < cur then -- end early if we got em
+                local tooEasy = difficultyBeingExperienced < targetDifficulty and math.abs( difference ) > ( 25 * difficultyMul )
+                if tooEasy or gettingHandsDirty < cur then -- they arent feeling the HEAT!
                     toAdd = "peak"
 
-                else
+                else -- they felt it
                     toAdd = "calm"
 
                 end
@@ -315,6 +321,51 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
 
 end
 
+function terminator_Extras.zamb_HandleLagging() -- lagging, delete a zombie and increase difficulty felt appropriately
+    local lagScale = physenv.GetLastSimulationTime() * 1000
+
+    local thresh
+    if game.IsDedicated() then
+        thresh = math.Rand( 0.25, 1.5 )
+
+    else
+        thresh = math.Rand( 0.15, 0.5 )
+
+    end
+
+    if lagScale <= thresh then return end
+
+    debugPrint( "felt lag of ", lagScale )
+
+    local willRemove = {}
+    local toRemove = {}
+    local zambs = ents.FindByClass( "terminator_nextbot_zambie*" )
+    for _ = 0, math.ceil( lagScale ) do
+        local smallestLastSpotTime = math.huge
+        for _, zamb in ipairs( zambs ) do
+            if not willRemove[zamb] and not zamb.IsSeeEnemy and zamb.LastEnemySpotTime < smallestLastSpotTime then
+                smallestLastSpotTime = zamb.LastEnemySpotTime
+                willRemove[zamb] = true
+                table.insert( toRemove, zamb )
+
+            end
+        end
+    end
+    if #toRemove >= 1 then
+        for _, zamb in ipairs( toRemove ) do
+            SafeRemoveEntity( zamb )
+
+        end
+        difficultyBeingExperienced = difficultyBeingExperienced + math.Round( lagScale * 2 )
+        debugPrint( "removed " .. tostring( #toRemove ) ..  " zamb(s)" )
+
+    else
+        difficultyBeingExperienced = difficultyBeingExperienced + math.Round( lagScale * 10 )
+        debugPrint( "increased difficulty" )
+
+    end
+end
+
 function terminator_Extras.zamb_HandleParticipation()
     noPlayerParticipators = false
 
@@ -396,7 +447,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt * 4
 
             end
-            gettingHandsDirty = math.max( cur + ( damageDealt * 0.25 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.5 / clampedParticipating ) )
+            gettingHandsDirty = math.max( cur + ( damageDealt * 0.15 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.5 / clampedParticipating ) )
             debugPrint( "dirtyhands1", gettingHandsDirty - cur )
 
         end
@@ -409,7 +460,7 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt + 1
                 difficultyFelt = difficultyFelt * 2
 
-                gettingHandsDirty = math.max( cur + ( damageDealt * 0.15 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.05 / clampedParticipating ) )
+                gettingHandsDirty = math.max( cur + ( damageDealt * 0.075 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.05 / clampedParticipating ) )
                 debugPrint( "dirtyhands2", gettingHandsDirty - cur )
 
             else -- they were NOT damaged up close earlier, this guy is good!
@@ -510,6 +561,8 @@ function terminator_Extras.zamb_SetupManager()
     hook.Add( "Think", "zambies_nextbot_spawningmanager", function()
         if nextGlobalThink > CurTime() then return end
         nextGlobalThink = CurTime() + 1
+
+        terminator_Extras.zamb_HandleLagging()
 
         terminator_Extras.zamb_HandleParticipation()
 

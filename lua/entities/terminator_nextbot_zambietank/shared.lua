@@ -51,7 +51,7 @@ ENT.DuelEnemyDist = 550
 local TANK_ZAMBIE_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = TANK_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.5
-ENT.CollisionBounds = { Vector( -10, -10, 0 ), Vector( 10, 10, 30 ) }
+ENT.CollisionBounds = { Vector( -10, -10, 0 ), Vector( 10, 10, 35 ) }
 ENT.MyPhysicsMass = 2500
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"

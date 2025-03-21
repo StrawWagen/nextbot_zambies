@@ -19,8 +19,8 @@ ENT.CoroutineThresh = 0.00004
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 300
-ENT.SpawnHealth = 1125
-ENT.ExtraSpawnHealthPerPlayer = 50
+ENT.SpawnHealth = 650
+ENT.ExtraSpawnHealthPerPlayer = 100
 ENT.HealthRegen = 1
 ENT.HealthRegenInterval = 0.75
 ENT.WalkSpeed = 50

@@ -246,7 +246,7 @@ function ENT:AdditionalThink()
                 minion:Spawn()
                 minion.HealthRegen = 0 -- here also for good measure
                 minion:SetSubMaterial( 0, "models/flesh" )
-                minion:SetHealth( math.min( minion:GetMaxHealth() / 2, 1 ) )
+                minion:SetHealth( math.max( minion:GetMaxHealth() / 2, 1 ) )
 
                 local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
                 timer.Create( timerId, math.Rand( 3, 6 ), 0, function()

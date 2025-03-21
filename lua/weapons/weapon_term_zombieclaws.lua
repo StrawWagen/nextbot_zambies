@@ -304,6 +304,8 @@ function SWEP:PrimaryAttack()
     end )
 end
 
+local MEMORY_BREAKABLE = 4
+
 function SWEP:DealDamage()
 
     local owner = self:GetOwner()
@@ -360,7 +362,6 @@ function SWEP:DealDamage()
         else
             local hittingProp = IsValid( hitEnt ) and not hitEnt:IsPlayer() and not hitEnt:IsNPC()
             local friendly = hitEnt.isTerminatorHunterChummy == owner.isTerminatorHunterChummy and owner:Disposition( hitEnt ) ~= D_HT
-            local _, entMemoryKey = owner.getMemoryOfObject and owner:getMemoryOfObject( hitEnt )
             local dmgMul = strength
 
             if friendly then
@@ -437,12 +438,12 @@ function SWEP:DealDamage()
 
             end
 
-            local MEMORY_BREAKABLE = 4
             local isSignificant = hitEnt:IsNPC() or hitEnt:IsNextBot() or hitEnt:IsPlayer()
 
             if not isSignificant then
                 hitEnt:ForcePlayerDrop()
                 local oldHealth = hitEnt:Health()
+                local _, entMemoryKey = owner.getMemoryOfObject and owner:getMemoryOfObject( owner:GetTable(), hitEnt )
 
                 timer.Simple( 0.1, function()
                     if not IsValid( self ) then return end

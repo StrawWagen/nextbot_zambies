@@ -49,6 +49,8 @@ if CLIENT then
 
 end
 
+local entMeta = FindMetaTable( "Entity" )
+
 local coroutine_yield = coroutine.yield
 
 ENT.CoroutineThresh = 0.00001
@@ -183,7 +185,9 @@ function ENT:AdditionalAvoidAreas( costs )
     for _, area in ipairs( terminator_Extras.zamb_IndexedRottingAreas ) do
         if not IsValid( area ) then continue end
         local oldMul = costs[ area:GetID() ] or 0
-        costs[ area:GetID() ] = oldMul + rotAmounts[ area ] * scale
+        local cost = oldMul + rotAmounts[ area ] * scale
+        cost = math.Clamp( cost, 0, 500 )
+        costs[ area:GetID() ] = cost
 
     end
     return costs
@@ -627,6 +631,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local nextPathAttempt = myTbl.zamb_NextPathAttempt
 
                 if nextPathAttempt < CurTime() and toPos and not data.Unreachable and myTbl.primaryPathInvalidOrOutdated( self, toPos ) then
+                    coroutine_yield()
                     myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
                     if myTbl.term_ExpensivePath then
                         myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 1, 4 )
@@ -678,11 +683,15 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
                 end
 
+                coroutine_yield()
+
 
                 local distToExit = myTbl.DuelEnemyDist
 
                 local lookAtGoal = myTbl.zamb_LookAheadWhenRunning or not ( myTbl.IsSeeEnemy and myTbl.HasBrains )
                 local result = self:ControlPath2( lookAtGoal )
+                coroutine_yield()
+
 
                 if lookAtGoal then
                     myTbl.blockAimingAtEnemy = CurTime() + 0.15
@@ -699,6 +708,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask2( self, "movement_duelenemy_near", nil, "they're swimming and im in the water!" )
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
+                    coroutine_yield()
                     data.overridePos = nil
                     local justDuel = myTbl.zamb_JustTryDuelingUnreachable or 0
                     if justDuel > CurTime() then
@@ -727,11 +737,13 @@ function ENT:DoCustomTasks( defaultTasks )
                 elseif goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask2( self, "movement_duelenemy_near", nil, "i gotta punch em" )
+
                 elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 300 ) then
                     data.overridePos = nil
                     if not myTbl.IsSeeEnemy then
                         myTbl.TaskFail( self, "movement_followenemy" )
                         myTbl.StartTask2( self, "movement_wander", nil, "got there, but no enemy" )
+
                     end
                 end
             end,
@@ -775,8 +787,10 @@ function ENT:DoCustomTasks( defaultTasks )
                     data.badCount = 0
 
                 end
+                coroutine_yield()
 
                 if data.badCount > 25 or not aliveOrHp then
+                    coroutine_yield()
                     local propInMyWay = ( myTbl.IsSeeEnemy and not myTbl.NothingOrBreakableBetweenEnemy ) and ( math.random( 1, 100 ) < 75 or myTbl.IsReallyAngry( self ) )
                     local propInMyWay2 = IsValid( myTbl.GetCachedDisrespector( self ) ) and myTbl.IsReallyAngry( self )
                     if propInMyWay or propInMyWay2 then
@@ -789,45 +803,45 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     end
                 elseif validEnemy then -- the dueling in question
+
                     if waterFight and self.loco:IsOnGround() then
                         self:StartSwimming()
 
                     end
-                    local enemVel = enemy:GetVelocity()
-                    enemVel.z = enemVel.z * 0.15
-                    local velProduct = math.Clamp( enemVel:Length() * 1.4, 0, myTbl.DistToEnemy * 0.8 )
-                    local offset = enemVel:GetNormalized() * velProduct
-
-                    -- determine where player CAN go
-                    -- dont build path to somewhere behind walls
-                    local mymins,mymaxs = self:GetCollisionBounds()
-                    mymins = mymins * 0.5
-                    mymaxs = mymaxs * 0.5
-
-                    local pathHull = {}
-                    pathHull.start = enemyPos
-                    pathHull.endpos = enemyPos + offset
-                    pathHull.mask = MASK_SOLID_BRUSHONLY
-                    pathHull.mins = mymins
-                    pathHull.maxs = mymaxs
-
-                    local whereToInterceptTr = util.TraceHull( pathHull )
-                    if myTbl.primaryPathIsValid( self ) then
-                        myTbl.InvalidatePath( self, "im closing in on my enemy!" )
-
-                    end
+                    coroutine_yield()
 
                     -- default, just run up to enemy
                     local gotoPos = enemyPos
                     local angy = myTbl.IsAngry( self )
                     -- if we mad though, predict where they will go, and surprise them
                     if myTbl.HasBrains and angy and enemy.GetAimVector then
+                        coroutine_yield()
                         local flat = enemy:GetAimVector()
                         flat.z = 0
                         flat:Normalize()
                         gotoPos = enemyPos + -flat
 
                     elseif angy then
+                        coroutine_yield()
+                        local enemVel = enemy:GetVelocity()
+                        enemVel.z = enemVel.z * 0.15
+                        local velProduct = math.Clamp( enemVel:Length() * 1.4, 0, myTbl.DistToEnemy * 0.8 )
+                        local offset = enemVel:GetNormalized() * velProduct
+
+                        -- determine where player CAN go
+                        -- dont build path to somewhere behind walls
+                        local mymins,mymaxs = self:GetCollisionBounds()
+                        mymins = mymins * 0.5
+                        mymaxs = mymaxs * 0.5
+
+                        local pathHull = {}
+                        pathHull.start = enemyPos
+                        pathHull.endpos = enemyPos + offset
+                        pathHull.mask = MASK_SOLID_BRUSHONLY
+                        pathHull.mins = mymins
+                        pathHull.maxs = mymaxs
+
+                        local whereToInterceptTr = util.TraceHull( pathHull )
                         gotoPos = whereToInterceptTr.HitPos
 
                     end
@@ -835,6 +849,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     gotoPos = gotoPos + VectorRand() * 15
 
                     --debugoverlay.Cross( gotoPos, 10, 1, Color( 255,255,0 ) )
+                    coroutine_yield()
                     myTbl.GotoPosSimple( self, myTbl, gotoPos, 35 )
 
                 end
@@ -859,15 +874,15 @@ function ENT:DoCustomTasks( defaultTasks )
                     local bestScore = 0
                     for _, curr in ipairs( myTbl.awarenessSubstantialStuff ) do
                         if not IsValid( curr ) then continue end -- this tbl is usually outdated
-                        if not curr:IsSolid() then continue end
-                        if curr.zamb_NeverFrenzyCurious then continue end
-                        if curr.isTerminatorHunterChummy and curr.isTerminatorHunterChummy == myTbl.isTerminatorHunterChummy then continue end
+                        local currsTbl = entMeta.GetTable( curr )
+                        if currsTbl.zamb_NeverFrenzyCurious then continue end
+                        if currsTbl.isTerminatorHunterChummy and currsTbl.isTerminatorHunterChummy == myTbl.isTerminatorHunterChummy then continue end
 
                         local range = self:GetRangeTo( curr )
                         if range > maxDist then continue end
 
                         local currsBoredom = myTbl.frenzyBoredomEnts[ curr ] or 1
-                        local entsBoredom = curr.zamb_entsBoredom or 0
+                        local entsBoredom = currsTbl.zamb_entsBoredom or 0
                         local boredom = currsBoredom + entsBoredom
                         local score = math.max( maxDist - range, 0 )
                         score = score / boredom
@@ -908,7 +923,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 else
                     boredToQuit = boredToQuit + 25
 
-                    local memory = myTbl.getMemoryOfObject( self, focus )
+                    local memory = myTbl.getMemoryOfObject( myTbl, self, focus )
                     if not data.validBeatup then
                         boredAdd = boredAdd + 5
 
@@ -946,7 +961,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
-                local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
+                local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and entMeta.Health( enemy ) > 0 )
                 local goodEnemy = validEnemy and aliveOrHp
 
                 local enemyIsReachable
@@ -1006,10 +1021,12 @@ function ENT:DoCustomTasks( defaultTasks )
                     enemyIsReachable = myTbl.areaIsReachable( self, result.area )
 
                 end
+                coroutine_yield()
 
                 local nextPathAttempt = myTbl.zamb_NextPathAttempt
 
                 if not data.toPos and nextPathAttempt < CurTime() then
+                    coroutine_yield()
                     myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
                     if myTbl.term_ExpensivePath then
                         myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 1, 4 )
@@ -1104,6 +1121,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                         end
 
+                        coroutine_yield()
                         data.toPos, data.lastToArea = myTbl.findValidNavResult( self, scoreData, self:GetPos(), math.random( 1000, 2000 ), scoreFunction )
 
                         table.Merge( data.beenAreas, wanderAreasTraversed )
@@ -1141,6 +1159,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     if myTbl.HasBrains and math.random( 1, 100 ) > 25 then
                         -- split up!
                         local otherHuntersHalfwayPoint = myTbl.GetOtherHuntersProbableEntrance( self )
+                        coroutine_yield()
                         local splitUpResult
                         local splitUpPos
                         local splitUpBubble
@@ -1174,7 +1193,8 @@ function ENT:DoCustomTasks( defaultTasks )
                 end
 
                 local lookAtGoal = myTbl.zamb_LookAheadWhenRunning or not ( myTbl.IsSeeEnemy and myTbl.HasBrains )
-                local result = self:ControlPath2( lookAtGoal )
+                local result = myTbl.ControlPath2( self, lookAtGoal )
+                coroutine_yield()
 
                 if lookAtGoal then
                     myTbl.blockAimingAtEnemy = CurTime() + 0.15
@@ -1196,6 +1216,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.StartTask2( self, "movement_frenzy", nil, "i want to attack random stuff" )
 
                 elseif myTbl.nextInterceptTry < CurTime() and myTbl.interceptIfWeCan( self, nil, data ) then
+                    coroutine_yield()
                     myTbl.nextInterceptTry = CurTime() + 1
                     if not myTbl.HasBrains then
                         local areasNearby = navmesh.Find( myTbl.lastInterceptPos, 250, 100, 100 )
