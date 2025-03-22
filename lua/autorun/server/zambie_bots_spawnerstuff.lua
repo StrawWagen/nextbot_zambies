@@ -326,7 +326,7 @@ function terminator_Extras.zamb_HandleLagging() -- lagging, delete a zombie and 
 
     local thresh
     if game.IsDedicated() then
-        thresh = math.Rand( 0.25, 1.5 )
+        thresh = math.Rand( 2, 25 )
 
     else
         thresh = math.Rand( 0.15, 0.5 )
@@ -336,6 +336,11 @@ function terminator_Extras.zamb_HandleLagging() -- lagging, delete a zombie and 
     if lagScale <= thresh then return end
 
     debugPrint( "felt lag of ", lagScale )
+
+    if game.IsDedicated() then
+        lagScale = lagScale / 2
+
+    end
 
     local willRemove = {}
     local toRemove = {}
