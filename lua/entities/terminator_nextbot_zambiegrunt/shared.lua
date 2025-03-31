@@ -61,7 +61,10 @@ function ENT:AdditionalInitialize()
     self.term_CallingSound = "ambient/creatures/town_zombie_call1.wav"
     self.term_CallingSmallSound = "npc/zombie/zombie_voice_idle6.wav"
     self.term_FindEnemySound = "Zombie.Alert"
-    self.term_AttackSound = "Zombie.Alert"
+    self.term_AttackSound = {
+        "nextbot_zambies/zombine/zombine_charge1.wav",
+        "nextbot_zambies/zombine/zombine_charge2.wav",
+    }
     self.term_AngerSound = "Zombie.Idle"
     self.term_DamagedSound = "Zombie.Pain"
     self.term_DieSound = "Zombie.Die"

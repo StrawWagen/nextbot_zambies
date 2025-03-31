@@ -427,14 +427,14 @@ function SWEP:DealDamage()
                 local lvl = 75 + damageToDeal * 0.1
                 local pitch = math.Clamp( 120 + -( damageToDeal * 0.25 ), 85, 120 )
                 owner:EmitSound( "npc/zombie/zombie_pound_door.wav", lvl, pitch, 1, CHAN_STATIC )
-                util.ScreenShake( self:GetPos(), damageToDeal * 0.1, 20, 0.15, damageToDeal * 5 )
+                util.ScreenShake( self:GetPos(), damageToDeal * 0.1, 20, 0.15, math.Clamp( damageToDeal * 5, 0, 2000 ) )
 
             end
             if damageToDeal > 200 then
                 local lvl = 80 + damageToDeal * 0.1
                 local pitch = math.Clamp( 120 + -( damageToDeal * 0.35 ), 85, 120 )
                 owner:EmitSound( "npc/antlion_guard/shove1.wav", lvl, pitch, 1, CHAN_STATIC )
-                util.ScreenShake( self:GetPos(), damageToDeal * 0.005, 2, 3, damageToDeal * 5 )
+                util.ScreenShake( self:GetPos(), damageToDeal * 0.005, 2, 3, math.Clamp( damageToDeal * 5, 0, 2000 ) )
 
             end
 

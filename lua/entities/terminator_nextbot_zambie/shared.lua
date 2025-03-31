@@ -444,7 +444,8 @@ function ENT:DoCustomTasks( defaultTasks )
 
             end,
             OnDamaged = function( self, data, damage )
-                self:Term_SpeakSoundNow( self.term_DamagedSound, self.term_SoundPitchShift )
+                self:Term_ClearStuffToSay()
+                self:Term_SpeakSoundNow( self.term_DamagedSound )
 
             end,
             PreventBecomeRagdollOnKilled = function( self, data, damage ) -- handle becoming zombie torso

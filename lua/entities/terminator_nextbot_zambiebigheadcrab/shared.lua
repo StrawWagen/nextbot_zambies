@@ -2,11 +2,11 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambienecro"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "God Crab"
+ENT.PrintName = "Demigod Crab"
 ENT.Spawnable = false
 ENT.AdminOnly = true
 list.Set( "NPC", "terminator_nextbot_zambiebigheadcrab", {
-    Name = "God Crab",
+    Name = "Demigod Crab",
     Class = "terminator_nextbot_zambiebigheadcrab",
     Category = "Nexbot Zambies",
     AdminOnly = true,
@@ -23,26 +23,26 @@ ENT.CoroutineThresh = 0.0001
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 500
-ENT.DefaultStepHeight = 18
+ENT.DefaultStepHeight = 25
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
 ENT.SpawnHealth = 5000
-ENT.ExtraSpawnHealthPerPlayer = 3000
+ENT.ExtraSpawnHealthPerPlayer = 2000
 ENT.HealthRegen = 2
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 400
 ENT.CrouchSpeed = 300
 ENT.WalkSpeed = 400
 ENT.MoveSpeed = 600
-ENT.RunSpeed = 800
-ENT.AccelerationSpeed = 750
-ENT.DeccelerationSpeed = 5000
+ENT.RunSpeed = 1800
+ENT.AccelerationSpeed = 550
+ENT.DeccelerationSpeed = 2500
 
 ENT.zamb_LookAheadWhenRunning = true
 ENT.zamb_MeleeAttackSpeed = 2
 ENT.zamb_MeleeAttackHitFrameMul = 40
-ENT.zamb_AttackAnim = ACT_GMOD_GESTURE_RANGE_ZOMBIE_SPECIAL -- ACT_RANGE_ATTACK1
+ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
 ENT.FistDamageMul = 20
 ENT.FistForceMul = 20
@@ -84,14 +84,18 @@ ENT.IdleActivityTranslations = {
 }
 
 ENT.zamb_CallAnim = "rearup"
-ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
 function ENT:canDoRun()
-    if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then
-        if not self.LostCoolCall then
+    local lostCool = self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio
+    if self.EnemiesVehicle or lostCool then
+        if lostCool and not self.LostCoolCall then
             self:Term_ClearStuffToSay()
             self:ZAMB_AngeringCall()
             self.LostCoolCall = true
+
+        end
+        if self.EnemiesVehicle then
+            return true
 
         end
         return BaseClass.canDoRun( self )
@@ -103,7 +107,7 @@ function ENT:canDoRun()
 end
 
 function ENT:shouldDoWalk()
-    if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then
+    if self.EnemiesVehicle or self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then
         return BaseClass.shouldDoWalk( self )
 
     else
