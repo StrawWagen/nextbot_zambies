@@ -27,6 +27,7 @@ ENT.DefaultStepHeight = 25
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
+ENT.PathGoalToleranceFinal = 75
 ENT.SpawnHealth = 5000
 ENT.ExtraSpawnHealthPerPlayer = 2000
 ENT.HealthRegen = 2

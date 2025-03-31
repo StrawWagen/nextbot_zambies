@@ -23,6 +23,7 @@ ENT.DefaultStepHeight = 50
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
+ENT.PathGoalToleranceFinal = 175
 ENT.SpawnHealth = 50000
 ENT.ExtraSpawnHealthPerPlayer = 5000
 ENT.HealthRegen = 8
@@ -41,7 +42,7 @@ ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 ENT.FistDamageMul = 40
 ENT.FistForceMul = 40
 ENT.FistRangeMul = 5
-ENT.DuelEnemyDist = 1000
+ENT.DuelEnemyDist = 1250
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"
 ENT.ARNOLD_MODEL = GOD_CRAB_MODEL
