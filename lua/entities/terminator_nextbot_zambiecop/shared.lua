@@ -18,7 +18,7 @@ ENT.AdminOnly = true
 list.Set( "NPC", "terminator_nextbot_zambiecop", {
     Name = "Fallen Supercop",
     Class = "terminator_nextbot_zambiecop",
-    Category = "Nexbot Zambies",
+    Category = "Nextbot Zambies",
     AdminOnly = true
 } )
 

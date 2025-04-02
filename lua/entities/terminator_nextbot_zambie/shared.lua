@@ -7,7 +7,7 @@ ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambie", {
     Name = "Zombie",
     Class = "terminator_nextbot_zambie",
-    Category = "Nexbot Zambies",
+    Category = "Nextbot Zambies",
 } )
 
 local function copyMatsOver( from, to )

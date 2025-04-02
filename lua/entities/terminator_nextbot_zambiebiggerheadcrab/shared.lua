@@ -8,7 +8,7 @@ ENT.AdminOnly = true
 list.Set( "NPC", "terminator_nextbot_zambiebiggerheadcrab", {
     Name = "The God Crab",
     Class = "terminator_nextbot_zambiebiggerheadcrab",
-    Category = "Nexbot Zambies",
+    Category = "Nextbot Zambies",
     AdminOnly = true,
 } )
 

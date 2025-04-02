@@ -7,7 +7,7 @@ ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambie_slow", {
     Name = "Zombie Snail",
     Class = "terminator_nextbot_zambie_slow",
-    Category = "Nexbot Zambies",
+    Category = "Nextbot Zambies",
 } )
 if CLIENT then
     language.Add( "terminator_nextbot_zambie_slow", ENT.PrintName )

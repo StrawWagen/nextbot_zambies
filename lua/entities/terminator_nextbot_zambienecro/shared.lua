@@ -7,7 +7,7 @@ ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambienecro", {
     Name = "Zombie Necromancer",
     Class = "terminator_nextbot_zambienecro",
-    Category = "Nexbot Zambies",
+    Category = "Nextbot Zambies",
 } )
 
 if CLIENT then
