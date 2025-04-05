@@ -239,13 +239,15 @@ function ENT:AdditionalInitialize()
     self:SetModel( zambieModel() )
     self:SetBodygroup( 1, 1 )
 
+
     self.isTerminatorHunterChummy = "zambies"
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4
+    self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < self.zamb_BrainsChance
     if hasBrains then
         self.HasBrains = true
-        terminator_Extras.RegisterListener( self )
+        self.CanHearStuff = true
 
     end
 

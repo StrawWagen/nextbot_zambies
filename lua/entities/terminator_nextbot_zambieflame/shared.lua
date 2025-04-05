@@ -37,10 +37,11 @@ function ENT:AdditionalInitialize()
     self:SetMaterial( "models/props_debris/plasterwall009d" )
     self:SetColor( BURNT_COLOR )
     self.isTerminatorHunterChummy = "zambies"
+    self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < 30
     if hasBrains then
         self.HasBrains = true
-        terminator_Extras.RegisterListener( self )
+        self.CanHearStuff = true
 
     end
     self.term_DMG_ImmunityMask = bit.bor( DMG_BURN, DMG_SLOWBURN )

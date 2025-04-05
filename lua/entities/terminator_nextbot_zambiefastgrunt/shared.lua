@@ -53,7 +53,6 @@ function ENT:AdditionalInitialize()
 
     self.isTerminatorHunterChummy = "zambies"
     self.HasBrains = math.random( 1, 100 ) < 85
-    terminator_Extras.RegisterListener( self )
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4
 

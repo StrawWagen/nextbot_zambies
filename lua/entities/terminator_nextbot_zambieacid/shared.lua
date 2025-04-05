@@ -60,10 +60,11 @@ function ENT:AdditionalInitialize()
     self:SetColor( ACIDIC_COLOR )
     self:SetBloodColor( BLOOD_COLOR_GREEN )
     self.isTerminatorHunterChummy = "zambies"
+    self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < 30
     if hasBrains then
         self.HasBrains = true
-        terminator_Extras.RegisterListener( self )
+        self.CanHearStuff = true
 
     end
     self.term_DMG_ImmunityMask = bit.bor( DMG_ACID, DMG_RADIATION )

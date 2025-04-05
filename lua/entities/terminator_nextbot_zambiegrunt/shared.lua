@@ -45,10 +45,11 @@ function ENT:AdditionalInitialize()
     self:SetModel( GRUNT_MODEL )
 
     self.isTerminatorHunterChummy = "zambies"
+    self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < 30
     if hasBrains then
         self.HasBrains = true
-        terminator_Extras.RegisterListener( self )
+        self.CanHearStuff = true
 
     end
     self.nextInterceptTry = 0
