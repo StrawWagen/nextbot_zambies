@@ -12,7 +12,7 @@ local zambieSpawnSet = {
     startingSpawnCount = "default",
     maxSpawnCount = 25,
     maxSpawnDist = "default",
-    chanceToBeVotable = 50,
+    chanceToBeVotable = 40,
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "ambient/creatures/town_zombie_call1.wav",
     spawns = {
@@ -151,13 +151,24 @@ local zambieSpawnSet = {
         {
             hardRandomChance = nil,
             name = "zambie_godcrab",
-            prettyName = "A God Crab",
+            prettyName = "The Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
             difficultyCost = { 150, 175 },
             countClass = "terminator_nextbot_zambiebigheadcrab",
-            maxCount = { 1 },
+            maxCount = { 8 },
             postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_godcrab",
+            prettyName = "The God Crab",
+            class = "terminator_nextbot_zambiebiggerheadcrab",
+            spawnType = "hunter",
+            difficultyCost = { 400, 600 },
+            countClass = "terminator_nextbot_zambiebiggerheadcrab",
+            maxCount = { 4 },
+            postSpawnedFuncs = { screamAfterSpawning },
         },
     }
 }

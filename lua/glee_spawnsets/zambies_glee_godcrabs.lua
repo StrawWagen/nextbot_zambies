@@ -32,11 +32,22 @@ local zambieSpawnSet = {
         {
             hardRandomChance = nil,
             name = "zambie_godcrab",
-            prettyName = "A God Crab",
+            prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
             difficultyCost = { 10, 20 },
             countClass = "terminator_nextbot_zambiebigheadcrab",
+            postSpawnedFuncs = { screamAfterSpawning },
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_godcrab",
+            prettyName = "The God Crab",
+            class = "terminator_nextbot_zambiebiggerheadcrab",
+            spawnType = "hunter",
+            difficultyCost = 100,
+            countClass = "terminator_nextbot_zambiebiggerheadcrab",
+            maxCount = { 1 },
             postSpawnedFuncs = { screamAfterSpawning },
         },
     }

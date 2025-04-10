@@ -41,7 +41,7 @@ ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
 ENT.FistDamageMul = 40
 ENT.FistForceMul = 40
-ENT.FistRangeMul = 5
+ENT.FistRangeMul = 4
 ENT.DuelEnemyDist = 1250
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"

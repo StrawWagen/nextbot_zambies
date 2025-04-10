@@ -14,7 +14,7 @@ local zambieSpawnSet = {
     maxSpawnDist = "default",
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "npc/fast_zombie/fz_alert_far1.wav",
-    chanceToBeVotable = 25,
+    chanceToBeVotable = 15,
     spawns = {
         {
             hardRandomChance = nil,
