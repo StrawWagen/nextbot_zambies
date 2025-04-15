@@ -1,6 +1,5 @@
-local function giveCamera( _, hunter )
-    hunter:Give( "gmod_camera" )
-end
+
+-- CREDIT MEMEMAN -- https://steamcommunity.com/id/blahaj1337/
 
 local function givePistol( _, hunter )
     hunter:Give( "weapon_pistol" )
@@ -26,17 +25,13 @@ local function giveXBOW( _, hunter )
     hunter:Give( "weapon_crossbow" )
 end
 
-local function giveFrag( _, hunter )
-    hunter:Give( "weapon_frag" )
-end
-
 local genericZambieCounter = "terminator_nextbot_zambie*"
 
 local set = {
     name = "zambies_glee_allguns", -- unique name
-    prettyName = "Who gave these zombies guns!?",
-    description = "Alright, whose responsible for this?",
-    difficultyPerMin = { 250 / 10, 500 / 10}, -- difficulty per minute
+    prettyName = "The American Undead",
+    description = "Not even death can depart an American from the 2nd amendment.",
+    difficultyPerMin = { 250 / 10, 500 / 10 }, -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 15, 25 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
@@ -51,7 +46,7 @@ local set = {
         {
             hardRandomChance = nil,
             name = "zambie_pistol", -- unique name
-            prettyName = "An Armed Zombie",
+            prettyName = "A Barely Armed American",
             class = "terminator_nextbot_zambie_slow", -- class spawned
             spawnType = "hunter",
             difficultyCost = 1,
@@ -62,7 +57,7 @@ local set = {
         {
             hardRandomChance = nil,
             name = "zambie_normal_smg", -- unique name
-            prettyName = "An Armed Zombie",
+            prettyName = "A Lightly Armed American",
             class = "terminator_nextbot_zambie", -- class spawned
             spawnType = "hunter",
             difficultyCost = 6,
@@ -73,7 +68,7 @@ local set = {
         {
             hardRandomChance = nil,
             name = "zambie_normal_rifle", -- unique name
-            prettyName = "An Armed Zombie",
+            prettyName = "A Moderately Armed American",
             class = "terminator_nextbot_zambie", -- class spawned
             spawnType = "hunter",
             difficultyCost = 8,
@@ -84,7 +79,7 @@ local set = {
         {
             hardRandomChance = nil,
             name = "zambie_grunt_ELITE", -- unique name
-            prettyName = "A Revolver Grunt",
+            prettyName = "A Cowboy American", -- yeeeehaw
             class = "terminator_nextbot_zambiegrunt", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 40, 80 },
@@ -95,7 +90,7 @@ local set = {
         {
             hardRandomChance = nil,
             name = "zambie_grunt_COMMON", -- unique name
-            prettyName = "A Rifleman Grunt",
+            prettyName = "A Moderately Armed American",
             class = "terminator_nextbot_zambiegrunt", -- class spawned
             spawnType = "hunter",
             difficultyCost = { 20, 40 },
@@ -107,7 +102,7 @@ local set = {
         {
             hardRandomChance = { 2, 4 },
             name = "zambie_tank",
-            prettyName = "An RPG Tank",
+            prettyName = "A Well Armed American",
             class = "terminator_nextbot_zambietank",
             spawnType = "hunter",
             difficultyCost = { 100, 150 },
@@ -119,7 +114,7 @@ local set = {
         {
             hardRandomChance = { 2, 4 },
             name = "zambie_tank",
-            prettyName = "A Sniper Tank",
+            prettyName = "An Average American Sniper",
             class = "terminator_nextbot_zambietank",
             spawnType = "hunter",
             difficultyCost = { 100, 150 },
