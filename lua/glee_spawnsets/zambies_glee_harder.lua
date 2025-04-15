@@ -151,7 +151,7 @@ local zambieSpawnSet = {
         {
             hardRandomChance = nil,
             name = "zambie_godcrab",
-            prettyName = "The Demigod Crab",
+            prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
             difficultyCost = { 150, 175 },

@@ -235,7 +235,7 @@ local zambieSpawnSet = {
         {
             hardRandomChance = { 0, 0.5 },
             name = "god_crab_early",
-            prettyName = "The Demigod Crab",
+            prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
             difficultyCost = { 75, 400 },
@@ -247,7 +247,7 @@ local zambieSpawnSet = {
         {
             hardRandomChance = { 10, 25 },
             name = "demigod_crab",
-            prettyName = "The Demigod Crab",
+            prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
             difficultyCost = { 200, 400 },
@@ -259,7 +259,7 @@ local zambieSpawnSet = {
         {
             hardRandomChance = { 10, 25 },
             name = "demigod_crab_late",
-            prettyName = "The Demigod Crab",
+            prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
             difficultyCost = { 100, 200 },
