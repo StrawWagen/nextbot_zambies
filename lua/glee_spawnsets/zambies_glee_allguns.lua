@@ -34,9 +34,9 @@ local set = {
     difficultyPerMin = { 250 / 10, 500 / 10 }, -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 15, 25 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = "default",
-    startingSpawnCount = "default",
+    startingBudget = { 1, 5 }, -- so budget isnt 0
+    spawnCountPerDifficulty = { 1 }, -- go up to 20 fast pls
+    startingSpawnCount = { 4, 7 },
     maxSpawnCount = { 30 }, -- hard cap on count
     maxSpawnDist = "default",
     roundEndSound = "music/hl1_song25_remix3.mp3",
