@@ -34,6 +34,7 @@ ENT.WalkSpeed = 600
 ENT.MoveSpeed = 1000
 ENT.RunSpeed = 3000
 ENT.AccelerationSpeed = 750
+ENT.neverManiac = true
 
 ENT.zamb_MeleeAttackSpeed = 2
 ENT.zamb_MeleeAttackHitFrameMul = 40

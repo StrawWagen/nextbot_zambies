@@ -239,7 +239,6 @@ function ENT:AdditionalInitialize()
     self:SetModel( zambieModel() )
     self:SetBodygroup( 1, 1 )
 
-
     self.isTerminatorHunterChummy = "zambies"
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4
