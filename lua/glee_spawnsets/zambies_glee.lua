@@ -83,7 +83,7 @@ local zambieSpawnSet = {
         {
             hardRandomChance = { 4, 15 },
             name = "zambie_acid_COMMON", -- spawns later but no max count
-            prettyName = "An Fast Acid Zombie",
+            prettyName = "A Fast Acid Zombie",
             class = "terminator_nextbot_zambieacidfast",
             spawnType = "hunter",
             difficultyCost = { 20, 30 },
