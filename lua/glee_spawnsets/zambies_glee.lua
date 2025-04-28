@@ -126,6 +126,17 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
+            hardRandomChance = { 12, 26 },
+            name = "zambie_poison",
+            prettyName = "A Poison Zombie",
+            class = "terminator_nextbot_poisonzambie",
+            spawnType = "hunter",
+            difficultyCost = { 16, 12 },
+            difficultyStopAfter = { 145, 310 },
+            countClass = genericZambieCounter,
+            postSpawnedFuncs = nil,
+        },
+        {
             hardRandomChance = nil,
             name = "zambie_fast_elite",
             prettyName = "An Elite Fast Zombie",
