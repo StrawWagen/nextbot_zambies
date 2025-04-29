@@ -12,7 +12,7 @@ list.Set( "NPC", "terminator_nextbot_zambieacidfast", {
 } )
 
 if CLIENT then
-    language.Add( "terminator_nextbot_zambiefast", ENT.PrintName )
+    language.Add( "terminator_nextbot_zambieacidfast", ENT.PrintName )
     return
 
 end

@@ -361,7 +361,7 @@ function SWEP:DealDamage()
 
         else
             local hittingProp = IsValid( hitEnt ) and not hitEnt:IsPlayer() and not hitEnt:IsNPC()
-            local friendly = hitEnt.isTerminatorHunterChummy == owner.isTerminatorHunterChummy and owner:Disposition( hitEnt ) ~= D_HT
+            local friendly = hitEnt:IsNPC() and hitEnt.isTerminatorHunterChummy == owner.isTerminatorHunterChummy and owner:Disposition( hitEnt ) ~= D_HT
             local dmgMul = strength
 
             if friendly then

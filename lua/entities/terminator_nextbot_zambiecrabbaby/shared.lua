@@ -25,6 +25,7 @@ ENT.MoveSpeed = 400
 ENT.RunSpeed = 800
 ENT.AccelerationSpeed = 350
 ENT.DeccelerationSpeed = 350
+ENT.neverManiac = true
 
 ENT.zamb_LookAheadWhenRunning = true
 ENT.zamb_MeleeAttackSpeed = 2
