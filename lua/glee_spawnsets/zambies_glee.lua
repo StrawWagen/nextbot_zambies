@@ -48,6 +48,17 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
+            hardRandomChance = { 2, 4 },
+            name = "zambie_fastflaming_RARE", -- spawns early with a max count
+            prettyName = "A Fast Flaming Zombie",
+            class = "terminator_nextbot_zambieflamefast",
+            spawnType = "hunter",
+            difficultyCost = { 5, 9 },
+            countClass = "terminator_nextbot_zambieflamefast",
+            maxCount = { 4 },
+            postSpawnedFuncs = nil,
+        },
+        {
             hardRandomChance = { 4, 10 },
             name = "zambie_flaming_COMMON", -- spawns later but no max count
             prettyName = "A Flaming Zombie",
@@ -56,6 +67,17 @@ local zambieSpawnSet = {
             difficultyCost = { 8, 10 },
             difficultyNeeded = { 100, 150 },
             countClass = "terminator_nextbot_zambieflame",
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = { 5, 13 },
+            name = "zambie_fastflaming_COMMON", -- spawns later but no max count
+            prettyName = "A Fast Flaming Zombie",
+            class = "terminator_nextbot_zambieflamefast",
+            spawnType = "hunter",
+            difficultyCost = { 15, 23 },
+            difficultyNeeded = { 110, 160 },
+            countClass = "terminator_nextbot_zambieflamefast",
             postSpawnedFuncs = nil,
         },
         {
