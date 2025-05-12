@@ -67,12 +67,22 @@ local set = {
         },
         {
             hardRandomChance = nil,
+            name = "zambie_shitter_rpg", -- it's accura
+            prettyName = "A Well Armed Diarrhea American",
+            class = "terminator_nextbot_zambieacid", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = 150,
+            countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
+            maxCount = { 3 }, -- will never exceed this count, uses findbycount
+            postSpawnedFuncs =  { giveRPG },
+        },
+            hardRandomChance = nil,
             name = "zambie_normal_rifle", -- unique name
             prettyName = "A Moderately Armed American",
             class = "terminator_nextbot_zambie", -- class spawned
             spawnType = "hunter",
             difficultyCost = 8,
-            countClass = "terminator_nextbot_zambie", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
             maxCount = { 10 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs =  { giveAR2 },
         },
@@ -98,6 +108,40 @@ local set = {
             minCount = { 0 }, -- will ALWAYS maintain this count
             maxCount = { 15 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs =  { giveAR2 },
+        },
+        {
+            name = "zambie_tank",
+            prettyName = "A Well Armed American",
+            class = "terminator_nextbot_zambietank",
+            spawnType = "hunter",
+            difficultyCost = { 100, 150 },
+            difficultyNeeded = { 200, 400 },
+            countClass = "terminator_nextbot_zambietank",
+            maxCount = { 1 },
+            postSpawnedFuncs = { giveRPG },
+        },
+-- wraith shit below
+        {
+            name = "zambie_wraith_drugged",
+            prettyName = "A Lightly Armed Drugged American",
+            class = "terminator_nextbot_zambiewraith",
+            spawnType = "hunter",
+            difficultyCost = { 80, 120 },
+            difficultyNeeded = { 160, 190 },
+            countClass = "terminator_nextbot_zambiewraith",
+            maxCount = { 3 },
+            postSpawnedFuncs = { giveSMG },
+        },
+        {
+            name = "zambie_wraithelite_drugged",
+            prettyName = "A Drugged Average American Sniper",
+            class = "terminator_nextbot_zambiewraithelite",
+            spawnType = "hunter",
+            difficultyCost = { 120, 180 },
+            difficultyNeeded = { 210, 450 },
+            countClass = "terminator_nextbot_zambiewraithelite",
+            maxCount = { 2 },
+            postSpawnedFuncs = { giveXBOW },
         },
         {
             name = "zambie_tank",
