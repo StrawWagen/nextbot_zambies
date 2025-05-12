@@ -82,7 +82,7 @@ local set = {
             class = "terminator_nextbot_zambie", -- class spawned
             spawnType = "hunter",
             difficultyCost = 8,
-            countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
+            countClass = "terminator_nextbot_zambie", -- class COUNTED, uses findbyclass
             maxCount = { 10 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs =  { giveAR2 },
         },
