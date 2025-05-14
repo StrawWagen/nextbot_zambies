@@ -62,6 +62,17 @@ local zambieSpawnSet = {
         },
         {
             hardRandomChance = nil,
+            name = "zambie_flamingfast",
+            prettyName = "A Fast Flaming Zombie",
+            class = "terminator_nextbot_zambieflamefast",
+            spawnType = "hunter",
+            difficultyCost = { 25, 45 },
+            countClass = "terminator_nextbot_zambieflamefast",
+            maxCount = { 4 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = nil,
             name = "zambie_acid",
             prettyName = "An Acid Zombie",
             class = "terminator_nextbot_zambieacid",
