@@ -55,7 +55,7 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 5, 9 },
             countClass = "terminator_nextbot_zambieflamefast",
-            maxCount = { 4 },
+            maxCount = { 1 },
             postSpawnedFuncs = nil,
         },
         {
