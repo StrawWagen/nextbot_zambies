@@ -326,10 +326,10 @@ function terminator_Extras.zamb_HandleLagging() -- lagging, delete a zombie and 
 
     local thresh
     if game.IsDedicated() then
-        thresh = math.Rand( 1.5, 40 )
+        thresh = math.Rand( 4, 40 )
 
     else
-        thresh = math.Rand( 1, 25 )
+        thresh = math.Rand( 3, 30 )
 
     end
 

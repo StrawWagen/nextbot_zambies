@@ -22,7 +22,7 @@ if CLIENT then
     return
 end
 
-ENT.CoroutineThresh = 0.00004
+ENT.CoroutineThresh = 0.00008
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18
@@ -126,7 +126,6 @@ function ENT:AdditionalInitialize()
     self.HasBrains = true
 
     self.nextInterceptTry = 0
-    self.term_NextIdleTaunt = math.huge
 
     self.term_SoundPitchShift = -45
     self.term_SoundLevelShift = 20

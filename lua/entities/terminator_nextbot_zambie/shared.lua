@@ -54,8 +54,8 @@ local entMeta = FindMetaTable( "Entity" )
 local coroutine_yield = coroutine.yield
 
 ENT.CoroutineThresh = 0.00001
-ENT.ThreshMulIfDueling = 2 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
-ENT.ThreshMulIfClose = 1.25 -- if we're closer than DuelEnemyDist * 2
+ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
+ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 80
@@ -241,7 +241,7 @@ function ENT:AdditionalInitialize()
 
     self.isTerminatorHunterChummy = "zambies"
     self.nextInterceptTry = 0
-    self.term_NextIdleTaunt = CurTime() + 4
+    self.term_NextIdleTaunt = CurTime() + 2
     self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < self.zamb_BrainsChance
     if hasBrains then
@@ -262,13 +262,13 @@ local cutoff = 35^2
 
 function ENT:AdditionalThink()
     if self.loco:GetVelocity():LengthSqr() > cutoff then
-        self.term_NextIdleTaunt = CurTime() + math.Rand( 0.5, 1 )
+        self.term_NextIdleTaunt = CurTime() + math.Rand( 0.25, 0.5 )
         return
 
     end
     if self.term_NextIdleTaunt > CurTime() then return end
 
-    self.term_NextIdleTaunt = CurTime() + math.Rand( 3, 7 )
+    self.term_NextIdleTaunt = CurTime() + math.Rand( 1, 2 )
 
     self:RunTask( "ZambOnGrumpy" )
 

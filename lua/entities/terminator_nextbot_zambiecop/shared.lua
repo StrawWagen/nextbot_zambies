@@ -33,8 +33,7 @@ if CLIENT then
 end
 
 ENT.IsFodder = nil
-ENT.CoroutineThresh = 0.0001
-ENT.MaxPathingIterations = 5000
+ENT.CoroutineThresh = 0.0005
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18
