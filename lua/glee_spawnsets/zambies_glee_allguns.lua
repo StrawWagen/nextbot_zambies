@@ -76,6 +76,7 @@ local set = {
             maxCount = { 3 }, -- will never exceed this count, uses findbycount
             postSpawnedFuncs =  { giveRPG },
         },
+        {
             hardRandomChance = nil,
             name = "zambie_normal_rifle", -- unique name
             prettyName = "A Moderately Armed American",
@@ -120,7 +121,7 @@ local set = {
             maxCount = { 1 },
             postSpawnedFuncs = { giveRPG },
         },
--- wraith shit below
+        -- wraith shit below
         {
             name = "zambie_wraith_drugged",
             prettyName = "A Lightly Armed Drugged American",
