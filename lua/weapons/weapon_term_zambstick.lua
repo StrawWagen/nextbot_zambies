@@ -11,8 +11,8 @@ SWEP.WorldModel = "models/weapons/w_stunbaton.mdl"
 SWEP.Weight = 3214214
 
 if CLIENT then
-    killicon.AddFont( "weapon_term_supercopstunstick", "HL2MPTypeDeath", "!", Color( 255, 80, 0 ) )
-    language.Add( "weapon_term_supercopstunstick", SWEP.PrintName )
+    killicon.AddFont( "weapon_term_zambstick", "HL2MPTypeDeath", "!", Color( 255, 80, 0 ) )
+    language.Add( "weapon_term_zambstick", SWEP.PrintName )
 end
 
 SWEP.Melee = true
@@ -109,7 +109,7 @@ function SWEP:DoDamage()
     end
     if tr.Hit then
 
-        supercop_HandleDoor( self, tr )
+        zambcop_HandleDoor( self, tr )
         local reallyMad = IsValid( owner ) and owner.IsReallyAngry and owner:IsReallyAngry()
 
         local hitEnt = tr.Entity
