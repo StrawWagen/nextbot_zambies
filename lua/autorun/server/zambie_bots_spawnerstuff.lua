@@ -821,7 +821,9 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     zamb:Spawn()
 
     if data.diffAdded then
-        difficultyBeingExperienced = difficultyBeingExperienced + data.diffAdded
+        local add = data.diffAdded
+        add = add / difficultyMul -- scale it down to the difficulty multiplier
+        difficultyBeingExperienced = difficultyBeingExperienced + difficultyMul
 
     end
 
