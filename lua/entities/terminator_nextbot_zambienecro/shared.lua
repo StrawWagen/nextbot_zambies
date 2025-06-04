@@ -72,10 +72,6 @@ local ACT_ZOM_RELEASECRAB = "releasecrab"
 ENT.zamb_CallAnim = ACT_ZOM_RELEASECRAB
 ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1 -- ACT_RANGE_ATTACK1
 
--- tanks dont care about body smell
-function ENT:AdditionalAvoidAreas()
-end
-
 function ENT:AdditionalInitialize()
     self:SetModel( NECRO_ZAMBIE_MODEL )
 
@@ -128,6 +124,19 @@ function ENT:AdditionalInitialize()
 
     end )
 
+    self.necro_MinionCountMul = 1
+    self.necro_MinMinionCount = 0
+    self.necro_MaxMinionCount = 12
+    self.necro_NormalMinionClass = "terminator_nextbot_zambie"
+
+    self.necro_ReachableFastMinionChance = 40
+    self.necro_UnReachableFastMinionChance = 90
+    self.necro_UnreachableCountAdd = 1
+    self.necro_FastMinionClass = "terminator_nextbot_zambiefast"
+
+    self.necro_NearDeathClassChance = 10
+    self.necro_NearDeathMinionClass = "terminator_nextbot_zambieberserk"
+
 end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
@@ -175,8 +184,13 @@ function ENT:AdditionalThink()
         local result = terminator_Extras.getNearestPosOnNav( myEnem:GetPos() )
         reachable = self:areaIsReachable( result.area )
 
+        if reachable and self:primaryPathIsValid() and self.DistToEnemy < self:GetPath():GetLength() * 2 then
+            reachable = false -- reachable but circiuitous path
+
+        end
+
         if not reachable then
-            desiredAliveCount = desiredAliveCount + 1
+            desiredAliveCount = desiredAliveCount + self.necro_UnreachableCountAdd
 
         end
     end
@@ -193,7 +207,8 @@ function ENT:AdditionalThink()
 
     end
 
-    desiredAliveCount = math.Clamp( desiredAliveCount, 0, 12 )
+    desiredAliveCount = desiredAliveCount * self.necro_MinionCountMul
+    desiredAliveCount = math.Clamp( desiredAliveCount, self.necro_MinMinionCount, self.necro_MaxMinionCount )
 
     if aliveCount < desiredAliveCount then
         local diff = desiredAliveCount - aliveCount
@@ -219,14 +234,14 @@ function ENT:AdditionalThink()
                 if not IsValid( self ) then return end
                 if self:Health() <= 0 then return end
 
-                local class = "terminator_nextbot_zambie"
-                local fastChance = reachable and 50 or 90
+                local class = self.necro_NormalMinionClass
+                local fastChance = reachable and self.necro_ReachableFastMinionChance or self.necro_UnReachableFastMinionChance
                 if math.random( 1, 100 ) < fastChance then
-                    class = "terminator_nextbot_zambiefast"
+                    class = self.necro_FastMinionClass
 
                 end
-                if nearDeath and math.random( 1, 100 ) < 10 then
-                    class = "terminator_nextbot_zambieberserk"
+                if nearDeath and math.random( 1, 100 ) < self.necro_NearDeathClassChance then
+                    class = self.necro_NearDeathMinionClass
 
                 end
                 local minion = ents.Create( class )
@@ -239,7 +254,11 @@ function ENT:AdditionalThink()
                 local flatRand = VectorRand() * flattener
                 flatRand:Normalize()
 
-                minion:SetPos( self:WorldSpaceCenter() + flatRand * 50 )
+                local minionPos = self:WorldSpaceCenter()
+                local offsetDist = ( 50 * self.TERM_MODELSCALE )
+                minionPos = minionPos + flatRand * offsetDist
+
+                minion:SetPos( minionPos )
                 minion:SetAngles( Angle( 0, math.random( -180, 180 ), 0 ) )
                 minion.HealthRegen = 0
                 minion:Spawn()

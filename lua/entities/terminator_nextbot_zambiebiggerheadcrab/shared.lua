@@ -26,7 +26,7 @@ ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in m
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
 ENT.PathGoalToleranceFinal = 175
-ENT.SpawnHealth = 50000
+ENT.SpawnHealth = 100000
 ENT.ExtraSpawnHealthPerPlayer = 5000
 ENT.HealthRegen = 8
 ENT.HealthRegenInterval = 1
@@ -34,8 +34,8 @@ ENT.AimSpeed = 300
 ENT.CrouchSpeed = 575
 ENT.WalkSpeed = 600
 ENT.MoveSpeed = 1000
-ENT.RunSpeed = 3000
-ENT.AccelerationSpeed = 750
+ENT.RunSpeed = 4000
+ENT.AccelerationSpeed = 850
 ENT.neverManiac = true
 
 ENT.zamb_MeleeAttackSpeed = 2
@@ -52,7 +52,7 @@ ENT.ARNOLD_MODEL = GOD_CRAB_MODEL
 ENT.TERM_MODELSCALE = 8
 ENT.CollisionBounds = { Vector( -1, -1, 0 ), Vector( 1, 1, 2 ) }
 ENT.CrouchCollisionBounds = { Vector( -0.75, -0.75, 0 ), Vector( 0.75, 0.75, 1.75 ) }
-ENT.MyPhysicsMass = 15000
+ENT.MyPhysicsMass = 50000
 
 ENT.Term_BaseTimeBetweenSteps = 1100
 ENT.Term_StepSoundTimeMul = 1.05
@@ -133,7 +133,11 @@ function ENT:OnFootstep( pos, _foot, _sound, volume, _filter )
         lvl = 76
 
     end
-    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_BODY, sndFlags )
+
+    local FilterAllPlayers = RecipientFilter()
+    FilterAllPlayers:AddAllPlayers()
+    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_BODY, sndFlags, 0, FilterAllPlayers )
+
     util.ScreenShake( pos, lvl / 10, 20, 0.5, 500 )
     util.ScreenShake( pos, lvl / 40, 5, 1.5, 1500 )
     return true
@@ -164,6 +168,11 @@ local screamsOfTheDamned = {
 
 }
 
+function ENT:ScreamsOfTheDamned( myTbl )
+    self:EmitSound( screamsOfTheDamned[math.random( 1, #screamsOfTheDamned )], 64 + myTbl.term_SoundLevelShift, math.random( 90, 110 ) + myTbl.term_SoundPitchShift, 1, CHAN_STATIC )
+
+end
+
 function ENT:AdditionalThink( myTbl )
     BaseClass.AdditionalThink( self, myTbl )
     local cur = CurTime()
@@ -172,6 +181,145 @@ function ENT:AdditionalThink( myTbl )
     if math.Rand( 0, 100 ) > 3 and nextForced > cur then return end
     myTbl.hugeHeadcrabForceScream = cur + math.Rand( 3, 5 )
 
-    self:EmitSound( screamsOfTheDamned[math.random( 1, #screamsOfTheDamned )], 64 + myTbl.term_SoundLevelShift, math.random( 90, 110 ) + myTbl.term_SoundPitchShift, 1, CHAN_STATIC )
+    self:ScreamsOfTheDamned( myTbl )
 
+end
+
+-- makes us wait a second at 0 hp when dying
+ENT.Term_DeathAnim = {
+    act = "rearup",
+    rate = 0.15,
+}
+
+ENT.HasClassTask = true
+function ENT:SetupClassTask( myTbl, myClassTask )
+    myClassTask.ZambAngeringCall = function( self, data )
+        local shock = EffectData()
+        shock:SetOrigin( self:WorldSpaceCenter() )
+        shock:SetScale( 0.1 )
+        util.Effect( "m9k_yoinked_shockwave", shock )
+
+    end
+
+    myClassTask.DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
+        if fallHeight <= 250 then return end
+        local myPos = self:GetPos()
+        local scale = fallHeight / 2000
+        scale = math.Clamp( scale, 0, 2 )
+
+        local shock = EffectData()
+        shock:SetOrigin( myPos )
+        shock:SetScale( scale )
+        util.Effect( "m9k_yoinked_shockwave", shock )
+
+        if fallHeight < 1000 then return end
+
+        local dmgRad = fallHeight * 0.5
+        dmgRad = math.Clamp( dmgRad, 500, 5000 )
+
+        local dmg = 250 * scale
+        util.BlastDamage( self, self, self:GetPos(), dmgRad, dmg )
+
+        local splode = EffectData()
+        splode:SetOrigin( myPos )
+        splode:SetNormal( Vector( 0, 0, 1 ) )
+        splode:SetScale( scale * 2 )
+        util.Effect( "huge_m9k_yoinked_splode", splode )
+
+    end
+
+    myClassTask.OnStartDying = function( self, data )
+        self:ZAMB_AngeringCall( true, 0.1 )
+        util.ScreenShake( self:GetPos(), 100, 50, 1, 2000, true )
+        local timerName = "thegodcrab_bubbleskin_" .. self:GetCreationID()
+        local scale = 1
+        timer.Create( timerName, 0.1, 0, function()
+            if not IsValid( self ) then timer.Remove( timerName ) return end
+            scale = scale + 0.01
+            self:ScreamsOfTheDamned( myTbl )
+            -- manupulate our bones's scale, warping them as time goes on
+            local bones = self:GetBoneCount()
+            for bone = 0, bones - 1 do
+                local finalScale = Vector( math.Rand( 0.5, 1.5 ), math.Rand( 0.5, 1.5 ), math.Rand( 0.1, 2 ) ) * scale
+                self:ManipulateBoneScale( bone, finalScale )
+
+            end
+        end )
+        local max = 22
+        for i = 1, max do
+            timer.Simple( i * 0.2, function()
+                if not IsValid( self ) then return end
+                local offset = VectorRand() * 100
+                local explosion = ents.Create( "env_explosion" )
+                explosion:SetPos( self:WorldSpaceCenter() + offset )
+                explosion:SetOwner( self )
+                explosion:Spawn()
+                explosion:SetKeyValue( "iMagnitude", 25 * i )
+                explosion:Fire( "Explode", 0, 0 )
+
+                if i > max - 2 then
+                    local splode = EffectData()
+                    splode:SetOrigin( self:WorldSpaceCenter() + offset )
+                    splode:SetNormal( Vector( 0, 0, 1 ) )
+                    splode:SetScale( i * 0.1 )
+                    util.Effect( "huge_m9k_yoinked_splode", splode )
+
+                end
+            end )
+        end
+    end
+    myClassTask.OnKilled = function( self, data )
+        local myPos = self:GetPos()
+
+        local filterAllPlayers = RecipientFilter()
+        filterAllPlayers:AddAllPlayers()
+
+        local splode = EffectData()
+        splode:SetOrigin( myPos )
+        splode:SetNormal( Vector( 0, 0, 1 ) )
+        splode:SetScale( 8 )
+        util.Effect( "huge_m9k_yoinked_splode", splode, filterAllPlayers )
+
+        local shock = EffectData()
+        shock:SetOrigin( myPos )
+        shock:SetScale( 2.5 )
+        util.Effect( "m9k_yoinked_shockwave", shock, filterAllPlayers )
+
+        -- lots of striderblood effects
+        for _ = 1, 20 do
+            local dir = VectorRand()
+            local effectdata = EffectData()
+            effectdata:SetOrigin( myPos )
+            effectdata:SetNormal( dir )
+            effectdata:SetScale( math.Rand( 1, 8 ) )
+            util.Effect( "StriderBlood", effectdata, filterAllPlayers )
+
+        end
+
+        util.BlastDamage( self, self, self:WorldSpaceCenter(), 5000, 50 )
+        util.BlastDamage( self, self, self:WorldSpaceCenter(), 1500, 10000 )
+
+        util.ScreenShake( myPos, 100, 50, 5, 2500, true )
+        util.ScreenShake( myPos, 10, 50, 5, 8000, true )
+
+        self:EmitSound( "explode_9", 150, 80, 1, CHAN_STATIC, SND_NOFLAGS, 0, filterAllPlayers )
+        self:EmitSound( "npc/antlion_guard/antlion_guard_die1.wav", 125, 50, 1, CHAN_STATIC, SND_NOFLAGS, 0, filterAllPlayers )
+        self:EmitSound( "npc/stalker/go_alert2a.wav", 150, 25, 0.75, CHAN_STATIC, SND_NOFLAGS, 22, filterAllPlayers )
+        self:EmitSound( "ambient/levels/labs/teleport_postblast_thunder1.wav", 150, 15, 0.75, CHAN_STATIC, SND_NOFLAGS, 0, filterAllPlayers )
+
+        local playersDone = self.ExtraSpawnHealthPlayersDone or 0
+        local count = math.Clamp( 2 + math.floor( playersDone / 5 ) * 2, 2, 4 )
+        timer.Simple( 0, function()
+            for _ = 1, count do
+                local pos = myPos + Vector( math.random( -50, 50 ), math.random( -50, 50 ), 0 )
+                local babby = ents.Create( "terminator_nextbot_zambiebigheadcrab" )
+                if not IsValid( babby ) then continue end
+                babby:SetPos( pos )
+                babby.SpawnHealth = babby.SpawnHealth * 0.5
+                babby.ExtraSpawnHealthPerPlayer = babby.ExtraSpawnHealthPerPlayer * 0.5
+                babby:Spawn()
+
+            end
+        end )
+    end
 end

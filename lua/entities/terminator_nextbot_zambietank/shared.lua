@@ -29,12 +29,12 @@ ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.SpawnHealth = 6000
+ENT.SpawnHealth = 8000
 ENT.ExtraSpawnHealthPerPlayer = 500
 ENT.AimSpeed = 400
 ENT.WalkSpeed = 60
 ENT.MoveSpeed = 350
-ENT.RunSpeed = 550
+ENT.RunSpeed = 750
 ENT.AccelerationSpeed = 1000
 ENT.neverManiac = true
 
@@ -46,7 +46,7 @@ ENT.zamb_AttackAnim = ACT_GMOD_GESTURE_RANGE_ZOMBIE_SPECIAL -- ACT_RANGE_ATTACK1
 ENT.FistDamageMul = 15
 ENT.FistForceMul = 12
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
-ENT.DuelEnemyDist = 550
+ENT.DuelEnemyDist = 600
 
 local TANK_ZAMBIE_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = TANK_ZAMBIE_MODEL
@@ -68,7 +68,7 @@ ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
     [ACT_MP_STAND_IDLE]                 = ACT_HL2MP_IDLE_CROUCH,
     [ACT_MP_WALK]                       = ACT_HL2MP_WALK_ZOMBIE_06,
-    [ACT_MP_RUN]                        = ACT_HL2MP_WALK_ZOMBIE_06,
+    [ACT_MP_RUN]                        = ACT_HL2MP_RUN_ZOMBIE_FAST,
     [ACT_MP_CROUCH_IDLE]                = ACT_HL2MP_IDLE_CROUCH,
     [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
     [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
@@ -95,7 +95,7 @@ function ENT:canDoRun()
 end
 
 function ENT:shouldDoWalk()
-    if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio and not self.zamb_HasArmor then
+    if self.EnemiesVehicle or self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio and not self.zamb_HasArmor then
         return BaseClass.shouldDoWalk( self )
 
     else
@@ -123,9 +123,10 @@ function ENT:AdditionalInitialize()
     self:SetModel( TANK_ZAMBIE_MODEL )
 
     self.isTerminatorHunterChummy = "zambies"
-    self.HasBrains = true
+    self.HasBrains = false
 
     self.nextInterceptTry = 0
+    self.term_NextIdleTaunt = 0
 
     self.term_SoundPitchShift = -45
     self.term_SoundLevelShift = 20
@@ -158,7 +159,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/antlion/antlionhigh_sheet" )
     self.zamb_HasArmor = true
-    self.zamb_LoseCoolRatio = 0.5
+    self.zamb_LoseCoolRatio = 0.75
     self.zamb_UnderArmorMat = "models/flesh"
 
 end
@@ -168,20 +169,21 @@ function ENT:BreakArmor()
     self.zamb_HasArmor = nil
     self:SetSubMaterial( 0, self.zamb_UnderArmorMat )
     self:Term_ClearStuffToSay()
-    self:ZAMB_AngeringCall()
-    self:StopMoving()
+    self:ZAMB_AngeringCall( true )
+    self:ReallyAnger( 60 )
     self.Term_BaseTimeBetweenSteps = 400
     self.Term_StepSoundTimeMul = 0.6
 
 
     self.JumpHeight = 300
     self.UnreachableAreas = {}
+    self.FistRangeMul = 2
 
     self.zamb_LookAheadWhenRunning = true
     self.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_ZOMBIE_FAST
 
     self:StopSound( self.AngryLoopingSounds[1] )
-    self.AccelerationSpeed = 250
+    self.AccelerationSpeed = 350
     self.loco:SetAcceleration( self.AccelerationSpeed )
 
     self.AlwaysPlayLooping = true

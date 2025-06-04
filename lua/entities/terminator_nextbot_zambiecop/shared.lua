@@ -60,7 +60,9 @@ ENT.FistForceMul = 51
 ENT.FistRangeMul = 2
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 500
+
 ENT.DoMetallicDamage = false
+ENT.MetallicMoveSounds = true
 ENT.ReallyHeavy = true
 
 local COP_ZAMBIE_MODEL = "models/player/classic_zombie_player_new.mdl" --https://steamcommunity.com/sharedfiles/filedetails/?id=669645732
