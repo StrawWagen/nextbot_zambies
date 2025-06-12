@@ -18,6 +18,7 @@ if CLIENT then
     return
 end
 
+ENT.IsFodder = nil
 ENT.CoroutineThresh = 0.003
 
 ENT.JumpHeight = 3000
@@ -38,6 +39,8 @@ ENT.RunSpeed = 4000
 ENT.AccelerationSpeed = 850
 ENT.neverManiac = true
 
+ENT.TERM_FOV = 120
+
 ENT.zamb_MeleeAttackSpeed = 2
 ENT.zamb_MeleeAttackHitFrameMul = 40
 ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
@@ -46,6 +49,7 @@ ENT.FistDamageMul = 40
 ENT.FistForceMul = 40
 ENT.FistRangeMul = 4
 ENT.DuelEnemyDist = 1250
+ENT.PrefersVehicleEnemies = true
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"
 ENT.ARNOLD_MODEL = GOD_CRAB_MODEL
@@ -179,7 +183,16 @@ function ENT:AdditionalThink( myTbl )
     local nextForced = myTbl.hugeHeadcrabForceScream or 0
 
     if math.Rand( 0, 100 ) > 3 and nextForced > cur then return end
-    myTbl.hugeHeadcrabForceScream = cur + math.Rand( 3, 5 )
+    local add = math.Rand( 5, 10 )
+    if self:IsReallyAngry() then
+        add = math.Rand( 0, 2 )
+
+    elseif self:IsAngry() then
+        add = math.Rand( 2, 5 )
+
+    end
+
+    myTbl.hugeHeadcrabForceScream = cur + add
 
     self:ScreamsOfTheDamned( myTbl )
 
@@ -204,8 +217,8 @@ function ENT:SetupClassTask( myTbl, myClassTask )
     myClassTask.DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
         if fallHeight <= 250 then return end
         local myPos = self:GetPos()
-        local scale = fallHeight / 2000
-        scale = math.Clamp( scale, 0, 2 )
+        local scale = fallHeight / 1500
+        scale = math.Clamp( scale, 0, 2.5 )
 
         local shock = EffectData()
         shock:SetOrigin( myPos )
@@ -278,12 +291,12 @@ function ENT:SetupClassTask( myTbl, myClassTask )
         splode:SetOrigin( myPos )
         splode:SetNormal( Vector( 0, 0, 1 ) )
         splode:SetScale( 8 )
-        util.Effect( "huge_m9k_yoinked_splode", splode, filterAllPlayers )
+        util.Effect( "huge_m9k_yoinked_splode", splode, true, filterAllPlayers )
 
         local shock = EffectData()
         shock:SetOrigin( myPos )
-        shock:SetScale( 2.5 )
-        util.Effect( "m9k_yoinked_shockwave", shock, filterAllPlayers )
+        shock:SetScale( 3 )
+        util.Effect( "m9k_yoinked_shockwave", shock, true, filterAllPlayers )
 
         -- lots of striderblood effects
         for _ = 1, 20 do
@@ -292,7 +305,7 @@ function ENT:SetupClassTask( myTbl, myClassTask )
             effectdata:SetOrigin( myPos )
             effectdata:SetNormal( dir )
             effectdata:SetScale( math.Rand( 1, 8 ) )
-            util.Effect( "StriderBlood", effectdata, filterAllPlayers )
+            util.Effect( "StriderBlood", effectdata, true, filterAllPlayers )
 
         end
 
@@ -316,7 +329,7 @@ function ENT:SetupClassTask( myTbl, myClassTask )
                 if not IsValid( babby ) then continue end
                 babby:SetPos( pos )
                 babby.SpawnHealth = babby.SpawnHealth * 0.5
-                babby.ExtraSpawnHealthPerPlayer = babby.ExtraSpawnHealthPerPlayer * 0.5
+                babby.ExtraSpawnHealthPerPlayer = babby.ExtraSpawnHealthPerPlayer * 0.1
                 babby:Spawn()
 
             end

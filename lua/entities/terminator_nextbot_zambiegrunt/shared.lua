@@ -162,6 +162,7 @@ end
 
 function ENT:IsImmuneToDmg( dmg )
     if dmg:IsBulletDamage() then return end -- handled above
+    if dmg:IsExplosionDamage() and dmg:GetDamage() > 300 then return end -- thats alot of damage! cant resist that
     dmg:ScaleDamage( 0.25 )
 
 end

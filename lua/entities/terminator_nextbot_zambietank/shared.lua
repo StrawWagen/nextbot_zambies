@@ -47,6 +47,7 @@ ENT.FistDamageMul = 15
 ENT.FistForceMul = 12
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 600
+ENT.PrefersVehicleEnemies = true
 
 local TANK_ZAMBIE_MODEL = "models/player/zombine/combine_zombie.mdl"
 ENT.ARNOLD_MODEL = TANK_ZAMBIE_MODEL

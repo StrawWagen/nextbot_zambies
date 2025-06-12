@@ -50,6 +50,7 @@ ENT.FistForceMul = 20
 ENT.FistRangeMul = 2
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 800
+ENT.PrefersVehicleEnemies = true
 ENT.IsEldritch = true -- GLEE
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"
@@ -76,7 +77,7 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RUN]                        = ACT_RUN,
     [ACT_MP_CROUCH_IDLE]                = ACT_IDLE,
     [ACT_MP_CROUCHWALK]                 = ACT_RUN,
-    [ACT_MP_JUMP]                       = 2082, -- ACT_HEADCRAB_DROWN
+    [ACT_MP_JUMP]                       = ACT_JUMP,
     [ACT_MP_JUMP_START]                 = ACT_RANGE_ATTACK1,
     [ACT_MP_SWIM]                       = ACT_RUN,
     [ACT_LAND]                          = "ceiling_land",

@@ -53,7 +53,7 @@ ENT.CanUseStuff = nil
 
 ENT.FistDamageMul = 0.35
 ENT.NoAnimLayering = nil -- this is what makes it stop moving forward when attacking
-ENT.DuelEnemyDist = 350
+ENT.DuelEnemyDist = 450
 ENT.CloseEnemyDistance = 500
 
 ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
@@ -642,6 +642,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local nextPathAttempt = myTbl.zamb_NextPathAttempt
 
                 if nextPathAttempt < CurTime() and toPos and not data.Unreachable and myTbl.primaryPathInvalidOrOutdated( self, toPos ) then
+                    self:InvalidatePath( "zamb_followenemy" )
                     coroutine_yield()
                     myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
                     if myTbl.term_ExpensivePath then
@@ -679,7 +680,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                         end
                     end
-                    -- cant flank
+                    -- flank failed or we're not smart enough to flank
                     if not myTbl.primaryPathIsValid( self ) then
                         myTbl.SetupPathShell( self, result.pos )
                         data.triedToPath = true
@@ -705,7 +706,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
 
                 if lookAtGoal then
-                    myTbl.blockAimingAtEnemy = CurTime() + 0.15
+                    myTbl.blockAimingAtEnemy = CurTime() + 0.25
 
                 end
 
@@ -747,7 +748,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
                 elseif goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
                     myTbl.TaskComplete( self, "movement_followenemy" )
-                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "i gotta punch em" )
+                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "i gotta slash em" )
 
                 elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 300 ) then
                     data.overridePos = nil
@@ -814,26 +815,25 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     end
                 elseif validEnemy then -- the dueling in question
-
                     if waterFight and self.loco:IsOnGround() then
                         self:StartSwimming()
 
                     end
                     coroutine_yield()
+                    if not IsValid( enemy ) then return end
 
                     -- default, just run up to enemy
                     local gotoPos = enemyPos
                     local angy = myTbl.IsAngry( self )
+
                     -- if we mad though, predict where they will go, and surprise them
                     if myTbl.HasBrains and angy and enemy.GetAimVector then
-                        coroutine_yield()
                         local flat = enemy:GetAimVector()
                         flat.z = 0
                         flat:Normalize()
                         gotoPos = enemyPos + -flat
 
                     elseif angy then
-                        coroutine_yield()
                         local enemVel = enemy:GetVelocity()
                         enemVel.z = enemVel.z * 0.15
                         local velProduct = math.Clamp( enemVel:Length() * 1.4, 0, myTbl.DistToEnemy * 0.8 )
@@ -905,7 +905,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
                     if IsValid( data.currentFrenzyFocus ) and bestScore > 10 then
                         data.everFocused = true
-                        debugoverlay.Text( data.currentFrenzyFocus, tostring( bestScore ), 5, false )
+                        --debugoverlay.Text( data.currentFrenzyFocus, tostring( bestScore ), 5, false )
                         data.maxDist = 500
                         validFocus = true
                         focus = data.currentFrenzyFocus
@@ -1158,6 +1158,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 end
                 coroutine_yield()
                 if data.toPos and myTbl.primaryPathInvalidOrOutdated( self, data.toPos ) then
+                    self:InvalidatePath( "zamb_wander" )
                     local result = terminator_Extras.getNearestPosOnNav( data.toPos )
                     local reachable = myTbl.areaIsReachable( self, result.area )
                     if not reachable then

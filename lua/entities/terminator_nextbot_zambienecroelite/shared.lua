@@ -24,8 +24,8 @@ ENT.DefaultStepHeight = 20
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
 ENT.StepHeight = ENT.StandingStepHeight
-ENT.SpawnHealth = 20000
-ENT.ExtraSpawnHealthPerPlayer = 1000
+ENT.SpawnHealth = 25000
+ENT.ExtraSpawnHealthPerPlayer = 2500
 ENT.HealthRegen = 25
 ENT.HealthRegenInterval = 1
 ENT.WalkSpeed = 100
@@ -36,6 +36,9 @@ ENT.neverManiac = true
 ENT.FistDamageMul = 25
 ENT.FistForceMul = 20
 ENT.FistRangeMul = 2
+ENT.zamb_MeleeAttackHitFrameMul = 0.5
+
+ENT.PrefersVehicleEnemies = true
 
 ENT.TERM_MODELSCALE = 2.5
 ENT.CollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 22 ) }
@@ -56,7 +59,19 @@ function ENT:AdditionalInitialize()
     self.necro_MinionCountMul = 2
     self.necro_MinMinionCount = 2
     self.necro_MaxMinionCount = 24
-    self.necro_NormalMinionClass = "terminator_nextbot_zambie"
+    self.necro_NormalMinionClass = {
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambiegrunt",
+
+    }
 
     self.necro_ReachableFastMinionChance = 40
     self.necro_UnReachableFastMinionChance = 90

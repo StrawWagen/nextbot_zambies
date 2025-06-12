@@ -36,6 +36,7 @@ ENT.zamb_LookAheadWhenRunning = nil
 ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.DuelEnemyDist = 350
+ENT.PrefersVehicleEnemies = false
 ENT.NoAnimLayering = true
 
 local NECRO_ZAMBIE_MODEL = "models/Zombie/Poison.mdl"
@@ -235,6 +236,9 @@ function ENT:AdditionalThink()
                 if self:Health() <= 0 then return end
 
                 local class = self.necro_NormalMinionClass
+                if istable( class ) then
+                    class = class[ math.random( 1, #class ) ]
+                end
                 local fastChance = reachable and self.necro_ReachableFastMinionChance or self.necro_UnReachableFastMinionChance
                 if math.random( 1, 100 ) < fastChance then
                     class = self.necro_FastMinionClass
