@@ -10,31 +10,8 @@ list.Set( "NPC", "terminator_nextbot_zambie", {
     Category = "Nextbot Zambies",
 } )
 
-local function copyMatsOver( from, to )
-    for ind = 0, #from:GetMaterials() do
-        local mat = from:GetSubMaterial( ind )
-        if mat and mat ~= "" then
-            to:SetSubMaterial( ind, mat )
-
-        end
-    end
-    local myMat = from:GetMaterial()
-    if myMat and myMat ~= "" then
-        to:SetMaterial( myMat )
-
-    end
-end
-
 if CLIENT then
     language.Add( "terminator_nextbot_zambie", ENT.PrintName )
-
-    hook.Add( "CreateClientsideRagdoll", "zambie_fixcorpsemats", function( ent, newRagdoll )
-        if not string.find( ent:GetClass(), "zambie" ) then return end
-        copyMatsOver( ent, newRagdoll )
-
-        -- tried setting mdlscale here too, didnt work
-
-    end )
 
     function ENT:AdditionalClientInitialize()
         local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
@@ -54,8 +31,8 @@ local entMeta = FindMetaTable( "Entity" )
 local coroutine_yield = coroutine.yield
 
 ENT.CoroutineThresh = 0.00001
-ENT.ThreshMulIfDueling = 2 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
-ENT.ThreshMulIfClose = 1.25 -- if we're closer than DuelEnemyDist * 2
+ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
+ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 80
@@ -241,7 +218,7 @@ function ENT:AdditionalInitialize()
 
     self.isTerminatorHunterChummy = "zambies"
     self.nextInterceptTry = 0
-    self.term_NextIdleTaunt = CurTime() + 4
+    self.term_NextIdleTaunt = CurTime() + 2
     self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < self.zamb_BrainsChance
     if hasBrains then
@@ -262,13 +239,13 @@ local cutoff = 35^2
 
 function ENT:AdditionalThink()
     if self.loco:GetVelocity():LengthSqr() > cutoff then
-        self.term_NextIdleTaunt = CurTime() + math.Rand( 0.5, 1 )
+        self.term_NextIdleTaunt = CurTime() + math.Rand( 0.25, 0.5 )
         return
 
     end
     if self.term_NextIdleTaunt > CurTime() then return end
 
-    self.term_NextIdleTaunt = CurTime() + math.Rand( 3, 7 )
+    self.term_NextIdleTaunt = CurTime() + math.Rand( 1, 2 )
 
     self:RunTask( "ZambOnGrumpy" )
 
@@ -289,34 +266,65 @@ function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
 
 end
 
-function ENT:ZAMB_AngeringCall()
-    self:Term_SpeakSound( "blarg", function( me )
-        self:StopMoving()
-        self:InvalidatePath( "angeringcall" )
-        self.nextNewPath = CurTime() + 2
+local function angeringCallFunc( me, rate )
 
-        local callAnim = me.zamb_CallAnim or ACT_GMOD_GESTURE_TAUNT_ZOMBIE
-        me:DoGesture( callAnim, 0.8, true )
+    me:RunTask( "ZambAngeringCall" )
 
-        local filterAllPlayers = RecipientFilter()
-        filterAllPlayers:AddAllPlayers()
-        me:EmitSound( self.term_CallingSound, 120 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 0.5, CHAN_STATIC, sndFlags, nil, filterAllPlayers )
-        me:EmitSound( self.term_CallingSmallSound, 85 + self.term_SoundLevelShift, math.random( 75, 85 ) + self.term_SoundPitchShift, 1, CHAN_STATIC, sndFlags, nil )
+    rate = rate or 1
 
-        for _, ally in ipairs( self:GetNearbyAllies() ) do
-            if not IsValid( ally ) then continue end
-            local time = math.Rand( 1, 3 )
-            if ally.HasBrains then
-                time = 0.5
+    me:StopMoving()
+    me:InvalidatePath( "angeringcall" )
+    me.nextNewPath = CurTime() + 2 * rate
 
-            end
-            timer.Simple( time, function()
-                if not IsValid( ally ) then return end
+    me.term_NextIdleTaunt = CurTime() + 8
+
+    local callAnim = me.zamb_CallAnim or ACT_GMOD_GESTURE_TAUNT_ZOMBIE
+    me:DoGesture( callAnim, 0.8 * rate, true )
+
+    local filterAllPlayers = RecipientFilter()
+    filterAllPlayers:AddAllPlayers()
+    me:EmitSound( me.term_CallingSound, 120 + me.term_SoundLevelShift, math.random( 95, 105 ) + me.term_SoundPitchShift, 0.5, CHAN_STATIC, sndFlags, nil, filterAllPlayers )
+    me:EmitSound( me.term_CallingSmallSound, 85 + me.term_SoundLevelShift, math.random( 75, 85 ) + me.term_SoundPitchShift, 1, CHAN_STATIC, sndFlags, nil )
+
+    local myCallId = me.zamb_CallId
+    local myHealth = me:Health()
+
+    for _, ally in ipairs( me:GetNearbyAllies() ) do
+        if not IsValid( ally ) then continue end
+        local time = math.Rand( 1, 3 )
+        if ally.HasBrains then
+            time = 0.5
+
+        end
+        timer.Simple( time, function()
+            if not IsValid( ally ) then return end
+            local chainCall = ( not ally.HasBrains and ally:Health() > myHealth and math.random( 0, 100 ) < 55 ) or math.random( 0, 100 ) < 15
+            if chainCall and myCallId and ( not ally.zamb_CallId or ally.zamb_CallId < myCallId ) then
+                ally:ZAMB_AngeringCall( true, 1, false )
+                ally.zamb_CallId = myCallId
+
+            else
                 ally:Anger( math.random( 55, 75 ) )
 
-            end )
-        end
-    end )
+            end
+        end )
+    end
+
+    return true
+end
+
+function ENT:ZAMB_AngeringCall( doNow, rate, newCall )
+    if newCall then
+        self.zamb_CallId = CurTime()
+
+    end
+    if doNow then
+        angeringCallFunc( self, rate )
+
+    else
+        self:Term_SpeakSound( "blarg", function( me ) angeringCallFunc( me, rate ) end )
+
+    end
 end
 
 function ENT:ZAMB_NormalCall()
@@ -382,6 +390,7 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_wait"] = defaultTasks["movement_wait"],
         ["playercontrol_handler"] = defaultTasks["playercontrol_handler"],
         ["zambstuff_handler"] = {
+            StartsOnInitialize = true,
             ZambOnGrumpy = function( self, data )
                 local cur = CurTime()
                 if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
@@ -493,7 +502,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     hook.Run( "zamb_OnBecomeTorso", self, torso )
                     undo.ReplaceEntity( self, torso )
-                    copyMatsOver( self, torso )
+                    terminator_Extras.copyMatsOver( self, torso )
 
                     terminator_Extras.zamb_TorsoDensityNum = math.max( oldDensity + torso:Health() / 2, cur + torso:Health() / 2 )
 
@@ -538,7 +547,7 @@ function ENT:DoCustomTasks( defaultTasks )
                                 legs:SetPos( self:GetPos() )
                                 legs:SetAngles( self:GetAngles() )
                                 legs:Spawn()
-                                copyMatsOver( self, legs )
+                                terminator_Extras.copyMatsOver( self, legs )
                                 legs:SetVelocity( damage:GetDamageForce() )
 
                             end
@@ -602,9 +611,9 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
         },
         ["movement_handler"] = {
+            StartsOnInitialize = true,
             OnStart = function( self, data )
                 local myTbl = data.myTbl
-                myTbl.StartTask( self, "zambstuff_handler" )
                 myTbl.TaskComplete( self, "movement_handler" )
                 myTbl.StartTask2( self, "movement_wander", nil, "spawned in!" )
 
@@ -1005,7 +1014,8 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_wander"] = {
             OnStart = function( self, data )
                 local myTbl = data.myTbl
-                myTbl.nextInterceptTry = math.max( CurTime() + 1, myTbl.nextInterceptTry + 1 )
+                local lastInterceptTry = myTbl.nextInterceptTry or 0
+                myTbl.nextInterceptTry = math.max( CurTime() + 1, lastInterceptTry + 1 )
                 if not myTbl.isUnstucking then
                     myTbl.InvalidatePath( self, "followenemy" )
                 end

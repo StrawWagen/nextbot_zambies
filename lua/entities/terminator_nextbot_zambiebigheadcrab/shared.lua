@@ -19,8 +19,7 @@ if CLIENT then
 end
 
 ENT.IsFodder = nil
-ENT.CoroutineThresh = 0.0001
-ENT.MaxPathingIterations = 25000
+ENT.CoroutineThresh = 0.0005
 
 ENT.JumpHeight = 500
 ENT.DefaultStepHeight = 25
@@ -48,7 +47,7 @@ ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
 ENT.FistDamageMul = 20
 ENT.FistForceMul = 20
-ENT.FistRangeMul = 2.5
+ENT.FistRangeMul = 2
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 800
 ENT.IsEldritch = true -- GLEE
@@ -59,6 +58,7 @@ ENT.TERM_MODELSCALE = 4
 ENT.CollisionBounds = { Vector( -3, -3, 0 ), Vector( 3, 3, 5 ) }
 ENT.CrouchCollisionBounds = { Vector( -1.5, -1.5, 0 ), Vector( 1.5, 1.5, 4.9 ) }
 ENT.MyPhysicsMass = 5000
+ENT.ReallyHeavy = true
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
@@ -68,7 +68,7 @@ ENT.Term_StepSoundTimeMul = 1.05
 
 ENT.Models = { GOD_CRAB_MODEL }
 
-local IdleActivity = ACT_HL2MP_IDLE_ZOMBIE
+local IdleActivity = "LookAround"
 ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
     [ACT_MP_STAND_IDLE]                 = ACT_IDLE,
@@ -76,13 +76,10 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_RUN]                        = ACT_RUN,
     [ACT_MP_CROUCH_IDLE]                = ACT_IDLE,
     [ACT_MP_CROUCHWALK]                 = ACT_RUN,
-    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
-    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
-    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
-    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
-    [ACT_MP_JUMP]                       = ACT_RANGE_ATTACK1,
+    [ACT_MP_JUMP]                       = 2082, -- ACT_HEADCRAB_DROWN
+    [ACT_MP_JUMP_START]                 = ACT_RANGE_ATTACK1,
     [ACT_MP_SWIM]                       = ACT_RUN,
-    [ACT_LAND]                          = 2089,
+    [ACT_LAND]                          = "ceiling_land",
 }
 
 ENT.zamb_CallAnim = "rearup"
