@@ -56,16 +56,10 @@ function ENT:AdditionalInitialize()
 
     self.zamb_LoseCoolRatio = 0.75
 
-    self.necro_MinionCountMul = 2
+    self.necro_MinionCountMul = 1.75
     self.necro_MinMinionCount = 2
-    self.necro_MaxMinionCount = 24
+    self.necro_MaxMinionCount = 20
     self.necro_NormalMinionClass = {
-        "terminator_nextbot_zambie",
-        "terminator_nextbot_zambie",
-        "terminator_nextbot_zambie",
-        "terminator_nextbot_zambie",
-        "terminator_nextbot_zambie",
-        "terminator_nextbot_zambie",
         "terminator_nextbot_zambie",
         "terminator_nextbot_zambie",
         "terminator_nextbot_zambie",
@@ -73,13 +67,37 @@ function ENT:AdditionalInitialize()
 
     }
 
-    self.necro_ReachableFastMinionChance = 40
-    self.necro_UnReachableFastMinionChance = 90
+    self.necro_ReachableFastMinionChance = 15
+    self.necro_UnReachableFastMinionChance = 55
     self.necro_UnreachableCountAdd = 4
-    self.necro_FastMinionClass = "terminator_nextbot_zambiefast"
+    self.necro_FastMinionClass = {
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefast",
+        "terminator_nextbot_zambiefastgrunt",
 
-    self.necro_NearDeathClassChance = 10
-    self.necro_NearDeathMinionClass = "terminator_nextbot_zambieberserk"
+    }
+
+    self.necro_NearDeathClassChance = 25
+    self.necro_NearDeathMinionClass = {
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambieberserk",
+        "terminator_nextbot_zambiewraith",
+        "terminator_nextbot_zambiewraith",
+        "terminator_nextbot_zambiewraith",
+        "terminator_nextbot_zambiewraith",
+        "terminator_nextbot_zambiewraithelite",
+
+    }
 
 end
 

@@ -128,7 +128,18 @@ function ENT:AdditionalInitialize()
     self.necro_MinionCountMul = 1
     self.necro_MinMinionCount = 0
     self.necro_MaxMinionCount = 12
-    self.necro_NormalMinionClass = "terminator_nextbot_zambie"
+    self.necro_NormalMinionClass = {
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambie",
+        "terminator_nextbot_zambiegrunt",
+
+    }
 
     self.necro_ReachableFastMinionChance = 40
     self.necro_UnReachableFastMinionChance = 90
@@ -185,7 +196,7 @@ function ENT:AdditionalThink()
         local result = terminator_Extras.getNearestPosOnNav( myEnem:GetPos() )
         reachable = self:areaIsReachable( result.area )
 
-        if reachable and self:primaryPathIsValid() and self.DistToEnemy < self:GetPath():GetLength() * 2 then
+        if reachable and self:primaryPathIsValid() and self.DistToEnemy < self:GetPath():GetLength() * 4 then
             reachable = false -- reachable but circiuitous path
 
         end
@@ -229,16 +240,14 @@ function ENT:AdditionalThink()
             self.zamb_NextMinionCheck = CurTime() + 4
 
         end
-        for _ = 1, diff do
-            local time = 0.8 + math.Rand( 0, 1 )
+        for i = 1, diff do
+            local time = i * 0.05
+            time = time + 0.8 + math.Rand( 0, 1 )
             timer.Simple( time, function()
                 if not IsValid( self ) then return end
                 if self:Health() <= 0 then return end
 
                 local class = self.necro_NormalMinionClass
-                if istable( class ) then
-                    class = class[ math.random( 1, #class ) ]
-                end
                 local fastChance = reachable and self.necro_ReachableFastMinionChance or self.necro_UnReachableFastMinionChance
                 if math.random( 1, 100 ) < fastChance then
                     class = self.necro_FastMinionClass
@@ -247,6 +256,9 @@ function ENT:AdditionalThink()
                 if nearDeath and math.random( 1, 100 ) < self.necro_NearDeathClassChance then
                     class = self.necro_NearDeathMinionClass
 
+                end
+                if istable( class ) then
+                    class = class[ math.random( 1, #class ) ]
                 end
                 local minion = ents.Create( class )
 
@@ -267,8 +279,10 @@ function ENT:AdditionalThink()
                 minion.HealthRegen = 0
                 minion:Spawn()
                 minion.HealthRegen = 0 -- here also for good measure
-                minion:SetSubMaterial( 0, "models/flesh" )
                 minion:SetHealth( math.max( minion:GetMaxHealth() / 2, 1 ) )
+
+                minion:SetSubMaterial( 0, "models/flesh" )
+                minion.zambGrunt_HasArmor = false
 
                 local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
                 timer.Create( timerId, math.Rand( 3, 6 ), 0, function()

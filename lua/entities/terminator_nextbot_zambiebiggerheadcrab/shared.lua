@@ -45,8 +45,8 @@ ENT.zamb_MeleeAttackSpeed = 2
 ENT.zamb_MeleeAttackHitFrameMul = 40
 ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
-ENT.FistDamageMul = 40
-ENT.FistForceMul = 40
+ENT.FistDamageMul = 100
+ENT.FistForceMul = 100
 ENT.FistRangeMul = 4
 ENT.DuelEnemyDist = 1250
 ENT.PrefersVehicleEnemies = true

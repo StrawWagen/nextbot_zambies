@@ -31,6 +31,8 @@ ENT.TERM_MODELSCALE = function() return math.Rand( 1.15, 1.2 ) end
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 14, 14, 60 ) } -- this is then scaled by modelscale
 ENT.MyPhysicsMass = 250
 
+ENT.zambGrunt_HasArmor = true
+
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     self.term_SoundPitchShift = -35

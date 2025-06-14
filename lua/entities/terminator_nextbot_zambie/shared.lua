@@ -30,7 +30,7 @@ local entMeta = FindMetaTable( "Entity" )
 
 local coroutine_yield = coroutine.yield
 
-ENT.CoroutineThresh = 0.00001
+ENT.CoroutineThresh = 0.00004
 ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500

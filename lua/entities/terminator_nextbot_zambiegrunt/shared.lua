@@ -41,6 +41,8 @@ ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
 ENT.Models = { GRUNT_MODEL }
 
+ENT.zambGrunt_HasArmor = true
+
 function ENT:AdditionalInitialize()
     self:SetModel( GRUNT_MODEL )
 
@@ -121,6 +123,7 @@ local HEAD = 1
 function ENT:HandleFlinching( dmg, hitGroup )
     if hitGroup == HEAD then
         BaseClass.HandleFlinching( self, dmg, hitGroup )
+
     end
 end
 
@@ -143,6 +146,7 @@ function ENT:PostTookBulletDamage( dmg, hitGroup )
 
         end )
     else
+        if not self.zambGrunt_HasArmor then return end -- no armor, no resist
         dmg:ScaleDamage( 0.25 )
         local pos = dmg:GetDamagePosition()
         timer.Simple( 0, function()
@@ -161,6 +165,7 @@ function ENT:PostTookBulletDamage( dmg, hitGroup )
 end
 
 function ENT:IsImmuneToDmg( dmg )
+    if not self.zambGrunt_HasArmor then return end -- no armor, no resist
     if dmg:IsBulletDamage() then return end -- handled above
     if dmg:IsExplosionDamage() and dmg:GetDamage() > 300 then return end -- thats alot of damage! cant resist that
     dmg:ScaleDamage( 0.25 )
@@ -172,7 +177,7 @@ function ENT:AdditionalThink( myTbl )
     local doAltRun = cur % 8 < 1.5
 
     if doAltRun then
-        myTbl.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_PROTECTED
+        myTbl.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_PROTECTED -- try and protect our head
 
     else
         myTbl.IdleActivityTranslations[ACT_MP_RUN] = ACT_HL2MP_RUN_ZOMBIE
