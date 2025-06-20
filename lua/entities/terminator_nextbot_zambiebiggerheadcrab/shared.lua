@@ -12,6 +12,8 @@ list.Set( "NPC", "terminator_nextbot_zambiebiggerheadcrab", {
     AdminOnly = true,
 } )
 
+ENT.IsEldritch = true -- GLEE
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiebiggerheadcrab", ENT.PrintName )
 

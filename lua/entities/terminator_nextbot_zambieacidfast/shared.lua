@@ -21,12 +21,12 @@ ENT.CoroutineThresh = 0.00005
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 200
-ENT.SpawnHealth = 200
+ENT.SpawnHealth = 100
 ENT.HealthRegen = 2
 ENT.HealthRegenInterval = 1
-ENT.WalkSpeed = 100
-ENT.MoveSpeed = 300
-ENT.RunSpeed = 400
+ENT.WalkSpeed = 150
+ENT.MoveSpeed = 350
+ENT.RunSpeed = 500
 ENT.AccelerationSpeed = 450
 
 ENT.zamb_LookAheadWhenRunning = true -- mdl doesnt support different move/look angles

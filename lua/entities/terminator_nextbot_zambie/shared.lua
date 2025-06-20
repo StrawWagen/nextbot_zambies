@@ -639,6 +639,15 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
 
+                local distToExit = myTbl.DuelEnemyDist
+
+                if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
+                    myTbl.TaskComplete( self, "movement_followenemy" )
+                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "i gotta slash em" )
+                    return
+
+                end
+
                 local nextPathAttempt = myTbl.zamb_NextPathAttempt
 
                 if nextPathAttempt < CurTime() and toPos and not data.Unreachable and myTbl.primaryPathInvalidOrOutdated( self, toPos ) then
@@ -697,9 +706,6 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 coroutine_yield()
 
-
-                local distToExit = myTbl.DuelEnemyDist
-
                 local lookAtGoal = myTbl.zamb_LookAheadWhenRunning or not ( myTbl.IsSeeEnemy and myTbl.HasBrains )
                 local result = self:ControlPath2( lookAtGoal )
                 coroutine_yield()
@@ -746,10 +752,6 @@ function ENT:DoCustomTasks( defaultTasks )
                         myTbl.StartTask2( self, "movement_wander", nil, "i cant get to them" )
 
                     end
-                elseif goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
-                    myTbl.TaskComplete( self, "movement_followenemy" )
-                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "i gotta slash em" )
-
                 elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 300 ) then
                     data.overridePos = nil
                     if not myTbl.IsSeeEnemy then

@@ -207,7 +207,7 @@ function ENT:AdditionalOnKilled()
     local timerName = "zambieacid_deathacid_" .. self:GetCreationID()
     local rad = 400
     timer.Create( timerName, 0.1, 5, function()
-        if not IsValid( self ) then return end
+        if not IsValid( self ) then timer.Remove( timerName ) return end
 
         acidPuff( self:GetPos(), rad / 4 )
         self:DoAoeAcidDamage( self, rad )

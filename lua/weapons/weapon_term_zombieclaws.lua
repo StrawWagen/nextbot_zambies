@@ -338,6 +338,13 @@ function SWEP:DealDamage()
     else
         local startPos = ownersShoot
         local smallerDist = math.min( firstTirDist, range * 0.75 )
+
+        if sizeMul > 25 then -- sanity clamp
+            local _, myMaxs = self:GetCollisionBounds()
+            sizeMul = math.min( sizeMul, myMaxs.z )
+
+        end
+
         local maxs = Vector( 10, 10, 8 ) * sizeMul
         local mins = -maxs
         mins.z = mins.z * 1.5

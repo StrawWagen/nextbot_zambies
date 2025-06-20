@@ -12,6 +12,8 @@ list.Set( "NPC", "terminator_nextbot_zambiebigheadcrab", {
     AdminOnly = true,
 } )
 
+ENT.IsEldritch = true -- GLEE
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiebigheadcrab", ENT.PrintName )
 
@@ -51,7 +53,6 @@ ENT.FistRangeMul = 2
 ENT.FistDamageType = bit.bor( DMG_SLASH, DMG_CLUB, DMG_GENERIC )
 ENT.DuelEnemyDist = 800
 ENT.PrefersVehicleEnemies = true
-ENT.IsEldritch = true -- GLEE
 
 local GOD_CRAB_MODEL = "models/headcrab.mdl"
 ENT.ARNOLD_MODEL = GOD_CRAB_MODEL
