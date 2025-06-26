@@ -4,12 +4,12 @@ local zambieSpawnSet = {
     name = "zambies_glee_harder", -- unique name
     prettyName = "Specially Infected Hell",
     description = "Zombies, everywhere!",
-    difficultyPerMin = { 250 / 10, 500 / 10 }, -- difficulty per minute
+    difficultyPerMin = "default*10", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = { 2 }, -- go up to 20 fast pls
-    startingSpawnCount = "default",
+    spawnCountPerDifficulty = { 4 }, -- go up to 20 fast pls
+    startingSpawnCount = { 8, 12 },
     maxSpawnCount = 25,
     maxSpawnDist = "default",
     chanceToBeVotable = 40,

@@ -31,7 +31,7 @@ local set = {
     name = "zambies_glee_allguns", -- unique name
     prettyName = "The American Undead",
     description = "Not even death can depart an American from the 2nd amendment.",
-    difficultyPerMin = { 250 / 10, 500 / 10 }, -- difficulty per minute
+    difficultyPerMin = "default*5", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = { 15, 25 }, -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = { 1, 5 }, -- so budget isnt 0
