@@ -50,7 +50,7 @@ local zambieSpawnSet = {
         },
         {
             hardRandomChance = { 1, 3 },
-            name = "zambie_flaming_RARE", -- spawns early with a max count
+            name = "zambie_flaming_RARE", -- rare spawn with a max count
             prettyName = "A Flaming Zombie",
             class = "terminator_nextbot_zambieflame",
             spawnType = "hunter",
@@ -61,8 +61,8 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 1, 3 },
-            name = "zambie_fastflaming_RARE", -- spawns later but no max count
+            hardRandomChance = { 1, 3 }, -- rare spawn with a max count
+            name = "zambie_fastflaming_RARE",
             prettyName = "A Fast Flaming Zombie",
             class = "terminator_nextbot_zambieflamefast",
             spawnType = "hunter",
@@ -73,8 +73,8 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 0, 2 },
-            name = "zambie_acid_RARE", -- spawns early with a max count
+            hardRandomChance = { 0, 2 }, -- rare spawn with a max count
+            name = "zambie_acid_RARE",
             prettyName = "An Acid Zombie",
             class = "terminator_nextbot_zambieacid",
             spawnType = "hunter",
@@ -84,8 +84,8 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 0, 2 },
-            name = "zambie_acid_RARE", -- spawns later but no max count
+            hardRandomChance = { 0, 2 }, -- rare spawn with a max count
+            name = "zambie_acid_RARE",
             prettyName = "A Fast Acid Zombie",
             class = "terminator_nextbot_zambieacidfast",
             spawnType = "hunter",
@@ -96,7 +96,7 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 2.5, 5 },
+            hardRandomChance = { 2.5, 5 }, -- rare early grunt
             name = "zambie_grunt_RARE",
             prettyName = "A Zombie Grunt",
             class = "terminator_nextbot_zambiegrunt",
@@ -108,7 +108,7 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 5, 15 },
+            hardRandomChance = { 5, 15 }, -- later grunt, way more common
             name = "zambie_grunt_COMMON",
             prettyName = "A Zombie Grunt",
             class = "terminator_nextbot_zambiegrunt",
@@ -119,7 +119,7 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 10, 25 },
+            hardRandomChance = { 10, 25 }, -- generic fast zombies
             name = "zambie_fast",
             prettyName = "A Fast Zombie",
             class = "terminator_nextbot_zambiefast",
