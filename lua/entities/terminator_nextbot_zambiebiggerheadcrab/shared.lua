@@ -60,8 +60,8 @@ ENT.CollisionBounds = { Vector( -1, -1, 0 ), Vector( 1, 1, 2 ) }
 ENT.CrouchCollisionBounds = { Vector( -0.75, -0.75, 0 ), Vector( 0.75, 0.75, 1.75 ) }
 ENT.MyPhysicsMass = 50000
 
-ENT.Term_BaseMsBetweenSteps = 1100
-ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
+ENT.Term_BaseTimeBetweenSteps = 1100
+ENT.Term_StepSoundTimeMul = 1.05
 
 -- launch stuff towards our enemy!
 function ENT:PostHitObject( hit )

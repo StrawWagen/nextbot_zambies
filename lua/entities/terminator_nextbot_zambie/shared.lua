@@ -77,7 +77,6 @@ ENT.zamb_NextPathAttempt = 0
 ENT.IsFodder = true
 ENT.IsStupid = true
 ENT.CanSpeak = true
-ENT.HasBrains = false -- default to no brains
 
 local ZAMBIE_MODEL = "models/player/zombie_classic.mdl"
 ENT.ARNOLD_MODEL = ZAMBIE_MODEL

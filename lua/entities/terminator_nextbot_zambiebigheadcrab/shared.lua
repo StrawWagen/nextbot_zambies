@@ -64,8 +64,8 @@ ENT.ReallyHeavy = true
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
-ENT.Term_BaseMsBetweenSteps = 800
-ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
+ENT.Term_BaseTimeBetweenSteps = 800
+ENT.Term_StepSoundTimeMul = 1.05
 
 
 ENT.Models = { GOD_CRAB_MODEL }

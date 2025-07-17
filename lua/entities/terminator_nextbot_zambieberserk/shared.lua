@@ -47,8 +47,8 @@ ENT.zamb_MeleeAttackSpeed = 2
 ENT.DuelEnemyDist = 600
 ENT.CloseEnemyDistance = 500
 
-ENT.Term_BaseMsBetweenSteps = 400
-ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
+ENT.Term_BaseTimeBetweenSteps = 400
+ENT.Term_StepSoundTimeMul = 1.05
 
 ENT.IsFodder = true
 ENT.IsStupid = true

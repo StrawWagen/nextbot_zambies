@@ -51,8 +51,8 @@ ENT.MyPhysicsMass = 5000
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
-ENT.Term_BaseMsBetweenSteps = 400
-ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
+ENT.Term_BaseTimeBetweenSteps = 400
+ENT.Term_StepSoundTimeMul = 1.05
 
 
 -- tanks dont care about body smell
@@ -80,8 +80,8 @@ end
 function ENT:BreakArmor()
     BaseClass.BreakArmor( self )
 
-    self.Term_BaseMsBetweenSteps = 400
-    self.Term_FootstepMsReductionPerUnitSpeed = 0.6
+    self.Term_BaseTimeBetweenSteps = 400
+    self.Term_StepSoundTimeMul = 0.6
 
     self.JumpHeight = 600
     self.FistRangeMul = 2.5
