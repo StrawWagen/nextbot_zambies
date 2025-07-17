@@ -49,7 +49,7 @@ ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
 
 ENT.Models = { NECRO_ZAMBIE_MODEL }
-ENT.Term_BaseTimeBetweenSteps = 500
+ENT.Term_BaseMsBetweenSteps = 500
 
 IdleActivity = ACT_IDLE
 ENT.IdleActivity = IdleActivity
