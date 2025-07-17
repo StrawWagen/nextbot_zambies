@@ -96,26 +96,37 @@ function ENT:AdditionalInitialize()
 
 end
 
-local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
-    local lvl = 77
-    local pit = math.random( 75, 85 )
-    local snd = foot and "npc/zombie_poison/pz_left_foot1.wav" or "npc/zombie_poison/pz_right_foot1.wav"
-    local moveSpeed = self:GetVelocity():Length()
-    if moveSpeed <= self.WalkSpeed * 1.15 then
-        lvl = 76
-        pit = math.random( 90, 100 )
-        snd = foot and "Zombie.ScuffRight" or "Zombie.ScuffLeft"
-
-    else
-        util.ScreenShake( self:GetPos(), 1, 20, 0.15, 200 + moveSpeed )
-
-    end
-    self:EmitSound( snd, lvl, pit, volume + 1, CHAN_STATIC, sndFlags )
-    return true
-
-end
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "Zombie.ScuffLeft",
+        lvl = 76,
+        pitch = math.random( 90, 100 ),
+    },
+    {
+        path = "Zombie.ScuffRight",
+        lvl = 76,
+        pitch = math.random( 90, 100 ),
+    },
+}
+ENT.Term_FootstepSound = { -- running sounds
+    {
+        path = "npc/zombie_poison/pz_left_foot1.wav",
+        lvl = 77,
+        pitch = math.random( 75, 85 ),
+    },
+    {
+        path = "npc/zombie_poison/pz_right_foot1.wav",
+        lvl = 77,
+        pitch = math.random( 75, 85 ),
+    },
+}
+ENT.Term_FootstepShake = {
+    amplitude = 1,
+    frequency = 20,
+    duration = 0.15,
+    radius = 600,
+}
 
 local HEAD = 1
 

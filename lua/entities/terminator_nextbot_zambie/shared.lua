@@ -76,7 +76,7 @@ ENT.zamb_NextPathAttempt = 0
 
 ENT.IsFodder = true
 ENT.IsStupid = true
-ENT.CanSpeak = true
+ENT.CanSpeak = true -- enable speaking thinker
 ENT.HasBrains = false -- default to no brains
 
 local ZAMBIE_MODEL = "models/player/zombie_classic.mdl"
@@ -252,20 +252,28 @@ function ENT:AdditionalThink()
 
 end
 
-local sndFlags = bit.bor( SND_CHANGE_VOL )
-
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
-    local lvl = 85
-    local snd = foot and "Zombie.FootstepRight" or "Zombie.FootstepLeft"
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-        lvl = 76
-        snd = foot and "Zombie.ScuffRight" or "Zombie.ScuffLeft"
-
-    end
-    self:EmitSound( snd, lvl, 100, volume + 1, CHAN_STATIC, sndFlags )
-    return true
-
-end
+ENT.FootstepClomping = false
+ENT.Term_FootstepMode = "custom"
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "Zombie.ScuffLeft",
+        lvl = 76,
+    },
+    {
+        path = "Zombie.ScuffRight",
+        lvl = 76,
+    },
+}
+ENT.Term_FootstepSound = { -- running sounds
+    {
+        path = "Zombie.FootstepLeft",
+        lvl = 85,
+    },
+    {
+        path = "Zombie.FootstepRight",
+        lvl = 85,
+    },
+}
 
 local function angeringCallFunc( me, rate )
 

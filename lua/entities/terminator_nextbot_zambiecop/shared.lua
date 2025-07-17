@@ -184,17 +184,26 @@ function ENT:AdditionalInitialize()
 
 end
 
-local sndFlags = bit.bor( SND_CHANGE_VOL )
-
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
-    local lvl = 89
-    local snd = foot and "nextbot_zambies/zombine/gear1.wav" or "nextbot_zambies/zombine/gear2.wav"
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-        lvl = 76
-    end
-    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_BODY, sndFlags )
-    return true
-end
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "nextbot_zambies/zombine/gear1.wav",
+        lvl = 76,
+    },
+    {
+        path = "nextbot_zambies/zombine/gear2.wav",
+        lvl = 76,
+    },
+}
+ENT.Term_FootstepSound = { -- running sounds
+    {
+        path = "nextbot_zambies/zombine/gear1.wav",
+        lvl = 89,
+    },
+    {
+        path = "nextbot_zambies/zombine/gear2.wav",
+        lvl = 89,
+    },
+}
 
 local rics = {
     "weapons/fx/rics/ric3.wav",

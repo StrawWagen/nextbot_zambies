@@ -168,15 +168,7 @@ end
 function ENT:HandleFlinching()
 end
 
-function ENT:OnFootstep( pos, foot, _sound, volume, _filter )
-    local lvl = 85
-    local pit = 100
-    local snd = foot and "Zombie.FootstepRight" or "Zombie.FootstepLeft"
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-        lvl = 76
-        snd = foot and "Zombie.ScuffRight" or "Zombie.ScuffLeft"
-
-    end
+function ENT:AdditionalFootstep( pos )
     if math.random( 0, 100 ) < 25 then
         snd = "ambient/levels/canals/toxic_slime_gurgle" .. math.random( 2, 8 ) .. ".wav"
         pit = math.random( 120, 140 )
@@ -194,8 +186,6 @@ function ENT:OnFootstep( pos, foot, _sound, volume, _filter )
         end
     end
     acidPuff( pos, lvl / 10 )
-    self:EmitSound( snd, lvl, pit, volume + 1, CHAN_STATIC, sndFlags )
-    return true
 
 end
 

@@ -132,7 +132,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, _foot, _sound, volume, _filter )
+function ENT:AdditionalFootstep( pos, _foot, _sound, volume, _filter )
     local lvl = 83
     local snd = "NPC_Strider.Footstep"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then

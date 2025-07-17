@@ -151,19 +151,30 @@ function ENT:AdditionalInitialize()
 
 end
 
-local sndFlags = bit.bor( SND_CHANGE_VOL )
-
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
-    local lvl = 83
-    local snd = foot and "npc/antlion_guard/foot_heavy1.wav" or "npc/antlion_guard/foot_light2.wav"
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-        lvl = 76
-
-    end
-    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_STATIC, sndFlags )
-    return true
-
-end
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "npc/antlion_guard/foot_heavy1.wav",
+        lvl = 76,
+        pitch = math.random( 90, 100 ),
+    },
+    {
+        path = "npc/antlion_guard/foot_light2.wav",
+        lvl = 76,
+        pitch = math.random( 90, 100 ),
+    },
+}
+ENT.Term_FootstepSound = { -- running sounds
+    {
+        path = "npc/antlion_guard/foot_heavy1.wav",
+        lvl = 85,
+        pitch = math.random( 75, 85 ),
+    },
+    {
+        path = "npc/antlion_guard/foot_light2.wav",
+        lvl = 85,
+        pitch = math.random( 75, 85 ),
+    },
+}
 
 -- does not flinch
 function ENT:HandleFlinching()

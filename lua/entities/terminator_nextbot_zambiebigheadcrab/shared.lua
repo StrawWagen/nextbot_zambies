@@ -191,7 +191,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, foot, _sound, volume, _filter )
+function ENT:AdditionalFootstep( pos, foot, _sound, volume, _filter )
     local lvl = 83
     local snd = foot and "NPC_AntlionGuard.StepLight" or "NPC_AntlionGuard.StepHeavy"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then

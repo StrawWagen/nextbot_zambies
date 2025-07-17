@@ -85,7 +85,7 @@ function ENT:AdditionalInitialize()
 
 end
 
-function ENT:OnFootstep( _pos, _foot, _sound, volume, _filter )
+function ENT:AdditionalFootstep( _pos, _foot, _sound, volume, _filter )
     local lvl = 88
     local snd = "npc/fast_zombie/foot" .. math.random( 1, 4 ) .. ".wav"
     local moveSpeed = self:GetVelocity():Length()
