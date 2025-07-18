@@ -185,7 +185,7 @@ function ENT:AdditionalFootstep( pos )
 
         end
     end
-    acidPuff( pos, lvl / 10 )
+    acidPuff( pos, self:GetVelocity():Length() / 25 )
 
 end
 
