@@ -11,8 +11,8 @@ local zambieSpawnSet = {
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = { 1, 5 }, -- so budget isnt 0
     spawnCountPerDifficulty = { 1 }, -- go up to 20 fast pls
-    startingSpawnCount = { 4, 7 },
-    maxSpawnCount = 20,
+    startingSpawnCount = { 10, 15 },
+    maxSpawnCount = 30,
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "ambient/creatures/town_zombie_call1.wav",
     spawns = {
