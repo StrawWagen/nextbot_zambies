@@ -250,7 +250,7 @@ ENT.MyClassTask = {
         timer.Create( timerName, 0.1, 0, function()
             if not IsValid( self ) then timer.Remove( timerName ) return end
             scale = scale + 0.01
-            self:ScreamsOfTheDamned( myTbl )
+            self:ScreamsOfTheDamned( self:GetTable() )
             -- manupulate our bones's scale, warping them as time goes on
             local bones = self:GetBoneCount()
             for bone = 0, bones - 1 do
