@@ -12,7 +12,7 @@ local zambieSpawnSet = {
     maxSpawnDist = { 4500, 6500 },
     roundEndSound = "ambient/alarms/city_siren_loop2.wav",
     roundStartSound = "ambient/alarms/scanner_alert_pass1.wav",
-    chanceToBeVotable = 15,
+    chanceToBeVotable = 10,
     spawns = {
         {
             hardRandomChance = nil,
