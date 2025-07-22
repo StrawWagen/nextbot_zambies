@@ -101,58 +101,37 @@ function ENT:AdditionalInitialize()
 
 end
 
-local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
-    local lvl = 93
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-        lvl = 78
-
-    end
-    self:EmitSound( "NPC_Strider.Footstep", lvl, 80, volume + 1, CHAN_STATIC, sndFlags )
-    return true
-
-end
-
-
-local dotVec = Vector( 0,0,1 )
-
-function ENT:AdditionalThink( myTbl )
-    BaseClass.AdditionalThink( self, myTbl )
-
-    if not myTbl.loco:IsOnGround() then return end
-
-    local leftFoot = self:LookupBone( "ValveBiped.Bip01_L_Foot" )
-    local leftFootPos, leftFootAng = self:GetBonePosition( leftFoot )
-
-    local rightFoot = self:LookupBone( "ValveBiped.Bip01_R_Foot" )
-    local rightFootPos, rightFootAng = self:GetBonePosition( rightFoot )
-
-    local currStepping = { left = false, right = false }
-    local oldStepping = myTbl.custom_OldStepping or currStepping
-    local feet = { left = { pos = leftFootPos, ang = leftFootAng }, right = { pos = rightFootPos, ang = rightFootAng } }
-
-    for curr, foot in pairs( feet ) do
-        local dot = foot.ang:Forward():Dot( dotVec )
-        currStepping[curr] = dot < -0.75
-
-        if currStepping[curr] and not oldStepping[curr] then
-            myTbl.NeedsAStep = true
-
-        end
-    end
-
-    myTbl.custom_OldStepping = currStepping
-
-end
-
--- yuck!
-function ENT:GetFootstepSoundTime()
-    if self.NeedsAStep then
-        self.NeedsAStep = nil
-        return 0
-
-    end
-    return math.huge
-
-end
+ENT.Term_FootstepTiming = "perfect"
+ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
+ENT.PerfectFootsteps_SteppingCriteria = -0.75
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "NPC_Strider.Footstep",
+        lvl = 78,
+        pitch = 90,
+    },
+    {
+        path = "NPC_Strider.Footstep",
+        lvl = 78,
+        pitch = 90,
+    },
+}
+ENT.Term_FootstepSound = { -- running sounds
+    {
+        path = "Zombie.FootstepLeft",
+        lvl = 93,
+        pitch = 80,
+    },
+    {
+        path = "Zombie.FootstepRight",
+        lvl = 93,
+        pitch = 80,
+    },
+}
+ENT.Term_FootstepShake = {
+    amplitude = 2,
+    frequency = 20,
+    duration = 0.35,
+    radius = 1500,
+}

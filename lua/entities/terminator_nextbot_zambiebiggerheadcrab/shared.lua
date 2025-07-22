@@ -60,8 +60,8 @@ ENT.CollisionBounds = { Vector( -1, -1, 0 ), Vector( 1, 1, 2 ) }
 ENT.CrouchCollisionBounds = { Vector( -0.75, -0.75, 0 ), Vector( 0.75, 0.75, 1.75 ) }
 ENT.MyPhysicsMass = 50000
 
-ENT.Term_BaseTimeBetweenSteps = 1100
-ENT.Term_StepSoundTimeMul = 1.05
+ENT.Term_BaseMsBetweenSteps = 1100
+ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
 
 -- launch stuff towards our enemy!
 function ENT:PostHitObject( hit )
@@ -132,7 +132,7 @@ end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( pos, _foot, _sound, volume, _filter )
+function ENT:AdditionalFootstep( pos, _foot, _sound, volume, _filter )
     local lvl = 83
     local snd = "NPC_Strider.Footstep"
     if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
@@ -206,17 +206,16 @@ ENT.Term_DeathAnim = {
     rate = 0.15,
 }
 
-ENT.HasClassTask = true
-function ENT:SetupClassTask( myTbl, myClassTask )
-    myClassTask.ZambAngeringCall = function( self, data )
+ENT.MyClassTask = {
+    ZambAngeringCall = function( self, data )
         local shock = EffectData()
         shock:SetOrigin( self:WorldSpaceCenter() )
         shock:SetScale( 0.1 )
         util.Effect( "m9k_yoinked_shockwave", shock )
 
-    end
+    end,
 
-    myClassTask.DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
+    DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
         if fallHeight <= 250 then return end
         local myPos = self:GetPos()
         local scale = fallHeight / 1500
@@ -241,9 +240,9 @@ function ENT:SetupClassTask( myTbl, myClassTask )
         splode:SetScale( scale * 2 )
         util.Effect( "huge_m9k_yoinked_splode", splode )
 
-    end
+    end,
 
-    myClassTask.OnStartDying = function( self, data )
+    OnStartDying = function( self, data )
         self:ZAMB_AngeringCall( true, 0.1 )
         util.ScreenShake( self:GetPos(), 100, 50, 1, 2000, true )
         local timerName = "thegodcrab_bubbleskin_" .. self:GetCreationID()
@@ -282,8 +281,9 @@ function ENT:SetupClassTask( myTbl, myClassTask )
                 end
             end )
         end
-    end
-    myClassTask.OnKilled = function( self, data )
+    end,
+
+    OnKilled = function( self, data )
         local myPos = self:GetPos()
 
         local filterAllPlayers = RecipientFilter()
@@ -336,5 +336,5 @@ function ENT:SetupClassTask( myTbl, myClassTask )
 
             end
         end )
-    end
-end
+    end,
+}

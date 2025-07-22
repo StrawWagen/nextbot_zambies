@@ -111,16 +111,8 @@ function ENT:AdditionalInitialize()
 
 end
 
-local sndFlags = bit.bor( SND_CHANGE_VOL )
-
-function ENT:OnFootstep( _pos, _foot, _sound, volume, _filter )
-    local lvl = 75
-    local snd = "NPC_FastHeadcrab.Footstep"
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-        lvl = 73
-
-    end
-    self:EmitSound( snd, lvl, 90, volume + 1, CHAN_BODY, sndFlags )
-    return true
-
-end
+ENT.Term_FootstepSound = { -- running sounds
+    path = "NPC_FastHeadcrab.Footstep",
+    lvl = 75,
+    pit = 80
+}

@@ -14,7 +14,7 @@ local zambieSpawnSet = {
     maxSpawnCount = 50,
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "ambient/creatures/town_zombie_call1.wav",
-    chanceToBeVotable = 15,
+    chanceToBeVotable = 35,
     spawns = {
         {
             name = "zambie_slow",

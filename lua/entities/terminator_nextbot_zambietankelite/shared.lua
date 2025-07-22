@@ -51,9 +51,6 @@ ENT.MyPhysicsMass = 5000
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
-ENT.Term_BaseTimeBetweenSteps = 400
-ENT.Term_StepSoundTimeMul = 1.05
-
 
 -- tanks dont care about body smell
 function ENT:AdditionalAvoidAreas()
@@ -80,8 +77,8 @@ end
 function ENT:BreakArmor()
     BaseClass.BreakArmor( self )
 
-    self.Term_BaseTimeBetweenSteps = 400
-    self.Term_StepSoundTimeMul = 0.6
+    self.Term_BaseMsBetweenSteps = 400
+    self.Term_FootstepMsReductionPerUnitSpeed = 0.6
 
     self.JumpHeight = 600
     self.FistRangeMul = 2.5
@@ -91,13 +88,21 @@ function ENT:BreakArmor()
 
 end
 
+ENT.Term_FootstepTiming = "perfect"
+ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
+ENT.PerfectFootsteps_SteppingCriteria = -0.7
+
 local sndFlags = bit.bor( SND_CHANGE_VOL )
 
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
+function ENT:AdditionalFootstep( pos, foot, _sound, volume, _filter )
     local lvl = 83
     local snd = foot and "npc/antlion_guard/foot_heavy1.wav" or "npc/antlion_guard/foot_light2.wav"
-    if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
+    if self:GetVelocity():LengthSqr() <= self.MoveSpeed^2 then
         lvl = 76
+
+    else
+        self:EmitSound( "npc/antlion_guard/shove1.wav", math.random( 75, 79 ), math.random( 70, 80 ), 1, CHAN_STATIC )
+        util.ScreenShake( pos, 5, 5, 0.5, 500 + self:GetVelocity():Length() )
 
     end
     self:EmitSound( snd, lvl, 90, volume + 1, CHAN_BODY, sndFlags )
