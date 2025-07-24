@@ -119,7 +119,7 @@ function ENT:canDoRun()
     if area:HasAttributes( NAV_MESH_CLIFF ) then return end
     if area:HasAttributes( NAV_MESH_CROUCH ) then return end
     local nextArea = self:GetNextPathArea()
-    if self:getMaxPathCurvature( area, self.MoveSpeed ) > 0.45 then return end
+    if self:getMaxPathCurvature( nil, area, self.MoveSpeed ) > 0.45 then return end
     if self:confinedSlope( area, nextArea ) == true then return end
     if not IsValid( nextArea ) then return true end
     local myPos = self:GetPos()
@@ -142,7 +142,7 @@ function ENT:shouldDoWalk()
     if minSize < 45 then return true end
     local nextArea = self:GetNextPathArea()
     if self:confinedSlope( area, nextArea ) then return true end
-    if self:getMaxPathCurvature( area, self.WalkSpeed, true ) > 0.85 then return true end
+    if self:getMaxPathCurvature( nil, area, self.WalkSpeed, true ) > 0.85 then return true end
     if not nextArea then return end
     if not nextArea:IsValid() then return end
     return true
