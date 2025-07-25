@@ -21,7 +21,7 @@ if CLIENT then
 end
 
 ENT.IsFodder = nil
-ENT.CoroutineThresh = 0.003
+ENT.CoroutineThresh = 0.001
 
 ENT.JumpHeight = 3000
 ENT.DefaultStepHeight = 50

@@ -16,6 +16,7 @@ if CLIENT then
 end
 
 ENT.CoroutineThresh = 0.0000125
+ENT.MaxPathingIterations = 1000
 
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 16, 16, 15 ) }
 ENT.AlwaysCrouching = true

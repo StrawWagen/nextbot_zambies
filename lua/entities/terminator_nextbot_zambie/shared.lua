@@ -30,7 +30,7 @@ local entMeta = FindMetaTable( "Entity" )
 
 local coroutine_yield = coroutine.yield
 
-ENT.CoroutineThresh = 0.00004
+ENT.CoroutineThresh = 0.000005
 ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500
@@ -886,6 +886,16 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.maxDist = 500
                 data.everFocused = nil
                 data.validBeatup = nil
+                data.startedWithEnemy = self.IsSeeEnemy
+            end,
+            EnemyFound = function( self, data ) -- break our trance
+                if data.startedWithEnemy then return end
+                if not self.IsSeeEnemy then return end
+                if self.DistToEnemy > self.DuelEnemyDist * 2 then return end
+
+                self:TaskComplete( "movement_frenzy" )
+                self:StartTask( "movement_handler", "i found an enemy!" )
+
             end,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = data.myTbl
@@ -1030,6 +1040,14 @@ function ENT:DoCustomTasks( defaultTasks )
                 if not myTbl.isUnstucking then
                     myTbl.InvalidatePath( self, "followenemy" )
                 end
+            end,
+            EnemyFound = function( self, data ) -- break our trance
+                if not self.IsSeeEnemy then return end
+                if self.DistToEnemy > self.DuelEnemyDist * 4 then return end
+
+                self:TaskComplete( "movement_wander" )
+                self:StartTask( "movement_handler", "i found an enemy!" )
+
             end,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = data.myTbl
