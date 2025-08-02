@@ -25,6 +25,7 @@ ENT.WalkSpeed = 100
 ENT.MoveSpeed = 125
 ENT.RunSpeed = 250
 ENT.JumpHeight = 30
+ENT.Term_Leaps = false
 ENT.StepHeight = 20
 
 ENT.SpawnHealth = 25

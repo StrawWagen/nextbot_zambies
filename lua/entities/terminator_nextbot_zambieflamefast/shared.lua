@@ -20,7 +20,8 @@ end
 ENT.CoroutineThresh = 0.00005
 ENT.MaxPathingIterations = 25000
 
-ENT.JumpHeight = 200
+ENT.JumpHeight = 400
+ENT.Term_Leaps = true
 ENT.SpawnHealth = 125
 ENT.HealthRegen = 2
 ENT.HealthRegenInterval = 1

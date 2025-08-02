@@ -14,6 +14,7 @@ end
 ENT.CoroutineThresh = 0.000001
 
 ENT.JumpHeight = 600
+ENT.Term_Leaps = true
 ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
@@ -104,7 +105,7 @@ function ENT:AdditionalInitialize()
     self.IdleLoopingSounds = nil
     self.AngryLoopingSounds = nil
 
-    self.HeightToStartTakingDamage = 400
+    self.HeightToStartTakingDamage = self.JumpHeight
     self.FallDamagePerHeight = 0.15
     self.DeathDropHeight = 1500
     self.CanUseLadders = false

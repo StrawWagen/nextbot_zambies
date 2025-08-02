@@ -49,7 +49,7 @@ ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
 ENT.FistDamageMul = 100
 ENT.FistForceMul = 100
-ENT.FistRangeMul = 4
+ENT.FistRangeMul = 3
 ENT.DuelEnemyDist = 1250
 ENT.PrefersVehicleEnemies = true
 
@@ -59,6 +59,7 @@ ENT.TERM_MODELSCALE = 8
 ENT.CollisionBounds = { Vector( -1, -1, 0 ), Vector( 1, 1, 2 ) }
 ENT.CrouchCollisionBounds = { Vector( -0.75, -0.75, 0 ), Vector( 0.75, 0.75, 1.75 ) }
 ENT.MyPhysicsMass = 50000
+ENT.ReallyHeavy = true
 
 ENT.Term_BaseMsBetweenSteps = 1100
 ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
@@ -240,6 +241,29 @@ ENT.MyClassTask = {
         splode:SetScale( scale * 2 )
         util.Effect( "huge_m9k_yoinked_splode", splode )
 
+    end,
+
+    OnJump = function( self, data, height )
+        timer.Simple( 0, function()
+            if not IsValid( self ) then return end
+            if not self.loco:IsOnGround() then return end
+            local myPos = self:GetPos()
+            local scale = height / 6000
+            scale = math.Clamp( scale, 0, 2.5 )
+
+            local shock = EffectData()
+            shock:SetOrigin( myPos )
+            shock:SetScale( scale )
+            util.Effect( "m9k_yoinked_shockwave", shock )
+
+        end )
+    end,
+
+    ZambBlockJumpToPos = function( self, data )
+        if self:Health() > self:GetMaxHealth() * 0.5 then
+            return true
+
+        end
     end,
 
     OnStartDying = function( self, data )

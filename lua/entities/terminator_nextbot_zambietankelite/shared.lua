@@ -86,6 +86,8 @@ function ENT:BreakArmor()
     self.AccelerationSpeed = 450
     self.loco:SetAcceleration( self.AccelerationSpeed )
 
+    self.loco:SetJumpHeight( self.JumpHeight )
+
 end
 
 ENT.Term_FootstepTiming = "perfect"

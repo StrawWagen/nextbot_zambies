@@ -177,6 +177,7 @@ function ENT:BreakArmor()
 
 
     self.JumpHeight = 300
+    self.Term_Leaps = true
     self.UnreachableAreas = {}
     self.FistRangeMul = 2
 
@@ -186,6 +187,8 @@ function ENT:BreakArmor()
     self:StopSound( self.AngryLoopingSounds[1] )
     self.AccelerationSpeed = 350
     self.loco:SetAcceleration( self.AccelerationSpeed )
+
+    self.loco:SetJumpHeight( self.JumpHeight )
 
     self.AlwaysPlayLooping = true
     self.AngryLoopingSounds = { -- berserker sound

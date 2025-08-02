@@ -17,6 +17,7 @@ if CLIENT then
 end
 
 ENT.JumpHeight = 800
+ENT.Term_Leaps = true
 ENT.SpawnHealth = 250
 ENT.HealthRegen = 25
 ENT.HealthRegenInterval = 1

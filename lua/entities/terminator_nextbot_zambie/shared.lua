@@ -36,6 +36,8 @@ ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 80
+ENT.Term_Leaps = false
+ENT.Term_LeapMinimizesHeight = true -- zombies should always leap as low as possible
 ENT.DefaultStepHeight = 18
 ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
 ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
@@ -345,8 +347,62 @@ function ENT:ZAMB_NormalCall()
         self:DoGesture( callAnim, 1.4, self.NoAnimLayering or false )
 
     end
+    self:RejectPathUpdates( entMeta.GetTable( self ) )
     self:Term_SpeakSound( self.term_FindEnemySound )
 
+end
+
+function ENT:TryAndLeapTo( myTbl, leapPos )
+    local cur = CurTime()
+    if myTbl.Zamb_NextLeap and myTbl.Zamb_NextLeap > cur then
+        return
+
+    end
+    local blockLeap = myTbl.RunTask( self, "ZambBlockJumpToPos" )
+    if blockLeap then return end
+
+    local canLeap = myTbl.loco:IsOnGround()
+    local addMul = 1
+    if myTbl.IsReallyAngry( self ) then
+        addMul = 0.25
+
+    end
+
+    if canLeap and myTbl.Zamb_LeapingPrepare then
+        if myTbl.Zamb_LeapingPrepare > cur or myTbl.IsGestureActive( self ) then
+            return true
+
+        end
+
+        myTbl.JumpToPos( self, leapPos, math.min( myTbl.DistToEnemy, myTbl.JumpHeight ) )
+        myTbl.Zamb_NextTryAndLeap = cur + math.Rand( 0, 20 ) * addMul
+
+        myTbl.Zamb_LeapingPrepare = nil
+        return true
+
+    end
+
+    if not myTbl.Zamb_NextTryAndLeap then
+        myTbl.Zamb_NextTryAndLeap = cur + math.Rand( 0, 10 ) * addMul
+
+    end
+
+    local wantsToLeap = canLeap and ( myTbl.IsAngry( self ) and myTbl.DistToEnemy < myTbl.JumpHeight * 2 ) and ( myTbl.Unreachable or myTbl.Zamb_NextTryAndLeap < cur )
+    if wantsToLeap then
+        myTbl.Zamb_NextTryAndLeap = cur + math.Rand( 0, 10 ) * addMul
+        local leapable = myTbl.CanJumpToPos( self, myTbl, leapPos, myTbl.DistToEnemy )
+        if leapable then
+            local add = math.Rand( 0.1, 0.25 )
+            myTbl.Zamb_LeapingPrepare = cur + add
+            myTbl.overrideCrouch = cur + add
+            if not myTbl.IsReallyAngry( self ) then
+                myTbl.ZAMB_NormalCall( self )
+
+            end
+            return true
+
+        end
+    end
 end
 
 local nextZombieCall = 0
@@ -401,6 +457,8 @@ function ENT:DoCustomTasks( defaultTasks )
         ["zambstuff_handler"] = {
             StartsOnInitialize = true,
             ZambOnGrumpy = function( self, data )
+                if not self.loco:IsOnGround() then return end
+
                 local cur = CurTime()
                 if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
                     self:Term_SpeakSound( self.term_FindEnemySound )
@@ -450,6 +508,18 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
             OnAttack = function( self, data )
                 self:Term_SpeakSound( self.term_AttackSound )
+
+            end,
+            OnJumpToPos = function( self, data, pos, height )
+                self:ReallyAnger( 10 )
+                self:Term_SpeakSoundNow( self.term_AttackSound )
+
+            end,
+            OnLandOnGround = function( self, data, landedOn, height )
+                if not self.Term_Leaps then return end
+                local add = ( height / 500 )
+                if add <= 0 then return end
+                self.Zamb_NextLeap = CurTime() + add
 
             end,
             OnAnger = function( self, data )
@@ -621,17 +691,26 @@ function ENT:DoCustomTasks( defaultTasks )
         },
         ["movement_handler"] = {
             StartsOnInitialize = true,
-            OnStart = function( self, data )
+            BehaveUpdateMotion = function( self, data )
                 local myTbl = data.myTbl
-                myTbl.TaskComplete( self, "movement_handler" )
-                myTbl.StartTask2( self, "movement_wander", nil, "spawned in!" )
+                if myTbl.IsSeeEnemy then
+                    myTbl.TaskComplete( self, "movement_handler" )
+                    myTbl.StartTask( self, "movement_followenemy", nil, "i see an enemy!" )
+                    return
 
+                else
+                    myTbl.TaskComplete( self, "movement_handler" )
+                    myTbl.StartTask( self, "movement_wander", nil, "i need to wander!" )
+                    return
+
+                end
             end,
         },
         ["movement_followenemy"] = {
             OnStart = function( self, data )
                 if not self.isUnstucking then
                     self:InvalidatePath( "followenemy" )
+
                 end
             end,
             BehaveUpdateMotion = function( self, data )
@@ -652,7 +731,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
                     myTbl.TaskComplete( self, "movement_followenemy" )
-                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "i gotta slash em" )
+                    myTbl.StartTask( self, "movement_duelenemy_near", nil, "i gotta slash em" )
                     return
 
                 end
@@ -710,6 +789,10 @@ function ENT:DoCustomTasks( defaultTasks )
                         data.Unreachable = true
                         return
 
+                    elseif myTbl.GetPath( self ):GetEnd():Distance( toPos ) > myTbl.DuelEnemyDist then -- path won't get us close, they're unreachable!
+                        self:TaskFail( "movement_followenemy" )
+                        myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + myTbl.DuelEnemyDist }, "i cant get to them" )
+
                     end
                 end
 
@@ -719,6 +802,13 @@ function ENT:DoCustomTasks( defaultTasks )
                 local result = self:ControlPath2( lookAtGoal )
                 coroutine_yield()
 
+                if myTbl.Term_Leaps then
+                    local leapPreparing = myTbl.TryAndLeapTo( self, myTbl, enemyPos )
+                    if leapPreparing then
+                        return
+
+                    end
+                end
 
                 if lookAtGoal then
                     myTbl.blockAimingAtEnemy = CurTime() + 0.25
@@ -729,11 +819,11 @@ function ENT:DoCustomTasks( defaultTasks )
                     --self:BashLockedDoor( "movement_followenemy" )
                 elseif not goodEnemy and not myTbl.primaryPathIsValid( self ) and data.triedToPath then
                     myTbl.TaskFail( self, "movement_followenemy" )
-                    myTbl.StartTask2( self, "movement_wander", nil, "i cant get to them/no enemy" )
+                    myTbl.StartTask( self, "movement_wander", nil, "i cant get to them/no enemy" )
                     data.overridePos = nil
                 elseif IsValid( enemy ) and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
                     myTbl.TaskComplete( self, "movement_followenemy" )
-                    myTbl.StartTask2( self, "movement_duelenemy_near", nil, "they're swimming and im in the water!" )
+                    myTbl.StartTask( self, "movement_duelenemy_near", nil, "they're swimming and im in the water!" )
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
                     coroutine_yield()
                     data.overridePos = nil
@@ -742,30 +832,30 @@ function ENT:DoCustomTasks( defaultTasks )
                         if not myTbl.HasBrains or math.random( 0, 100 ) < 50 then
                             myTbl.ReallyAnger( self, 25 )
                             myTbl.TaskComplete( self, "movement_followenemy" )
-                            myTbl.StartTask2( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
+                            myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
 
                         else
                             myTbl.Anger( self, 25 )
                             myTbl.TaskFail( self, "movement_followenemy" )
-                            myTbl.StartTask2( self, "movement_wander", nil, "i cant get to them and i tried frenzying" )
+                            myTbl.StartTask( self, "movement_wander", nil, "i cant get to them and i tried frenzying" )
 
                         end
                     elseif math.random( 1, 100 ) < 50 or myTbl.IsReallyAngry( self ) then
                         myTbl.TaskFail( self, "movement_followenemy" )
-                        myTbl.StartTask2( self, "movement_frenzy", nil, "i cant get to them" )
+                        myTbl.StartTask( self, "movement_frenzy", nil, "i cant get to them" )
                         myTbl.zamb_JustTryDuelingUnreachable = CurTime() + math.random( 1, 15 )
 
                     else
                         myTbl.Anger( self, 5 )
                         myTbl.TaskFail( self, "movement_followenemy" )
-                        myTbl.StartTask2( self, "movement_wander", nil, "i cant get to them" )
+                        myTbl.StartTask( self, "movement_wander", nil, "i cant get to them" )
 
                     end
                 elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 300 ) then
                     data.overridePos = nil
                     if not myTbl.IsSeeEnemy then
                         myTbl.TaskFail( self, "movement_followenemy" )
-                        myTbl.StartTask2( self, "movement_wander", nil, "got there, but no enemy" )
+                        myTbl.StartTask( self, "movement_wander", nil, "got there, but no enemy" )
 
                     end
                 end
@@ -818,11 +908,11 @@ function ENT:DoCustomTasks( defaultTasks )
                     local propInMyWay2 = IsValid( myTbl.GetCachedDisrespector( self ) ) and myTbl.IsReallyAngry( self )
                     if propInMyWay or propInMyWay2 then
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
-                        myTbl.StartTask2( self, "movement_frenzy", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_frenzy", nil, "got bored" )
 
                     else
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
-                        myTbl.StartTask2( self, "movement_followenemy", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_followenemy", nil, "got bored" )
 
                     end
                 elseif validEnemy then -- the dueling in question
@@ -872,6 +962,18 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     --debugoverlay.Cross( gotoPos, 10, 1, Color( 255,255,0 ) )
                     coroutine_yield()
+                    if myTbl.Term_Leaps and myTbl.DistToEnemy > myTbl.DuelEnemyDist * 0.5 then
+                        local leapPos = gotoPos
+                        if myTbl.HasBrains then
+                            leapPos = enemyPos + enemy:GetVelocity() * 1
+
+                        end
+                        local leapPreparing = myTbl.TryAndLeapTo( self, myTbl, leapPos )
+                        if leapPreparing then
+                            return
+
+                        end
+                    end
                     myTbl.GotoPosSimple( self, myTbl, gotoPos, 35 )
 
                 end
@@ -1012,11 +1114,11 @@ function ENT:DoCustomTasks( defaultTasks )
                 if data.quitCount > 100 then
                     if myTbl.IsSeeEnemy then
                         myTbl.TaskComplete( self, "movement_frenzy" )
-                        myTbl.StartTask2( self, "movement_followenemy", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_followenemy", nil, "got bored" )
 
                     else
                         myTbl.TaskComplete( self, "movement_frenzy" )
-                        myTbl.StartTask2( self, "movement_wander", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_wander", nil, "got bored" )
 
                     end
                 else
@@ -1255,7 +1357,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.zamb_nextRandomFrenzy = CurTime() + add
 
                     myTbl.TaskComplete( self, "movement_wander" )
-                    myTbl.StartTask2( self, "movement_frenzy", nil, "i want to attack random stuff" )
+                    myTbl.StartTask( self, "movement_frenzy", nil, "i want to attack random stuff" )
 
                 elseif myTbl.nextInterceptTry < CurTime() and myTbl.interceptIfWeCan( self, nil, data ) then
                     coroutine_yield()
@@ -1267,7 +1369,7 @@ function ENT:DoCustomTasks( defaultTasks )
                             myTbl.nextInterceptTry = CurTime() + 5
                             local randomPosNearby = randomArea:GetRandomPoint()
                             myTbl.TaskComplete( self, "movement_wander" )
-                            myTbl.StartTask2( self, "movement_followenemy", { overridePos = randomPosNearby }, "i can intercept someone" )
+                            myTbl.StartTask( self, "movement_followenemy", { overridePos = randomPosNearby }, "i can intercept someone" )
                             myTbl.lastInterceptPos = nil
 
                         end
@@ -1277,14 +1379,14 @@ function ENT:DoCustomTasks( defaultTasks )
                             myTbl.nextInterceptTry = CurTime() + 15
                             local pos = nearestArea:GetRandomPoint()
                             myTbl.TaskComplete( self, "movement_wander" )
-                            myTbl.StartTask2( self, "movement_followenemy", { overridePos = pos }, "i can intercept someone" )
+                            myTbl.StartTask( self, "movement_followenemy", { overridePos = pos }, "i can intercept someone" )
                             myTbl.lastInterceptPos = nil
 
                         end
                     end
                 elseif goodEnemy and enemyIsReachable then
                     myTbl.TaskFail( self, "movement_wander" )
-                    myTbl.StartTask2( self, "movement_followenemy", nil, "new enemy!" )
+                    myTbl.StartTask( self, "movement_followenemy", nil, "new enemy!" )
                 elseif result then
                     data.toPos = nil
                     myTbl.zamb_NextPathAttempt = CurTime() + 1
