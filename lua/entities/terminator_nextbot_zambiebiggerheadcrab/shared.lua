@@ -20,7 +20,7 @@ if CLIENT then
     return
 end
 
-ENT.IsFodder = nil
+ENT.IsFodder = false
 ENT.CoroutineThresh = 0.001
 
 ENT.JumpHeight = 3000
