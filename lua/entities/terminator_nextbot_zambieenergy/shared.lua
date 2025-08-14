@@ -16,7 +16,6 @@ list.Set("NPC","terminator_nextbot_zambieenergy",{
 if CLIENT then
     language.Add("terminator_nextbot_zambieenergy", ENT.PrintName)
 
-    -- Create once; reuse by name
     CreateMaterial("nextbotZambies_EnergyFlesh","VertexLitGeneric",{
         ["$basetexture"] = "phoenix_storms/wire/pcb_blue",
         ["$treesway"]    = 1
@@ -29,7 +28,6 @@ if CLIENT then
     return
 end
 
--- hot locals
 local util_Effect, util_PrecacheSound = util.Effect, util.PrecacheSound
 local ents_Create, ents_FindInSphere  = ents.Create, ents.FindInSphere
 local timer_Simple                    = timer.Simple
@@ -41,7 +39,6 @@ local bor                             = bit.bor
 local VEC_UP                          = vector_up or Vector(0,0,1)
 local sqrt                            = math.sqrt
 
--- constants
 local ELECT_SFX = {
     "ambient/energy/zap1.wav",
     "ambient/energy/zap2.wav",
@@ -58,7 +55,6 @@ ENT.IMMUNE_MASK  = IMMUNE_MASK
 ENT.ELECT_SFX    = ELECT_SFX
 ENT.ENERGY_COLOR = Color(160,40,200)
 
--- tuning
 ENT.SpawnHealth         = 125
 ENT.HealthRegen         = 2
 ENT.HealthRegenInterval = 1
@@ -70,7 +66,6 @@ ENT.CanSpeak            = true
 ENT.TERM_MODELSCALE     = function() return math.Rand(1.08,1.10) end
 ENT.MyPhysicsMass       = 85
 
--- arc FX (normal emits)
 ENT.ArcEnabled     = true
 ENT.ArcIntervalMin = 0.5
 ENT.ArcIntervalMax = 1.2
@@ -78,7 +73,6 @@ ENT.ArcRadius      = 160
 ENT.ArcMagnitude   = 6
 ENT.ArcScale       = 1
 
--- helpers
 local function PrecacheSounds(s)
     if not s then return end
     if istable(s) then
@@ -150,7 +144,6 @@ function ENT:AdditionalInitialize()
     self.nextInterceptTry       = 0
     self.term_NextIdleTaunt     = CurTime() + 4
 
-    -- sound profile
     self.term_SoundPitchShift   = 5
     self.term_SoundLevelShift   = 5
     self.term_LoseEnemySound    = "Zombie.Idle"
@@ -171,7 +164,6 @@ function ENT:AdditionalInitialize()
     self.FallDamagePerHeight       = 0.03
     self.DeathDropHeight           = 1500
 
-    -- precache sounds
     for i=1,ELECT_SFX_N do util_PrecacheSound(ELECT_SFX[i]) end
     PrecacheSounds(self.term_LoseEnemySound)
     PrecacheSounds(self.term_CallingSound)
@@ -185,7 +177,6 @@ function ENT:AdditionalInitialize()
     PrecacheSounds(self.IdleLoopingSounds)
     PrecacheSounds(self.AngryLoopingSounds)
 
-    -- schedule first arc
     self._nextArc = CurTime() + Rand(self.ArcIntervalMin, self.ArcIntervalMax)
 end
 
@@ -278,7 +269,6 @@ function ENT:OnRemove()
 end
 
 function ENT:AdditionalThink()
-    -- periodic arc visual FX (cheap, throttled)
     if self.ArcEnabled then
         local now = CurTime()
         if now >= (self._nextArc or 0) then
@@ -289,5 +279,6 @@ function ENT:AdditionalThink()
 
     BaseClass.AdditionalThink(self)
 end
+
 
 function ENT:HandleFlinching() end
