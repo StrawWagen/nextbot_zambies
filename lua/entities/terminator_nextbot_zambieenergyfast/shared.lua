@@ -18,7 +18,6 @@ if CLIENT then
     return
 end
 
--- movement/stats
 ENT.CoroutineThresh           = 0.00005
 ENT.MaxPathingIterations      = 25000
 ENT.JumpHeight                = 400
@@ -40,7 +39,6 @@ ENT.FistDamageMul             = 0.25
 ENT.DuelEnemyDist             = 450
 ENT.TERM_MODELSCALE           = function( ) return math.Rand( 1.1, 1.18 ) end
 
--- arcs enabled on fast, tighter and quicker
 ENT.ArcEnabled     = true
 ENT.ArcIntervalMin = 0.35
 ENT.ArcIntervalMax = 0.8
@@ -48,7 +46,6 @@ ENT.ArcRadius      = 120
 ENT.ArcMagnitude   = 5
 ENT.ArcScale       = 0.9
 
--- melee aim lowered (fix swinging over targets)
 ENT.term_MeleeAimOffset         = Vector( 0, 0, -18 )
 ENT.term_MeleeTraceZOffset      = -18
 ENT.term_MeleeTraceStartOffset  = Vector( 0, 0, -12 )
@@ -84,7 +81,6 @@ function ENT:AdditionalInitialize( )
     self:SetModel( FAST_ZOMBIE_MODEL )
     BaseClass.AdditionalInitialize( self )
 
-    -- fast zombie sound profile
     self.term_SoundPitchShift   = -3
     self.term_SoundLevelShift   = 10
     self.term_LoseEnemySound    = "NPC_FastZombie.Idle"
@@ -108,7 +104,6 @@ function ENT:AdditionalInitialize( )
     self._nextArc = CurTime( ) + math.Rand( self.ArcIntervalMin, self.ArcIntervalMax )
 end
 
--- hard override if base supports it (guarantee lower aim)
 function ENT:ComputeMeleeAimPos( enemy )
     local base = BaseClass.ComputeMeleeAimPos and BaseClass.ComputeMeleeAimPos( self, enemy )
     local pos  = base or ( IsValid( enemy ) and enemy:WorldSpaceCenter( ) ) or ( self:GetPos( ) + Vector( 0, 0, 48 ) )

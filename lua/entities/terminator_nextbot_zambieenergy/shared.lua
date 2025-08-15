@@ -45,7 +45,6 @@ local bor                             = bit.bor
 local VEC_UP                          = vector_up or Vector( 0, 0, 1 )
 local sqrt                            = math.sqrt
 
--- constants
 local ELECT_SFX = {
     "ambient/energy/zap1.wav",
     "ambient/energy/zap2.wav",
@@ -62,7 +61,6 @@ ENT.IMMUNE_MASK  = IMMUNE_MASK
 ENT.ELECT_SFX    = ELECT_SFX
 ENT.ENERGY_COLOR = Color( 160, 40, 200 )
 
--- tuning
 ENT.SpawnHealth         = 125
 ENT.HealthRegen         = 2
 ENT.HealthRegenInterval = 1
@@ -74,7 +72,6 @@ ENT.CanSpeak            = true
 ENT.TERM_MODELSCALE     = function( ) return math.Rand( 1.08, 1.10 ) end
 ENT.MyPhysicsMass       = 85
 
--- arc FX (base emits)
 ENT.ArcEnabled     = true
 ENT.ArcIntervalMin = 0.5
 ENT.ArcIntervalMax = 1.2
@@ -82,7 +79,6 @@ ENT.ArcRadius      = 160
 ENT.ArcMagnitude   = 6
 ENT.ArcScale       = 1
 
--- helper methods (not localized)
 function ENT:PrecacheSounds( s )
     if not s then return end
 
