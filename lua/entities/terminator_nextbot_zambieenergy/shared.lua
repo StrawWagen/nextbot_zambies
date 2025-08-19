@@ -1,4 +1,4 @@
-AddCSLuaFile( )
+AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
@@ -15,7 +15,7 @@ if CLIENT then
     language.Add( "terminator_nextbot_zambieenergy", ENT.PrintName )
 
     local MAT = "nextbotZambies_EnergyFlesh"
-    function ENT:AdditionalClientInitialize( )
+    function ENT:AdditionalClientInitialize()
         if self._energySetup then return end
         self._energySetup = true
 
@@ -42,7 +42,7 @@ ENT.IsFodder = true
 ENT.IsStupid = true
 ENT.CanSpeak = true
 
-ENT.TERM_MODELSCALE = function( ) return math.Rand( 1.08, 1.10 ) end
+ENT.TERM_MODELSCALE = function() return math.Rand( 1.08, 1.10 ) end
 ENT.MyPhysicsMass = 85
 
 -- visuals / damage
@@ -76,7 +76,7 @@ function ENT:IsImmuneToDmg( dmg )
 
 end
 
-function ENT:AdditionalInitialize( )
+function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "!nextbotZambies_EnergyFlesh" )
     self:SetColor( self.ENERGY_COLOR )
@@ -129,9 +129,10 @@ function ENT:DoEffect( name, pos, scale, normal, flags, color )
     if flags  then d:SetFlags( flags ) end
     if color  then d:SetColor( color ) end
     util.Effect( name, d, true, true )
+
 end
 
-function ENT:DoSelfArcFX( )
+function ENT:DoSelfArcFX()
     if not self.ArcEnabled then return end
 
     local d = EffectData()
@@ -141,6 +142,7 @@ function ENT:DoSelfArcFX( )
     d:SetScale( self.ArcScale )
     d:SetRadius( self.ArcRadius )
     util.Effect( "TeslaHitBoxes", d, true, true )
+
 end
 
 function ENT:DissolveTarget( t )
@@ -150,6 +152,7 @@ function ENT:DissolveTarget( t )
     if not IsValid( dis ) then
         SafeRemoveEntityDelayed( t, 0.1 )
         return
+
     end
 
     dis:SetPos( t:GetPos() )
@@ -160,6 +163,7 @@ function ENT:DissolveTarget( t )
 
     timer.Simple( 1.2, function()
         if IsValid( dis ) then dis:Remove() end
+
     end )
 end
 
@@ -175,6 +179,7 @@ function ENT:DealEnergyDamageTo( ent, dmg, pos )
     ent:TakeDamageInfo( di )
 
     ent:EmitSound( self.ELECT_SFX[ math.random( 1, #self.ELECT_SFX ) ], 60 + ( dmg / 40 ), 120 + ( -dmg / 10 ) )
+
 end
 
 function ENT:DoAoeEnergyDamage( ent, rad )
@@ -211,23 +216,27 @@ function ENT:AdditionalFootstep( pos )
         if IsValid( g ) then
             self:DealEnergyDamageTo( g, 100, self:GetPos() )
             self:DoAoeEnergyDamage( g, 200 )
+
         end
     else
         if IsValid( g ) then
             self:DealEnergyDamageTo( g, 10, self:GetPos() )
+
         end
     end
 
     local spd = self:GetVelocity():Length()
     self:DoEffect( "effects/fluttercore_gmod", pos, math.Clamp( spd / 100, 0.5, 3 ), vector_up )
     self:DoEffect( "bloodspray", pos, 6, vector_up, 4, 7 )
+
 end
 
 function ENT:PostHitObject( hit )
     self:DoAoeEnergyDamage( hit, 200 )
+
 end
 
-function ENT:AdditionalOnKilled( )
+function ENT:AdditionalOnKilled()
     self:EmitSound( self.ELECT_SFX[ math.random( 1, #self.ELECT_SFX ) ], 80, 120 )
     self:EmitSound( self.ELECT_SFX[ math.random( 1, #self.ELECT_SFX ) ], 90, 60 )
 
@@ -240,6 +249,7 @@ function ENT:AdditionalOnKilled( )
 
         if IsValid( rag ) then
             self:DissolveTarget( rag )
+
         else
             if IsValid( self ) then self:DissolveTarget( self ) end
 
@@ -247,14 +257,14 @@ function ENT:AdditionalOnKilled( )
     end )
 end
 
-function ENT:OnRemove( )
+function ENT:OnRemove()
     for _, s in ipairs( self.ELECT_SFX ) do
         self:StopSound( s )
 
     end
 end
 
-function ENT:AdditionalThink( )
+function ENT:AdditionalThink()
     if self.ArcEnabled then
         local now = CurTime()
         if now >= ( self._nextArc or 0 ) then
@@ -267,4 +277,4 @@ function ENT:AdditionalThink( )
     BaseClass.AdditionalThink( self )
 end
 
-function ENT:HandleFlinching( ) end
+function ENT:HandleFlinching() end

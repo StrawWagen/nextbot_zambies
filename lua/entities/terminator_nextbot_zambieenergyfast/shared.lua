@@ -1,4 +1,4 @@
-AddCSLuaFile( )
+AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambieenergy"
 DEFINE_BASECLASS( ENT.Base )
@@ -14,6 +14,7 @@ list.Set( "NPC", "terminator_nextbot_zambieenergyfast", {
 if CLIENT then
     language.Add( "terminator_nextbot_zambieenergyfast", ENT.PrintName )
     return
+
 end
 
 -- pathing/move
@@ -78,7 +79,7 @@ ENT.IdleActivityTranslations = {
 ENT.zamb_CallAnim = "BR2_Roar"
 ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1
 
-function ENT:AdditionalInitialize( )
+function ENT:AdditionalInitialize()
     self:SetModel( FAST_ZOMBIE_MODEL )
     BaseClass.AdditionalInitialize( self )
 
@@ -104,6 +105,7 @@ function ENT:AdditionalInitialize( )
     self.DeathDropHeight = 3000
 
     self._nextArc = CurTime() + math.Rand( self.ArcIntervalMin, self.ArcIntervalMax )
+
 end
 
 -- fallback aim override if base supports it
@@ -112,6 +114,7 @@ function ENT:ComputeMeleeAimPos( enemy )
     local pos = base or ( IsValid( enemy ) and enemy:WorldSpaceCenter() ) or ( self:GetPos() + Vector( 0, 0, 48 ) )
 
     return pos + Vector( 0, 0, -18 )
+
 end
 
 function ENT:AdditionalFootstep( pos )
@@ -121,20 +124,24 @@ function ENT:AdditionalFootstep( pos )
         if IsValid( g ) then
             self:DealEnergyDamageTo( g, 60, self:GetPos() )
             self:DoAoeEnergyDamage( g, 120 )
+
         end
     else
         if IsValid( g ) then
             self:DealEnergyDamageTo( g, 6, self:GetPos() )
+
         end
     end
 
     local spd = self:GetVelocity():Length()
     self:DoEffect( "effects/fluttercore_gmod", pos, math.Clamp( spd / 80, 0.5, 3 ), vector_up )
     self:DoEffect( "bloodspray", pos, 4, vector_up, 4, 7 )
+
 end
 
-function ENT:AdditionalThink( )
+function ENT:AdditionalThink()
     BaseClass.AdditionalThink( self )
+
 end
 
-function ENT:HandleFlinching( ) end
+function ENT:HandleFlinching() end
