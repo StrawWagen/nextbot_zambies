@@ -140,7 +140,7 @@ function ENT:DoAoeAcidDamage( ent, rad )
         if aoeEnt == ent then continue end
         if aoeEnt == self then continue end
 
-        if aoeEnt:GetMaxHealth() > 1 and aoeEnt:Health() <= 0 then return end
+        if aoeEnt:GetMaxHealth() > 1 and aoeEnt:Health() <= 0 then continue end
 
         local isSignificant = aoeEnt:IsNPC() or aoeEnt:IsPlayer()
         local dmg = rad - aoeEnt:NearestPoint( areaDamagePos ):Distance( areaDamagePos )
@@ -149,6 +149,7 @@ function ENT:DoAoeAcidDamage( ent, rad )
             dmg = dmg / 100
 
         end
+        if dmg < 1 then continue end
         self:DealAcidDamageTo( aoeEnt, dmg, areaDamagePos )
 
     end
@@ -172,6 +173,7 @@ function ENT:AdditionalFootstep( pos )
     if math.random( 0, 100 ) < 25 then
         snd = "ambient/levels/canals/toxic_slime_gurgle" .. math.random( 2, 8 ) .. ".wav"
         pit = math.random( 120, 140 )
+        self:EmitSound( snd, 75, pit )
         local groundEnt = self:GetGroundEntity()
         if IsValid( groundEnt ) then
             self:DealAcidDamageTo( groundEnt, 100, self:GetPos() )
