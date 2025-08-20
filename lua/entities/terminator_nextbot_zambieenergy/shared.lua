@@ -11,23 +11,87 @@ list.Set( "NPC", "terminator_nextbot_zambieenergy", {
     Category = "Nextbot Zambies",
 } )
 
+-- stub, make sure you add this shared, this is called for client ragdolls too
+function ENT:AdditionalRagdollDeathEffects( ragdoll )
+    if not IsValid( ragdoll ) then return end
+
+    local duration = 5
+    local step = duration / 100
+    local endTime = CurTime() + duration
+    local timerName = "zmb_energy_ragdoll_jitter_" .. ragdoll:GetCreationID()
+
+    -- wake up physics so impulses actually move it
+    local count = ragdoll.GetPhysicsObjectCount and ragdoll:GetPhysicsObjectCount() or 0
+    for i = 0, count - 1 do
+        local phys = ragdoll:GetPhysicsObjectNum( i )
+        if IsValid( phys ) then phys:Wake() end
+    end
+
+    ragdoll.Chance = 100
+
+    timer.Create( timerName, step, 0, function()
+        if not IsValid( ragdoll ) then
+            timer.Remove( timerName )
+            return
+        end
+
+        local timeLeft = endTime - CurTime()
+        if timeLeft <= 0 then
+            timer.Remove( timerName )
+            return
+        end
+
+        ragdoll.Chance = ragdoll.Chance - 1
+        if math.random( 0, 100 ) > ragdoll.Chance then return end
+
+        local frac = math.Clamp( timeLeft / duration, 0, 1 )
+        local force = 600 * frac + 100 -- start stronger, taper off
+
+        local countInternal = ragdoll.GetPhysicsObjectCount and ragdoll:GetPhysicsObjectCount() or 0
+        for i = 0, countInternal - 1 do
+            local phys = ragdoll:GetPhysicsObjectNum( i )
+            if IsValid( phys ) then
+                local dir = VectorRand()
+                phys:ApplyForceCenter( dir * force )
+                phys:ApplyForceOffset( -dir * force, phys:GetPos() + dir * 5 )
+
+                if math.random( 0, 400 ) < ragdoll.Chance then
+                    local eff = EffectData()
+                    eff:SetOrigin( phys:GetPos() )
+                    eff:SetRadius( 2 )
+                    eff:SetMagnitude( math.Rand( 0.1, 0.5 ) )
+                    eff:SetScale( math.Rand( 0.1, 1.5 ) )
+                    util.Effect( "Sparks", eff )
+
+                end
+            end
+        end
+    end )
+end
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambieenergy", ENT.PrintName )
 
-    local MAT = "nextbotZambies_EnergyFlesh"
+    local setupMat
+    local desiredBaseTexture = "models/vortigaunt/vortigaunt_warp"
+    local mat = "nextbotZambies_BurntFlesh"
     function ENT:AdditionalClientInitialize()
-        if self._energySetup then return end
-        self._energySetup = true
+        if setupMat then return end
+        setupMat = true
 
-        CreateMaterial( MAT, "VertexLitGeneric", {
-            ["$basetexture"] = "phoenix_storms/wire/pcb_blue",
-            ["$treesway"]    = 1,
+        local newMat = CreateMaterial( mat, "VertexLitGeneric", {
+            ["$basetexture"] = desiredBaseTexture,
         } )
 
-        self:SetSubMaterial( 0, "!" .. MAT )
-    end
+        if newMat and newMat:GetKeyValues()["$basetexture"] then
+            newMat:SetTexture( "$basetexture", desiredBaseTexture )
+        end
 
+        self:SetSubMaterial( 0, "!" .. mat )
+
+    end
     return
+
 end
 
 -- stats
@@ -49,17 +113,25 @@ ENT.TERM_MODELSCALE = function() return math.Rand( 1.08, 1.10 ) end
 ENT.MyPhysicsMass = 85
 
 -- visuals / damage
-ENT.ENERGY_COLOR = Color( 160, 40, 200 )
+ENT.ENERGY_COLOR = Color( 150, 150, 150 )
 ENT.DMG_MASK = bit.bor( DMG_SHOCK, DMG_ENERGYBEAM, DMG_DISSOLVE )
 ENT.IMMUNE_MASK = bit.bor( DMG_SHOCK, DMG_ENERGYBEAM, DMG_DISSOLVE, DMG_RADIATION )
 
 -- arc FX
 ENT.ArcEnabled = true
+ENT.ArcMagnitude = 6
 ENT.ArcIntervalMin = 0.50
 ENT.ArcIntervalMax = 1.20
-ENT.ArcRadius = 160
-ENT.ArcMagnitude = 6
-ENT.ArcScale = 1
+
+local function arcingFx( ent )
+    if not ent.ArcEnabled then return end
+
+    local effDat = EffectData()
+    effDat:SetEntity( ent )
+    effDat:SetMagnitude( ent.ArcMagnitude )
+    util.Effect( "TeslaHitBoxes", effDat )
+
+end
 
 -- sfx
 ENT.ELECT_SFX = {
@@ -71,7 +143,7 @@ ENT.ELECT_SFX = {
 
 function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
-    self:SetSubMaterial( 0, "!nextbotZambies_EnergyFlesh" )
+    self:SetSubMaterial( 0, "!nextbotZambies_BurntFlesh" )
     self:SetColor( self.ENERGY_COLOR )
 
     self.isTerminatorHunterChummy = "zambies"
@@ -118,55 +190,27 @@ function ENT:AdditionalInitialize()
     self.DeathDropHeight = 1500
 
     self._nextArc = CurTime() + math.Rand( self.ArcIntervalMin, self.ArcIntervalMax )
-end
-
--- helpers
-function ENT:DoEffect( name, pos, scale, normal, flags, color )
-    if not pos then return end
-
-    local d = EffectData()
-    d:SetOrigin( pos )
-    if scale  then d:SetScale( scale ) end
-    if normal then d:SetNormal( normal ) end
-    if flags  then d:SetFlags( flags ) end
-    if color  then d:SetColor( color ) end
-    util.Effect( name, d, true, true )
 
 end
 
-function ENT:DoSelfArcFX()
-    if not self.ArcEnabled then return end
+function ENT:DissolveTarget( target )
+    if not IsValid( target ) then return end
 
-    local d = EffectData()
-    d:SetOrigin( self:WorldSpaceCenter() )
-    d:SetEntity( self )
-    d:SetMagnitude( self.ArcMagnitude )
-    d:SetScale( self.ArcScale )
-    d:SetRadius( self.ArcRadius )
-    util.Effect( "TeslaHitBoxes", d, true, true )
-
-end
-
-function ENT:DissolveTarget( t )
-    if not IsValid( t ) then return end
-
-    local dis = ents.Create( "env_entity_dissolver" )
-    if not IsValid( dis ) then
-        SafeRemoveEntityDelayed( t, 0.1 )
+    local dissolver = ents.Create( "env_entity_dissolver" )
+    if not IsValid( dissolver ) then
+        SafeRemoveEntityDelayed( target, 0.1 )
         return
 
     end
 
-    dis:SetPos( t:GetPos() )
-    dis:Spawn()
-    dis:Activate()
-    dis:SetKeyValue( "dissolvetype", "0" )
-    dis:Fire( "Dissolve", t, 0 )
+    dissolver:SetPos( target:GetPos() )
+    dissolver:Spawn()
+    dissolver:Activate()
+    dissolver:SetKeyValue( "dissolvetype", "0" )
+    dissolver:Fire( "Dissolve", target, 0 )
 
-    timer.Simple( 1.2, function()
-        if IsValid( dis ) then dis:Remove() end
+    SafeRemoveEntityDelayed( dissolver, 1.2 )
 
-    end )
 end
 
 function ENT:DealEnergyDamageTo( ent, dmg, pos )
@@ -304,12 +348,10 @@ function ENT:AdditionalThink()
         local now = CurTime()
         if now >= ( self._nextArc or 0 ) then
             self._nextArc = now + math.Rand( self.ArcIntervalMin, self.ArcIntervalMax )
-            self:DoSelfArcFX()
+            arcingFx( self )
 
         end
     end
-
     BaseClass.AdditionalThink( self )
-end
 
-function ENT:HandleFlinching() end
+end

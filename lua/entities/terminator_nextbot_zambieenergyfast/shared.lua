@@ -84,6 +84,8 @@ function ENT:AdditionalInitialize()
     self:SetModel( FAST_ZOMBIE_MODEL )
     BaseClass.AdditionalInitialize( self )
 
+    self.HasBrains = true
+
     self.term_SoundPitchShift = 35
     self.term_SoundLevelShift = 10
 
@@ -118,25 +120,35 @@ function ENT:ComputeMeleeAimPos( enemy )
 
 end
 
-function ENT:AdditionalFootstep( pos )
-    local g = self:GetGroundEntity()
+local scorchUpOffs = Vector( 0, 0, 10 )
+local scorchDownOffs = Vector( 0, 0, -20 )
 
-    if math.random( 0, 100 ) < 20 then
-        if IsValid( g ) then
-            self:DealEnergyDamageTo( g, 60, self:GetPos() )
-            self:DoAoeEnergyDamage( g, 120 )
+function ENT:AdditionalFootstep( pos )
+    if math.random( 0, 100 ) < 25 then
+        snd = "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav"
+        pit = math.random( 120, 140 )
+        self:EmitSound( snd, 75, pit )
+        local groundEnt = self:GetGroundEntity()
+        if IsValid( groundEnt ) then
+            self:DealEnergyDamageTo( groundEnt, 100, self:GetPos() )
+            self:DoAoeEnergyDamage( groundEnt )
 
         end
     else
-        if IsValid( g ) then
-            self:DealEnergyDamageTo( g, 6, self:GetPos() )
+        local groundEnt = self:GetGroundEntity()
+        if IsValid( groundEnt ) then
+            self:DealEnergyDamageTo( groundEnt, 10, self:GetPos() )
 
         end
     end
-
-    local spd = self:GetVelocity():Length()
-    self:DoEffect( "effects/fluttercore_gmod", pos, math.Clamp( spd / 80, 0.5, 3 ), vector_up )
-    self:DoEffect( "bloodspray", pos, 4, vector_up, 4, 7 )
+    util.Decal( "SmallScorch", pos + scorchUpOffs, pos + scorchDownOffs, self )
+    local effData = EffectData()
+    effData:SetOrigin( pos + Vector( math.random( -10, 10 ), math.random( -10, 10 ), 0 ) )
+    effData:SetScale( 4 )
+    effData:SetRadius( 8 )
+    effData:SetMagnitude( math.Rand( 1, 2 ) )
+    effData:SetNormal( scorchUpOffs )
+    util.Effect( "ElectricSpark", effData )
 
 end
 
