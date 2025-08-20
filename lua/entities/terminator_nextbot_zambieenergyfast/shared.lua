@@ -18,7 +18,7 @@ if CLIENT then
 end
 
 -- pathing/move
-ENT.CoroutineThresh = 0.00005
+ENT.CoroutineThresh = 0.0001
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 400
@@ -29,14 +29,15 @@ ENT.HealthRegen = 2
 ENT.HealthRegenInterval = 1
 
 ENT.WalkSpeed = 150
-ENT.MoveSpeed = 350
-ENT.RunSpeed = 500
+ENT.MoveSpeed = 700
+ENT.RunSpeed = 1000
 ENT.AccelerationSpeed = 450
 
 ENT.zamb_LookAheadWhenRunning = true
 ENT.zamb_MeleeAttackSpeed = 1.15
 
 ENT.FistDamageMul = 0.25
+ENT.zamb_MeleeAttackSpeed = 3
 ENT.DuelEnemyDist = 450
 
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.10, 1.18 ) end
@@ -83,7 +84,7 @@ function ENT:AdditionalInitialize()
     self:SetModel( FAST_ZOMBIE_MODEL )
     BaseClass.AdditionalInitialize( self )
 
-    self.term_SoundPitchShift = -3
+    self.term_SoundPitchShift = 35
     self.term_SoundLevelShift = 10
 
     self.term_LoseEnemySound = "NPC_FastZombie.Idle"

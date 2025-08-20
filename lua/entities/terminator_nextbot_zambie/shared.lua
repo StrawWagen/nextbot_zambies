@@ -234,6 +234,7 @@ function ENT:AdditionalInitialize()
     self.HeightToStartTakingDamage = 200
     self.FallDamagePerHeight = 0.15
     self.DeathDropHeight = 1000
+    self.zamb_IdleTauntInterval = nil -- overrides the taunt interval below
     self.walkedAreas = nil -- disables walked area logic, we're fodder, we dont need that
 
 end
@@ -241,14 +242,16 @@ end
 local cutoff = 35^2
 
 function ENT:AdditionalThink()
+    local cur = CurTime()
     if self.loco:GetVelocity():LengthSqr() > cutoff then
-        self.term_NextIdleTaunt = CurTime() + math.Rand( 0.25, 0.5 )
+        self.term_NextIdleTaunt = cur + math.Rand( 0.25, 0.5 )
         return
 
     end
-    if self.term_NextIdleTaunt > CurTime() then return end
+    if self.term_NextIdleTaunt > cur then return end
 
-    self.term_NextIdleTaunt = CurTime() + math.Rand( 1, 2 )
+    local add = self.zamb_IdleTauntInterval or math.Rand( 1, 2 )
+    self.term_NextIdleTaunt = cur + add
 
     self:RunTask( "ZambOnGrumpy" )
 
