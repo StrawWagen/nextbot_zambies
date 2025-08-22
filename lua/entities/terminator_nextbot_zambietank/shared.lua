@@ -22,7 +22,7 @@ if CLIENT then
     return
 end
 
-ENT.CoroutineThresh = 0.00005
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 20
 
 ENT.JumpHeight = 80
 ENT.DefaultStepHeight = 18

@@ -68,13 +68,13 @@ local set = {
         {
             hardRandomChance = nil,
             name = "zambie_shitter_rpg", -- it's accura
-            prettyName = "A Well Armed Diarrhea American",
+            prettyName = "An Armed Diarrhea American",
             class = "terminator_nextbot_zambieacid", -- class spawned
             spawnType = "hunter",
             difficultyCost = 150,
             countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
-            maxCount = { 3 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { giveRPG },
+            maxCount = { 1 }, -- will never exceed this count, uses findbycount
+            postSpawnedFuncs =  { giveSMG },
         },
         {
             hardRandomChance = nil,
@@ -84,7 +84,28 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 150,
             countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
-            maxCount = { 3 }, -- will never exceed this count, uses findbycount
+            maxCount = { 1 }, -- will never exceed this count, uses findbycount
+            postSpawnedFuncs =  { giveRPG },
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_crack_rpg", -- it's accura
+            prettyName = "An Armed American On Crack",
+            class = "terminator_nextbot_zambieenergy", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = 150,
+            countClass = "terminator_nextbot_zambieenergy", -- class COUNTED, uses findbyclass
+            maxCount = { 1 }, -- will never exceed this count, uses findbycount
+            postSpawnedFuncs =  { giveSMG },
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_shitter_rpg", -- it's accura
+            prettyName = "A Well Armed Overcharged American On Crack",
+            class = "terminator_nextbot_zambieenergy", -- class spawned
+            spawnType = "hunter",
+            difficultyCost = 350,
+            countClass = "terminator_nextbot_zambieenergy", -- class COUNTED, uses findbyclass
             postSpawnedFuncs =  { giveRPG },
         },
         {

@@ -30,7 +30,7 @@ local entMeta = FindMetaTable( "Entity" )
 
 local coroutine_yield = coroutine.yield
 
-ENT.CoroutineThresh = 0.000005
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 40
 ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500
@@ -1000,6 +1000,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 self:TaskComplete( "movement_frenzy" )
                 self:StartTask( "movement_handler", "i found an enemy!" )
+                self:RestartMotionCoroutine()
 
             end,
             BehaveUpdateMotion = function( self, data )
@@ -1152,6 +1153,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 self:TaskComplete( "movement_wander" )
                 self:StartTask( "movement_handler", "i found an enemy!" )
+                self:RestartMotionCoroutine()
 
             end,
             BehaveUpdateMotion = function( self, data )

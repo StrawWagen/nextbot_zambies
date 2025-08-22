@@ -100,7 +100,7 @@ ENT.SpawnHealth = 50
 ENT.HealthRegen = 2
 ENT.HealthRegenInterval = 1
 
-ENT.CoroutineThresh = 0.00005
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 40
 ENT.AimSpeed = 600
 ENT.WalkSpeed = 75
 ENT.MoveSpeed = 300

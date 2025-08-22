@@ -16,7 +16,7 @@ if CLIENT then
 end
 
 -- cheap asf
-ENT.CoroutineThresh = 0.000001
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 80
 ENT.MaxPathingIterations = 2500
 
 ENT.JumpHeight = 64

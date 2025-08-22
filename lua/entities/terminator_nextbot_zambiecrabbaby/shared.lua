@@ -11,7 +11,7 @@ if CLIENT then
     return
 end
 
-ENT.CoroutineThresh = 0.000001
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 60
 
 ENT.JumpHeight = 600
 ENT.Term_Leaps = true

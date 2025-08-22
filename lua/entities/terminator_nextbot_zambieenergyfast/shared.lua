@@ -19,7 +19,7 @@ if CLIENT then
 end
 
 -- pathing/move
-ENT.CoroutineThresh = 0.0001
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 20
 ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 400

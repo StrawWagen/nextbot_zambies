@@ -60,6 +60,17 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
+            hardRandomChance = { 0, 1 },
+            name = "zambie_energy_RARE", -- spawns early with a max count
+            prettyName = "An Energy Zombie",
+            class = "terminator_nextbot_zambieenergy",
+            spawnType = "hunter",
+            difficultyCost = { 4, 8 },
+            countClass = "terminator_nextbot_zambieenergy",
+            maxCount = { 4 },
+            postSpawnedFuncs = nil,
+        },
+        {
             hardRandomChance = { 1.5, 4 },
             name = "zambie_grunt_RARE",
             prettyName = "A Zombie Grunt",

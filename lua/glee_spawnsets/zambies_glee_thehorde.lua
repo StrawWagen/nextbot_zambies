@@ -96,6 +96,28 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
+            hardRandomChance = { 0, 2 }, -- rare spawn with a max count
+            name = "zambie_energy_RARE",
+            prettyName = "An Energy Zombie",
+            class = "terminator_nextbot_zambieenergy",
+            spawnType = "hunter",
+            difficultyCost = { 4, 8 },
+            countClass = "terminator_nextbot_zambieenergy*",
+            maxCount = { 4 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = { 0, 2 }, -- rare spawn with a max count
+            name = "zambie_energyfast_RARE",
+            prettyName = "A Fast Energy Zombie",
+            class = "terminator_nextbot_zambieenergyfast",
+            spawnType = "hunter",
+            difficultyCost = { 8, 12 },
+            countClass = "terminator_nextbot_zambieenergy*",
+            maxCount = { 4 },
+            postSpawnedFuncs = nil,
+        },
+        {
             hardRandomChance = { 2.5, 5 }, -- rare early grunt
             name = "zambie_grunt_RARE",
             prettyName = "A Zombie Grunt",

@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.CoroutineThresh = 0.0000025
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 80
 ENT.MaxPathingIterations = 500
 
 ENT.CollisionBounds = { Vector( -14, -14, 0 ), Vector( 16, 16, 15 ) }

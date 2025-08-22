@@ -17,7 +17,7 @@ if CLIENT then
 end
 
 ENT.IsFodder = false
-ENT.CoroutineThresh = 0.0001
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 10
 
 ENT.JumpHeight = 40
 ENT.DefaultStepHeight = 20
