@@ -21,7 +21,7 @@ if CLIENT then
 end
 
 ENT.IsFodder = false
-ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 10
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 2
 
 ENT.JumpHeight = 500
 ENT.Term_Leaps = true
