@@ -1,28 +1,34 @@
 
 -- CREDIT MEMEMAN -- https://steamcommunity.com/id/blahaj1337/
 
+local function setWeaponOverride( hunter, wepClass )
+    hunter.DefaultWeapon = wepClass
+    hunter.TERM_FISTS = wepClass
+
+end
+
 local function givePistol( _, hunter )
-    hunter:Give( "weapon_pistol" )
+    setWeaponOverride( hunter, "weapon_pistol" )
 end
 
 local function giveSMG( _, hunter )
-    hunter:Give( "weapon_smg1" )
+    setWeaponOverride( hunter, "weapon_smg1" )
 end
 
 local function giveAR2( _, hunter )
-    hunter:Give( "weapon_ar2" )
+    setWeaponOverride( hunter, "weapon_ar2" )
 end
 
 local function giveRPG( _, hunter )
-    hunter:Give( "weapon_rpg" )
+    setWeaponOverride( hunter, "weapon_rpg" )
 end
 
 local function give357( _, hunter )
-    hunter:Give( "weapon_357" )
+    setWeaponOverride( hunter, "weapon_357" )
 end
 
 local function giveXBOW( _, hunter )
-    hunter:Give( "weapon_crossbow" )
+    setWeaponOverride( hunter, "weapon_crossbow" )
 end
 
 local genericZambieCounter = "terminator_nextbot_zambie*"

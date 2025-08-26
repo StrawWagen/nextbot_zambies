@@ -177,8 +177,8 @@ function ENT:AdditionalInitialize()
 
     self.HeightToStartTakingDamage = 900
     self.FallDamagePerHeight = 0.15
-    self.TakesFallDamage = false
-    self.DeathDropHeight = 1500
+    self.TakesFallDamage = true
+    self.DeathDropHeight = 2000
 
     self:SetSkin(6)
 
