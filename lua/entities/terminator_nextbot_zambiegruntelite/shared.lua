@@ -38,7 +38,7 @@ function ENT:AdditionalInitialize()
     self.term_SoundPitchShift = -35
     self.term_SoundLevelShift = 15
     --make the dude bigger so he looks scarier 
-    self:SetModelScale(2,0)
+    self:SetModelScale(1.5,0)
 end
 
 function ENT:AdditionalThink( myTbl )
