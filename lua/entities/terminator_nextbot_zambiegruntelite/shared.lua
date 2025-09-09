@@ -14,8 +14,8 @@ if CLIENT then
     return
 
 end
-
-ENT.SpawnHealth = 2000
+    --changee to 3000 healthh for some reason idk
+ENT.SpawnHealth = 3000
 ENT.ExtraSpawnHealthPerPlayer = 50
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 1
@@ -37,7 +37,8 @@ function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     self.term_SoundPitchShift = -35
     self.term_SoundLevelShift = 15
-
+    --make the dude bigger so he looks scarier 
+    self:SetModelScale(2,0)
 end
 
 function ENT:AdditionalThink( myTbl )
