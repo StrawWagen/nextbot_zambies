@@ -117,6 +117,7 @@ function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
 
 end
 
+-- hide when damaged!
 function ENT:PostTookDamage( dmg )
     if self:Health() > 0 and self:Health() < self:GetMaxHealth() * 0.75 and self.DistToEnemy > 100 then
         self:DoHiding( true )

@@ -10,26 +10,6 @@ list.Set( "NPC", "terminator_nextbot_zambie", {
     Category = "Nextbot Zambies",
 } )
 
-if CLIENT then
-    language.Add( "terminator_nextbot_zambie", ENT.PrintName )
-
-    function ENT:AdditionalClientInitialize()
-        local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
-        --https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/matproxy/player_color.lua
-        self.GetPlayerColor = function()
-            return myColor
-
-        end
-    end
-
-    return
-
-end
-
-local entMeta = FindMetaTable( "Entity" )
-
-local coroutine_yield = coroutine.yield
-
 ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 40
 ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
@@ -57,6 +37,8 @@ ENT.FistDamageMul = 0.35
 ENT.NoAnimLayering = nil -- this is what makes it stop moving forward when attacking
 ENT.DuelEnemyDist = 450
 ENT.CloseEnemyDistance = 500
+
+ENT.TERM_WEAPON_PROFICIENCY = WEAPON_PROFICIENCY_POOR
 
 ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
 ENT.MetallicMoveSounds = false
@@ -87,6 +69,40 @@ ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.05 ) end
 ENT.MyPhysicsMass = 80
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
+
+ENT.ClassSpecialActions = {
+    ["call"] = {
+        inBind = IN_RELOAD,
+        drawHint = true,
+        name = "Call",
+        desc = "Let out your anger in a loud call.",
+        ratelimit = 4, -- seconds between uses
+        svAction = function( _drive, _driver, bot )
+            bot:ZAMB_AngeringCall( true, 1, true )
+
+        end,
+    }
+}
+
+if CLIENT then
+    language.Add( "terminator_nextbot_zambie", ENT.PrintName )
+
+    function ENT:AdditionalClientInitialize()
+        local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
+        --https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/matproxy/player_color.lua
+        self.GetPlayerColor = function()
+            return myColor
+
+        end
+    end
+
+    return
+
+end
+
+local entMeta = FindMetaTable( "Entity" )
+
+local coroutine_yield = coroutine.yield
 
 CreateConVar( "zambie_nextbot_forcedmodel", ZAMBIE_MODEL, bit.bor( FCVAR_ARCHIVE ), "Override the supercop nextbot's spawned-in model. Model needs to be rigged for player movement" )
 

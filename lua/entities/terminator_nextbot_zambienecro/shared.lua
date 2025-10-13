@@ -10,6 +10,20 @@ list.Set( "NPC", "terminator_nextbot_zambienecro", {
     Category = "Nextbot Zambies",
 } )
 
+ENT.ClassSpecialActions = {
+    ["call"] = {
+        inBind = IN_RELOAD,
+        drawHint = true,
+        name = "Raise the dead.",
+        desc = "",
+        ratelimit = 4, -- seconds between uses
+        svAction = function( _drive, _driver, bot )
+            bot:NECRO_TrySpawnMinions( true )
+
+        end,
+    }
+}
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambienecro", ENT.PrintName )
     return
@@ -176,18 +190,9 @@ ENT.Term_FootstepSound = { -- running sounds
     },
 }
 
--- does not flinch
-function ENT:HandleFlinching()
-end
-
 local flattener = Vector( 1,1,0.1 )
 
-function ENT:AdditionalThink()
-
-    if self.zamb_NextMinionCheck > CurTime() then return end
-    if self:IsGestureActive() then return end
-
-    self.zamb_NextMinionCheck = CurTime() + 1
+function ENT:NECRO_TrySpawnMinions( maxCountNow )
     local aliveCount = 0
     local newTbl = {}
     for _, minion in ipairs( self.ZAMBIE_MINIONS ) do
@@ -198,36 +203,47 @@ function ENT:AdditionalThink()
     end
     self.ZAMBIE_MINIONS = newTbl
 
-    local desiredAliveCount = 1
-    local myEnem = self:GetEnemy()
-    local reachable
-    if IsValid( myEnem ) then
-        desiredAliveCount = 2
+    local nearDeath = false -- used for ai spawning
 
-        local result = terminator_Extras.getNearestPosOnNav( myEnem:GetPos() )
-        reachable = self:areaIsReachable( result.area )
+    local desiredAliveCount
+    if maxCountNow then
+        desiredAliveCount = self.necro_MaxMinionCount
 
-        if reachable and self:primaryPathIsValid() and self.DistToEnemy < self:GetPath():GetLength() * 4 then
-            reachable = false -- reachable but circiuitous path
+    else
+        desiredAliveCount = 1
+        local myEnem = self:GetEnemy()
+        local reachable
+        if IsValid( myEnem ) then
+            desiredAliveCount = 2
+
+            local result = terminator_Extras.getNearestPosOnNav( myEnem:GetPos() )
+            reachable = self:areaIsReachable( result.area )
+
+            if reachable and self:primaryPathIsValid() and self.DistToEnemy < self:GetPath():GetLength() * 4 then
+                reachable = false -- reachable but circiuitous path
+
+            end
+
+            if not reachable then
+                desiredAliveCount = desiredAliveCount + self.necro_UnreachableCountAdd
+
+            end
+        end
+        if self:IsReallyAngry() and self:Health() < self:GetMaxHealth() * 0.35 then
+            nearDeath = true
+            desiredAliveCount = desiredAliveCount + 5
+
+        elseif self:IsReallyAngry() then
+            desiredAliveCount = desiredAliveCount + 3
+
+        elseif self:IsAngry() then
+            desiredAliveCount = desiredAliveCount + 1
 
         end
-
-        if not reachable then
-            desiredAliveCount = desiredAliveCount + self.necro_UnreachableCountAdd
+        if self:GetCurrentSpeed() <= 50 then
+            desiredAliveCount = desiredAliveCount + 1
 
         end
-    end
-    local nearDeath
-    if self:IsReallyAngry() and self:Health() < self:GetMaxHealth() * 0.35 then
-        nearDeath = true
-        desiredAliveCount = desiredAliveCount + 5
-
-    elseif self:IsReallyAngry() then
-        desiredAliveCount = desiredAliveCount + 3
-
-    elseif self:IsAngry() then
-        desiredAliveCount = desiredAliveCount + 1
-
     end
 
     desiredAliveCount = desiredAliveCount * self.necro_MinionCountMul
@@ -310,6 +326,22 @@ function ENT:AdditionalThink()
             end )
         end
     end
+end
+
+-- does not flinch
+function ENT:HandleFlinching()
+end
+
+function ENT:AdditionalThink()
+
+    if self.zamb_NextMinionCheck > CurTime() then return end
+    if self:IsGestureActive() then return end
+
+    self.zamb_NextMinionCheck = CurTime() + 1
+
+    if self:IsControlledByPlayer() then return end -- let driver choose when to spawn stuff
+    self:NECRO_TrySpawnMinions()
+
 end
 
 function ENT:OnRemove()

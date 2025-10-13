@@ -24,6 +24,7 @@ local SwingSound = Sound( "Zombie.AttackMiss" )
 local HitSound = Sound( "Zombie.AttackHit" )
 
 SWEP.Primary = {
+    Automatic = true,
     Ammo = "None",
     ClipSize = -1,
     DefaultClip = -1,

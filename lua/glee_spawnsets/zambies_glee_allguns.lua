@@ -1,6 +1,11 @@
 
 -- CREDIT MEMEMAN -- https://steamcommunity.com/id/blahaj1337/
 
+local function americanize( hunter )
+    hunter.CanUseStuff = true
+
+end
+
 local function setWeaponOverride( hunter, wepClass )
     hunter.DefaultWeapon = wepClass
     hunter.TERM_FISTS = wepClass
@@ -58,7 +63,7 @@ local set = {
             difficultyCost = 1,
             countClass = genericZambieCounter, -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
-            postSpawnedFuncs =  { givePistol },
+            postSpawnedFuncs =  { americanize, givePistol },
         },
         {
             hardRandomChance = nil,
@@ -69,7 +74,7 @@ local set = {
             difficultyCost = 6,
             countClass = genericZambieCounter, -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
-            postSpawnedFuncs =  { giveSMG },
+            postSpawnedFuncs =  { americanize, giveSMG },
         },
         {
             hardRandomChance = nil,
@@ -80,7 +85,7 @@ local set = {
             difficultyCost = 150,
             countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
             maxCount = { 1 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { giveSMG },
+            postSpawnedFuncs =  { americanize, giveSMG },
         },
         {
             hardRandomChance = nil,
@@ -91,7 +96,7 @@ local set = {
             difficultyCost = 150,
             countClass = "terminator_nextbot_zambieacid", -- class COUNTED, uses findbyclass
             maxCount = { 1 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { giveRPG },
+            postSpawnedFuncs =  { americanize, giveRPG },
         },
         {
             hardRandomChance = nil,
@@ -102,7 +107,7 @@ local set = {
             difficultyCost = 150,
             countClass = "terminator_nextbot_zambieenergy", -- class COUNTED, uses findbyclass
             maxCount = { 1 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { giveSMG },
+            postSpawnedFuncs =  { americanize, giveSMG },
         },
         {
             hardRandomChance = nil,
@@ -112,7 +117,7 @@ local set = {
             spawnType = "hunter",
             difficultyCost = 350,
             countClass = "terminator_nextbot_zambieenergy", -- class COUNTED, uses findbyclass
-            postSpawnedFuncs =  { giveRPG },
+            postSpawnedFuncs =  { americanize, giveRPG },
         },
         {
             hardRandomChance = nil,
@@ -123,7 +128,7 @@ local set = {
             difficultyCost = 8,
             countClass = "terminator_nextbot_zambie", -- class COUNTED, uses findbyclass
             maxCount = { 10 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { giveAR2 },
+            postSpawnedFuncs =  { americanize, giveAR2 },
         },
         {
             hardRandomChance = nil,
@@ -134,7 +139,7 @@ local set = {
             difficultyCost = { 40, 80 },
             countClass = "terminator_nextbot_zambiegrunt", -- class COUNTED, uses findbyclass
             maxCount = { 5 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { give357 },
+            postSpawnedFuncs =  { americanize, give357 },
         },
         {
             hardRandomChance = nil,
@@ -146,7 +151,7 @@ local set = {
             countClass = "terminator_nextbot_zambiegrunt", -- class COUNTED, uses findbyclass
             minCount = { 0 }, -- will ALWAYS maintain this count
             maxCount = { 15 }, -- will never exceed this count, uses findbycount
-            postSpawnedFuncs =  { giveAR2 },
+            postSpawnedFuncs =  { americanize, giveAR2 },
         },
         {
             name = "zambie_tank",
@@ -157,7 +162,7 @@ local set = {
             difficultyNeeded = { 200, 400 },
             countClass = "terminator_nextbot_zambietank",
             maxCount = { 1 },
-            postSpawnedFuncs = { giveRPG },
+            postSpawnedFuncs = { americanize, giveRPG },
         },
         -- wraith shit below
         {
@@ -169,7 +174,7 @@ local set = {
             difficultyNeeded = { 160, 190 },
             countClass = "terminator_nextbot_zambiewraith",
             maxCount = { 3 },
-            postSpawnedFuncs = { giveSMG },
+            postSpawnedFuncs = { americanize, giveSMG },
         },
         {
             name = "zambie_wraithelite_drugged",
@@ -180,7 +185,7 @@ local set = {
             difficultyNeeded = { 210, 450 },
             countClass = "terminator_nextbot_zambiewraithelite",
             maxCount = { 2 },
-            postSpawnedFuncs = { giveXBOW },
+            postSpawnedFuncs = { americanize, giveXBOW },
         },
         {
             name = "zambie_tank",
@@ -191,7 +196,7 @@ local set = {
             difficultyNeeded = { 200, 400 },
             countClass = "terminator_nextbot_zambietank",
             maxCount = { 1 },
-            postSpawnedFuncs = { giveRPG },
+            postSpawnedFuncs = { americanize, giveRPG },
         },
         -- wraith shit below
         {
@@ -203,7 +208,7 @@ local set = {
             difficultyNeeded = { 160, 190 },
             countClass = "terminator_nextbot_zambiewraith",
             maxCount = { 3 },
-            postSpawnedFuncs = { giveSMG },
+            postSpawnedFuncs = { americanize, giveSMG },
         },
         {
             name = "zambie_wraithelite_drugged",
@@ -214,7 +219,7 @@ local set = {
             difficultyNeeded = { 210, 450 },
             countClass = "terminator_nextbot_zambiewraithelite",
             maxCount = { 2 },
-            postSpawnedFuncs = { giveXBOW },
+            postSpawnedFuncs = { americanize, giveXBOW },
         },
         {
             name = "zambie_tank",
@@ -225,7 +230,7 @@ local set = {
             difficultyNeeded = { 200, 400 },
             countClass = "terminator_nextbot_zambietank",
             maxCount = { 1 },
-            postSpawnedFuncs = { giveRPG },
+            postSpawnedFuncs = { americanize, giveRPG },
         },
         {
             name = "zambie_tank",
@@ -236,7 +241,7 @@ local set = {
             difficultyNeeded = { 400, 800 },
             countClass = "terminator_nextbot_zambietank",
             maxCount = { 1 },
-            postSpawnedFuncs = { giveXBOW },
+            postSpawnedFuncs = { americanize, giveXBOW },
         },
     }
 }

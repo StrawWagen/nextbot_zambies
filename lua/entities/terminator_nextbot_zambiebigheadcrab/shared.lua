@@ -188,6 +188,20 @@ function ENT:AdditionalInitialize()
     self.ZAMBIE_MINIONS = {}
     self.zamb_NextMinionCheck = CurTime() + 10
 
+    self.necro_MinionCountMul = 1
+    self.necro_MinMinionCount = 0
+    self.necro_MaxMinionCount = 12
+    self.necro_NormalMinionClass = {
+        "terminator_nextbot_zambiecrabbaby",
+
+    }
+
+    self.necro_ReachableFastMinionChance = 0
+    self.necro_UnReachableFastMinionChance = 0
+    self.necro_UnreachableCountAdd = 0
+
+    self.necro_NearDeathClassChance = 0
+
 end
 
 local sndFlags = bit.bor( SND_CHANGE_VOL )
@@ -204,100 +218,4 @@ function ENT:AdditionalFootstep( pos, foot, _sound, volume, _filter )
     util.ScreenShake( pos, lvl / 40, 5, 1.5, 1500 )
     return true
 
-end
-local flattener = Vector( 1,1,0.1 )
-
-function ENT:AdditionalThink()
-
-    if self.zamb_NextMinionCheck > CurTime() then return end
-    if self:IsGestureActive() then return end
-
-    self.zamb_NextMinionCheck = CurTime() + 5
-    local aliveCount = 0
-    local newTbl = {}
-    for _, minion in ipairs( self.ZAMBIE_MINIONS ) do
-        if IsValid( minion ) and minion:Health() > 0 then
-            table.insert( newTbl, minion )
-            aliveCount = aliveCount + 1
-        end
-    end
-    self.ZAMBIE_MINIONS = newTbl
-
-    local desiredAliveCount = 0
-    local myEnem = self:GetEnemy()
-    local reachable
-    if IsValid( myEnem ) and self:GetCurrentSpeed() <= 50 then
-        desiredAliveCount = 2
-
-        if not reachable then
-            desiredAliveCount = 6
-
-        elseif not self.IsSeeEnemy then
-            desiredAliveCount = 4
-
-        end
-    elseif self:GetCurrentSpeed() <= 50 then
-        desiredAliveCount = math.random( 1, 5 )
-
-    end
-    local nearDeath
-    if self:IsReallyAngry() and self:Health() < self:GetMaxHealth() * 0.35 then
-        nearDeath = true
-
-    end
-
-    if aliveCount < desiredAliveCount then
-        local diff = desiredAliveCount - aliveCount
-        if diff > 2 or nearDeath then
-            self:Term_ClearStuffToSay()
-            self:ZAMB_AngeringCall()
-            if nearDeath then
-                self.zamb_NextMinionCheck = CurTime() + 2
-
-            else
-                self.zamb_NextMinionCheck = CurTime() + 15
-
-            end
-
-        else
-            self:ZAMB_NormalCall()
-            self.zamb_NextMinionCheck = CurTime() + 8
-
-        end
-        for _ = 1, diff do
-            local time = 0.8 + math.Rand( 0, 1 )
-            timer.Simple( time, function()
-                if not IsValid( self ) then return end
-                if self:Health() <= 0 then return end
-
-                local class = "terminator_nextbot_zambiecrabbaby"
-                local minion = ents.Create( class )
-
-                if not IsValid( minion ) then return end
-
-                minion:SetOwner( self )
-                table.insert( self.ZAMBIE_MINIONS, minion )
-
-                local flatRand = VectorRand() * flattener
-                flatRand:Normalize()
-
-                minion:SetPos( self:GetPos() + flatRand * 25 )
-                minion:SetAngles( Angle( 0, math.random( -180, 180 ), 0 ) )
-                minion:Spawn()
-
-                local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
-                timer.Create( timerId, math.Rand( 3, 6 ), 0, function()
-                    if not IsValid( minion ) then timer.Remove( timerId ) return end
-                    if minion:Health() <= 0 then SafeRemoveEntity( minion ) timer.Remove( timerId ) return end
-
-                    local owner = minion:GetOwner()
-                    if not IsValid( owner ) or owner:Health() <= 0 then minion:Ignite( 999 ) return end
-
-                    minion:TakeDamage( 1, minion, minion ) -- slowly die
-                    if not IsValid( minion:GetEnemy() ) and IsValid( owner:GetEnemy() ) then minion:SetEnemy( owner:GetEnemy() ) end
-
-                end )
-            end )
-        end
-    end
 end

@@ -123,60 +123,22 @@ function ENT:AdditionalInitialize()
 
 end
 
-function ENT:CloakedMatFlicker()
-    self:SetMaterial( "effects/combineshield/comshieldwall3" )
-    self:SetRenderMode( RENDERMODE_NORMAL ) -- cfc ji defense compatibility
-    timer.Simple( math.Rand( 0.25, 0.75 ), function()
-        if not IsValid( self ) then return end
-        if self:IsSolid() then return end
-        self:SetRenderMode( RENDERMODE_TRANSALPHA )
-        self:RemoveAllDecals() -- evil
-        self:SetMaterial( "effects/combineshield/comshieldwall" )
+ENT.IsWraith = true -- enable wraith cloaking logic
+ENT.NotSolidWhenCloaked = true -- if we're a wraith, we become non-solid when cloaked
 
-
-    end )
-end
-
-function ENT:DoHiding( hide )
-    local oldHide = not self:IsSolid()
-    if hide == oldHide then return end
-    local nextSwap = self.zamb_NextHidingSwap or 0
-    if nextSwap > CurTime() then return end
-
-    if hide then
-        self:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
-        self:SetSolidMask( MASK_NPCSOLID_BRUSHONLY )
-        self:DrawShadow( false )
-        self:AddFlags( FL_NOTARGET )
-        self:SetNotSolid( true )
-        self:EmitSound( "ambient/levels/citadel/pod_open1.wav", 74, math.random( 115, 125 ) )
-        self.zamb_NextHidingSwap = CurTime() + math.Rand( 0.25, 0.75 )
-
-        self:CloakedMatFlicker()
-
-    else
-        self:CloakedMatFlicker()
-        self.zamb_NextHidingSwap = CurTime() + 0.25
-        timer.Simple( 0.25 * self.zambwraith_InvisGraceMul, function()
-            if not IsValid( self ) then return end
-            self:SetCollisionGroup( COLLISION_GROUP_NPC )
-            self:SetSolidMask( MASK_NPCSOLID )
-            self:DrawShadow( true )
-            self:SetMaterial( "" )
-            self:RemoveFlags( FL_NOTARGET )
-            self:SetNotSolid( false )
-            self:EmitSound( "ambient/levels/citadel/pod_close1.wav", 74, math.random( 115, 125 ) )
-            self:EmitSound( "buttons/combine_button_locked.wav", 76, 50 )
-            self:Term_SpeakSoundNow( { "NPC_FastZombie.Frenzy", "NPC_FastZombie.Scream" } )
-            self:SetRenderMode( RENDERMODE_NORMAL ) -- cfc jid
-            self.zamb_NextHidingSwap = CurTime() + ( math.Rand( 2.5, 3.5 ) * self.zambwraith_InvisGraceMul )
-
-        end )
-    end
+function ENT:PlayHideFX()
+    self:EmitSound( "ambient/levels/citadel/pod_open1.wav", 74, math.random( 115, 125 ) )
 
 end
 
-function ENT:AdditionalThink()
+function ENT:PlayUnhideFX()
+    self:EmitSound( "ambient/levels/citadel/pod_close1.wav", 74, math.random( 115, 125 ) )
+    self:EmitSound( "buttons/combine_button_locked.wav", 76, 50 )
+    self:Term_SpeakSoundNow( { "NPC_FastZombie.Frenzy", "NPC_FastZombie.Scream" } )
+
+end
+
+ENT.wraithTerm_CloakDecidingTask = function( self, data ) -- ran in BehaveUpdatePriority
     local doHide = not self:IsGestureActive() and IsValid( self:GetEnemy() ) and not IsValid( self:GetGroundEntity() ) -- we cant stand on props!
     local enemDist = self.DistToEnemy
     local allyCount = #self:GetNearbyAllies()
@@ -202,43 +164,8 @@ function ENT:AdditionalThink()
 
     self:DoHiding( doHide )
 
-    if not self:IsSolid() and math.Rand( 0, 100 ) < 0.5 then
+    if self.wraithTerm_IsCloaked and math.Rand( 0, 100 ) < 0.5 then
         self:CloakedMatFlicker()
 
     end
-end
-
-function ENT:IsImmuneToDmg( dmg )
-    if not self:IsSolid() then
-        dmg:ScaleDamage( 0.1 )
-
-    end
-end
-
-function ENT:AdditionalOnKilled()
-    self:DoHiding( false )
-
-end
-
-local sndFlags = bit.bor( SND_CHANGE_VOL )
-
-function ENT:OnFootstep( _pos, foot, _sound, volume, _filter )
-    local lvl
-    local snd
-    if self:IsSolid() then
-        lvl = 85
-        if self:GetVelocity():LengthSqr() <= self.WalkSpeed^2 then
-            lvl = 76
-
-        end
-        snd = foot and "NPC_FastZombie.GallopRight" or "NPC_FastZombie.GallopLeft"
-
-    else
-        lvl = 72
-        snd = "NPC_FastHeadcrab.Footstep"
-
-    end
-    self:EmitSound( snd, lvl, 100, volume + 1, CHAN_STATIC, sndFlags )
-    return true
-
 end
