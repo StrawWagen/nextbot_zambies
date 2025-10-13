@@ -10,6 +10,8 @@ list.Set( "NPC", "terminator_nextbot_zambieglass", {
     Category = "Nextbot Zambies",
 } )
 
+ENT.Author = "regunkyle"
+
 function ENT:AdditionalRagdollDeathEffects( ragdoll )
     if not IsValid( ragdoll ) then return end
 
