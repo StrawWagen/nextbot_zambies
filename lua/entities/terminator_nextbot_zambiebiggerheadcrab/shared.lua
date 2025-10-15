@@ -14,7 +14,7 @@ list.Set( "NPC", "terminator_nextbot_zambiebiggerheadcrab", {
 
 ENT.IsEldritch = true -- GLEE
 
-ENT.ClassSpecialActions = {
+ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
         drawHint = true,

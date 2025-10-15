@@ -10,7 +10,7 @@ list.Set( "NPC", "terminator_nextbot_zambienecro", {
     Category = "Nextbot Zambies",
 } )
 
-ENT.ClassSpecialActions = {
+ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
         drawHint = true,

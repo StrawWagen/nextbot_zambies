@@ -70,7 +70,7 @@ ENT.MyPhysicsMass = 80
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
-ENT.ClassSpecialActions = {
+ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
         drawHint = true,
