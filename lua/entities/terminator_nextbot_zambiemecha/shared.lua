@@ -4,14 +4,13 @@ ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Mecha Zombie"
 ENT.Spawnable = false
-ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiemecha", {
     Name = "Mecha Zombie",
     Class = "terminator_nextbot_zambiemecha",
     Category = "Nextbot Zambies",
 } )
 
-ENT.SpawnHealth = 500
+ENT.SpawnHealth = 2250
 ENT.WalkSpeed = 70
 ENT.MoveSpeed = 180
 ENT.RunSpeed = 300
@@ -35,39 +34,29 @@ ENT.term_SoundLevelShift = 10
 ENT.Mecha_LastShockwave = 0
 ENT.Mecha_ShockwaveCooldown = 5
 
-ENT.MySpecialActions = {
-    ["call"] = {
-        inBind = IN_RELOAD,
-        drawHint = true,
-        name = "Call",
-        desc = "Let out your anger in a loud call.",
-        ratelimit = 4,
-        svAction = function( _drive, _driver, bot )
-            bot:ZAMB_AngeringCall( true, 1, true )
-        end,
-    }
+-- Mechanical sounds
+ENT.term_LoseEnemySound = "npc/scanner/scanner_talk1.wav"
+ENT.term_CallingSound = "npc/scanner/scanner_talk2.wav"
+ENT.term_CallingSmallSound = "npc/scanner/combat_scan5.wav"
+ENT.term_FindEnemySound = "npc/scanner/scanner_alert1.wav"
+ENT.term_AttackSound = "npc/scanner/scanner_combat1.wav"
+ENT.term_AngerSound = "npc/manhack/bat_away.wav"
+ENT.term_DamagedSound = "npc/scanner/scanner_pain1.wav"
+ENT.term_DieSound = "npc/scanner/scanner_explode_crash2.wav"
+ENT.term_JumpSound = "npc/scanner/scanner_nearmiss1.wav"
+
+ENT.IdleLoopingSounds = {
+    "npc/turret_floor/ping.wav",
+}
+ENT.AngryLoopingSounds = {
+    "npc/scanner/scanner_scan_loop2.wav",
 }
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambiemecha", ENT.PrintName )
     
-    local setupMat
-    local desiredBaseTexture = "phoenix_storms/cube"
-    local mat = "nextbotZambies_MechaFlesh"
-    
     function ENT:AdditionalClientInitialize()
-        if setupMat then return end
-        setupMat = true
-
-        local newMat = CreateMaterial( mat, "VertexLitGeneric", {
-            ["$basetexture"] = desiredBaseTexture,
-        } )
-
-        if newMat and newMat:GetKeyValues()["$basetexture"] then
-            newMat:SetTexture( "$basetexture", desiredBaseTexture )
-        end
-
-        self:SetSubMaterial( 0, "!" .. mat )
+        self:SetSubMaterial( 0, "phoenix_storms/cube" )
     end
     return
 end
@@ -76,7 +65,7 @@ function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
     self:SetModelScale( 1.5 )
-    self:SetSubMaterial( 0, "!nextbotZambies_MechaFlesh" )
+    self:SetSubMaterial( 0, "phoenix_storms/cube" )
     self:SetColor( Color( 60, 60, 80 ) )
     
     self.HeightToStartTakingDamage = 400
@@ -87,30 +76,22 @@ function ENT:AdditionalInitialize()
     self.IsStupid = false
 end
 
-function ENT:DoCustomTasks( defaultTasks )
-    BaseClass.DoCustomTasks( self, defaultTasks )
-    
-    local oldOnLandOnGround = self.TaskList["zambstuff_handler"].OnLandOnGround
-    self.TaskList["zambstuff_handler"].OnLandOnGround = function( self, data, landedOn, height )
-        if oldOnLandOnGround then
-            oldOnLandOnGround( self, data, landedOn, height )
-        end
-        
+ENT.MyClassTask = {
+    OnLandOnGround = function( self, data, landedOn, height )
         if height > 350 then
             self:CreateShockwave( height )
         end
-    end
-    
-    -- Override OnKilled to add self-destruct
-    local oldOnKilled = self.TaskList["zambstuff_handler"].OnKilled
-    self.TaskList["zambstuff_handler"].OnKilled = function( self, data, damage, rag )
-        if oldOnKilled then
-            oldOnKilled( self, data, damage, rag )
-        end
-        
+    end,
+    OnKilled = function( self, data, damage, rag )
         self:SelfDestruct()
-    end
-end
+    end,
+    OnDamaged = function( self, data, damage )
+        -- Reduced fall damage
+        if damage:IsFallDamage() and damage:GetDamage() < 50 then
+            return true
+        end
+    end,
+}
 
 function ENT:CreateShockwave( height )
     local cur = CurTime()
@@ -177,7 +158,8 @@ function ENT:SelfDestruct()
     local radius = 650
     local damage = 250
     
-    -- Explosion sound
+    -- Mechanical explosion sounds
+    sound.Play( "npc/scanner/scanner_explode_crash2.wav", pos, 120, 70 )
     sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 120, 70 )
     
     -- Large explosion effect at center
@@ -266,12 +248,4 @@ function ENT:SelfDestruct()
     sprite:SetScale( 15 )
     sprite:SetMagnitude( 3 )
     util.Effect( "cball_explode", sprite )
-end
-
-function ENT:OnInjured( damage )
-    if damage:IsFallDamage() and damage:GetDamage() < 50 then
-        return true
-    end
-    
-    return BaseClass.OnInjured and BaseClass.OnInjured( self, damage )
 end

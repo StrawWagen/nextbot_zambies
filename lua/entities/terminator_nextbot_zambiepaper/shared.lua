@@ -4,7 +4,6 @@ ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Paper Zombie"
 ENT.Spawnable = false
-ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiepaper", {
     Name = "Paper Zombie",
     Class = "terminator_nextbot_zambiepaper",
@@ -24,23 +23,8 @@ ENT.zamb_BrainsChance = 5
 if CLIENT then
     language.Add( "terminator_nextbot_zambiepaper", ENT.PrintName )
     
-    local setupMat
-    local desiredBaseTexture = "models/props_c17/paper01"
-    local mat = "nextbotZambies_PaperFlesh"
-    
     function ENT:AdditionalClientInitialize()
-        if setupMat then return end
-        setupMat = true
-
-        local newMat = CreateMaterial( mat, "VertexLitGeneric", {
-            ["$basetexture"] = desiredBaseTexture,
-        } )
-
-        if newMat and newMat:GetKeyValues()["$basetexture"] then
-            newMat:SetTexture( "$basetexture", desiredBaseTexture )
-        end
-
-        self:SetSubMaterial( 0, "!" .. mat )
+        self:SetSubMaterial( 0, "models/props_c17/paper01" )
     end
     return
 end
@@ -49,34 +33,41 @@ function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
     self:SetModelScale( math.Rand( 0.85, 0.95 ) )
-    self:SetSubMaterial( 0, "!nextbotZambies_PaperFlesh" )
+    self:SetSubMaterial( 0, "models/props_c17/paper01" )
     self:SetColor( Color( 230, 220, 200 ) )
     
     self.HeightToStartTakingDamage = 100
     self.FallDamagePerHeight = 0.3
     self.DeathDropHeight = 500
-    
-    self.Paper_NextBleedCheck = 0
 end
 
-function ENT:DoCustomTasks( defaultTasks )
-    BaseClass.DoCustomTasks( self, defaultTasks )
-    
-    local oldOnAttack = self.TaskList["zambstuff_handler"].OnAttack
-    self.TaskList["zambstuff_handler"].OnAttack = function( self, data )
-        if oldOnAttack then
-            oldOnAttack( self, data )
-        end
-        
-        local enemy = self:GetEnemy()
-        if IsValid( enemy ) and self.DistToEnemy < 100 then
-            self:ApplyBleedEffect( enemy )
-        end
-    end
-end
+ENT.MyClassTask = {
+    OnStart = function( self, data )
+        -- Hook to apply bleed on successful damage
+        hook.Add( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:EntIndex(), function( target, dmg, took )
+            if not IsValid( self ) then 
+                hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:EntIndex() )
+                return 
+            end
+            if not took then return end
+            if dmg:GetAttacker() ~= self then return end
+            
+            self:ApplyBleedEffect( target )
+        end )
+    end,
+    OnKilled = function( self, data )
+        -- Clean up hook
+        hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:EntIndex() )
+    end,
+}
 
 function ENT:ApplyBleedEffect( victim )
     if not IsValid( victim ) then return end
+    if not victim:Health() or victim:Health() <= 0 then return end
+    
+    -- Prevent multiple bleeds on same victim
+    if victim.PaperZombie_Bleeding then return end
+    victim.PaperZombie_Bleeding = true
     
     local bleedDuration = 3
     local bleedDamage = 2
@@ -93,7 +84,12 @@ function ENT:ApplyBleedEffect( victim )
     
     for i = 1, bleedTicks do
         timer.Simple( tickDelay * i, function()
-            if not IsValid( victim ) or not victim:Health() or victim:Health() <= 0 then return end
+            if not IsValid( victim ) or not victim:Health() or victim:Health() <= 0 then 
+                if IsValid( victim ) then
+                    victim.PaperZombie_Bleeding = nil
+                end
+                return 
+            end
             
             local dmg = DamageInfo()
             dmg:SetDamage( bleedDamage )
@@ -109,21 +105,11 @@ function ENT:ApplyBleedEffect( victim )
                 bloodeffect:SetScale( 0.5 )
                 util.Effect( "bloodspray", bloodeffect )
             end
+            
+            -- Clear bleeding flag on last tick
+            if i == bleedTicks then
+                victim.PaperZombie_Bleeding = nil
+            end
         end )
     end
-end
-
-function ENT:OnMeleeAttack( hitEnt )
-    if not IsValid( hitEnt ) then return end
-    
-    local damage = DamageInfo()
-    damage:SetAttacker( self )
-    damage:SetInflictor( self )
-    damage:SetDamage( 8 * self.FistDamageMul )
-    damage:SetDamageType( DMG_SLASH )
-    damage:SetDamagePosition( hitEnt:GetPos() )
-    
-    hitEnt:TakeDamageInfo( damage )
-    
-    self:ApplyBleedEffect( hitEnt )
 end
