@@ -4,6 +4,7 @@ ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Mecha Zombie"
 ENT.Spawnable = false
+ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiemecha", {
     Name = "Mecha Zombie",
     Class = "terminator_nextbot_zambiemecha",
