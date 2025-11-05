@@ -233,6 +233,18 @@ local zambieSpawnSet = {
             maxCount = { 1 },
             postSpawnedFuncs = nil,
         },
+        {
+            hardRandomChance = { 0, 2 },
+            name = "zambie_demigodcrab",
+            prettyName = "The Demigod Crab",
+            class = "terminator_nextbot_zambiebigheadcrab",
+            spawnType = "hunter",
+            difficultyCost = { 1500, 2000 },
+            difficultyNeeded = { 25000, 50000 },
+            countClass = "terminator_nextbot_zambiebigheadcrab",
+            maxCount = { 1 },
+            postSpawnedFuncs = nil,
+        },
     }
 }
 
