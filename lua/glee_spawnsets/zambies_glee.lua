@@ -25,7 +25,6 @@ local zambieSpawnSet = {
             difficultyStopAfter = { 10, 15 },
             countClass = genericZambieCounter,
             minCount = { 4 },
-            postSpawnedFuncs = nil,
         },
         {
             name = "zambie_normal",
@@ -34,7 +33,6 @@ local zambieSpawnSet = {
             spawnType = "hunter",
             difficultyCost = { 2, 4 },
             countClass = genericZambieCounter,
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 1, 3 },
@@ -45,7 +43,6 @@ local zambieSpawnSet = {
             difficultyCost = { 4, 8 },
             countClass = "terminator_nextbot_zambieflame",
             maxCount = { 4 },
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 2, 4 },
@@ -56,7 +53,6 @@ local zambieSpawnSet = {
             difficultyCost = { 5, 9 },
             countClass = "terminator_nextbot_zambieflamefast",
             maxCount = { 1 },
-            postSpawnedFuncs = nil,
         },
         {
             hardRandomChance = { 4, 10 },

@@ -10,26 +10,6 @@ list.Set( "NPC", "terminator_nextbot_zambie", {
     Category = "Nextbot Zambies",
 } )
 
-if CLIENT then
-    language.Add( "terminator_nextbot_zambie", ENT.PrintName )
-
-    function ENT:AdditionalClientInitialize()
-        local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
-        --https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/matproxy/player_color.lua
-        self.GetPlayerColor = function()
-            return myColor
-
-        end
-    end
-
-    return
-
-end
-
-local entMeta = FindMetaTable( "Entity" )
-
-local coroutine_yield = coroutine.yield
-
 ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 40
 ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're closer than DuelEnemyDist
 ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
@@ -57,6 +37,8 @@ ENT.FistDamageMul = 0.35
 ENT.NoAnimLayering = nil -- this is what makes it stop moving forward when attacking
 ENT.DuelEnemyDist = 450
 ENT.CloseEnemyDistance = 500
+
+ENT.TERM_WEAPON_PROFICIENCY = WEAPON_PROFICIENCY_POOR
 
 ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
 ENT.MetallicMoveSounds = false
@@ -87,6 +69,40 @@ ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.05 ) end
 ENT.MyPhysicsMass = 80
 
 ENT.TERM_FISTS = "weapon_term_zombieclaws"
+
+ENT.MySpecialActions = {
+    ["call"] = {
+        inBind = IN_RELOAD,
+        drawHint = true,
+        name = "Call",
+        desc = "Let out your anger in a loud call.",
+        ratelimit = 4, -- seconds between uses
+        svAction = function( _drive, _driver, bot )
+            bot:ZAMB_AngeringCall( true, 1, true )
+
+        end,
+    }
+}
+
+if CLIENT then
+    language.Add( "terminator_nextbot_zambie", ENT.PrintName )
+
+    function ENT:AdditionalClientInitialize()
+        local myColor = Vector( math.Rand( 0.1, 1 ), math.Rand( 0, 0.5 ), math.Rand( 0, 0.1 ) )
+        --https://github.com/Facepunch/garrysmod/blob/master/garrysmod/lua/matproxy/player_color.lua
+        self.GetPlayerColor = function()
+            return myColor
+
+        end
+    end
+
+    return
+
+end
+
+local entMeta = FindMetaTable( "Entity" )
+
+local coroutine_yield = coroutine.yield
 
 CreateConVar( "zambie_nextbot_forcedmodel", ZAMBIE_MODEL, bit.bor( FCVAR_ARCHIVE ), "Override the supercop nextbot's spawned-in model. Model needs to be rigged for player movement" )
 
@@ -456,7 +472,6 @@ function ENT:DoCustomTasks( defaultTasks )
         ["inform_handler"] = defaultTasks["inform_handler"],
         ["reallystuck_handler"] = defaultTasks["reallystuck_handler"],
         ["movement_wait"] = defaultTasks["movement_wait"],
-        ["playercontrol_handler"] = defaultTasks["playercontrol_handler"],
         ["zambstuff_handler"] = {
             StartsOnInitialize = true,
             ZambOnGrumpy = function( self, data )
@@ -672,7 +687,6 @@ function ENT:DoCustomTasks( defaultTasks )
                 self:RunTask( "ZambOnGrumpy" )
 
             end,
-
             ShouldRun = function( self, data )
                 local goodToRun = self:IsAngry() and self:canDoRun()
                 if not goodToRun then return false end
@@ -694,6 +708,7 @@ function ENT:DoCustomTasks( defaultTasks )
         },
         ["movement_handler"] = {
             StartsOnInitialize = true,
+            StopsWhenPlayerControlled = true,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = data.myTbl
                 if myTbl.IsSeeEnemy then
@@ -910,6 +925,12 @@ function ENT:DoCustomTasks( defaultTasks )
                     local propInMyWay = ( myTbl.IsSeeEnemy and not myTbl.NothingOrBreakableBetweenEnemy ) and ( math.random( 1, 100 ) < 75 or myTbl.IsReallyAngry( self ) )
                     local propInMyWay2 = IsValid( myTbl.GetCachedDisrespector( self ) ) and myTbl.IsReallyAngry( self )
                     if propInMyWay or propInMyWay2 then
+                        local blocker = myTbl.LastShootBlocker
+                        if IsValid( blocker ) and blocker.isTerminatorHunterChummy and blocker.isTerminatorHunterChummy == myTbl.isTerminatorHunterChummy then
+                            data.badCount = -50
+                            return
+
+                        end
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
                         myTbl.StartTask( self, "movement_frenzy", nil, "got bored" )
 
@@ -992,14 +1013,29 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.everFocused = nil
                 data.validBeatup = nil
                 data.startedWithEnemy = self.IsSeeEnemy
+                data.nextDuelQuit = CurTime() + math.Rand( 4, 12 )
             end,
             EnemyFound = function( self, data ) -- break our trance
+                local myTbl = data.myTbl
                 if data.startedWithEnemy then return end
-                if not self.IsSeeEnemy then return end
-                if self.DistToEnemy > self.DuelEnemyDist * 2 then return end
+                if not myTbl.IsSeeEnemy then return end
+                if myTbl.DistToEnemy > myTbl.DuelEnemyDist * 2 then return end
 
                 self:TaskComplete( "movement_frenzy" )
                 self:StartTask( "movement_handler", "i found an enemy!" )
+                self:RestartMotionCoroutine()
+
+            end,
+            BehaveUpdatePriority = function( self, data )
+                if data.nextDuelQuit > CurTime() then return end
+                local myTbl = data.myTbl
+
+                if not myTbl.IsSeeEnemy then return end
+                if myTbl.DistToEnemy > myTbl.DuelEnemyDist then return end
+                if myTbl.primaryPathIsValid( self ) then return end -- path is good, dont need to end early
+
+                myTbl.TaskComplete( self, "movement_frenzy" )
+                myTbl.StartTask( self, "movement_duelenemy_near", nil, "i see an enemy!" )
                 self:RestartMotionCoroutine()
 
             end,
@@ -1146,13 +1182,28 @@ function ENT:DoCustomTasks( defaultTasks )
                 if not myTbl.isUnstucking then
                     myTbl.InvalidatePath( self, "followenemy" )
                 end
+                data.nextDuelQuit = CurTime() + math.Rand( 4, 12 )
             end,
             EnemyFound = function( self, data ) -- break our trance
-                if not self.IsSeeEnemy then return end
-                if self.DistToEnemy > self.DuelEnemyDist * 4 then return end
+                local myTbl = data.myTbl
+                if not myTbl.IsSeeEnemy then return end
+                if myTbl.DistToEnemy > myTbl.DuelEnemyDist * 4 then return end
 
                 self:TaskComplete( "movement_wander" )
                 self:StartTask( "movement_handler", "i found an enemy!" )
+                self:RestartMotionCoroutine()
+
+            end,
+            BehaveUpdatePriority = function( self, data )
+                if data.nextDuelQuit > CurTime() then return end
+                local myTbl = data.myTbl
+
+                if not myTbl.IsSeeEnemy then return end
+                if myTbl.DistToEnemy > myTbl.DuelEnemyDist then return end
+                if myTbl.primaryPathIsValid( self ) then return end -- path is good, dont need to end early
+
+                myTbl.TaskComplete( self, "movement_wander" )
+                myTbl.StartTask( self, "movement_duelenemy_near", nil, "i see an enemy!" )
                 self:RestartMotionCoroutine()
 
             end,
