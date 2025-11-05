@@ -18,7 +18,7 @@ ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
         drawHint = true,
-        name = "Release your spawn.",
+        name = "Release your spawn.", -- just a diff name
         ratelimit = 8, -- seconds between uses
         svAction = function( _drive, _driver, bot )
             bot:NECRO_TrySpawnMinions( true )

@@ -20,6 +20,19 @@ if CLIENT then
     return
 end
 
+ENT.MySpecialActions = {
+    ["call"] = {
+        inBind = IN_RELOAD,
+        drawHint = true,
+        name = "Release your spawn.", -- diff name
+        ratelimit = 8, -- seconds between uses
+        svAction = function( _drive, _driver, bot )
+            bot:NECRO_TrySpawnMinions( true )
+
+        end,
+    }
+}
+
 ENT.IsFodder = false
 ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 2
 
