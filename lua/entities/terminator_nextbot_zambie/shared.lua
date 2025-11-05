@@ -926,6 +926,8 @@ function ENT:DoCustomTasks( defaultTasks )
                     local propInMyWay2 = IsValid( myTbl.GetCachedDisrespector( self ) ) and myTbl.IsReallyAngry( self )
                     if propInMyWay or propInMyWay2 then
                         local blocker = myTbl.LastShootBlocker
+                        -- blocker is ANOTHER ZOMBIE!
+                        -- we're horde-ing all over some enemy, not gonna get bored!
                         if IsValid( blocker ) and blocker.isTerminatorHunterChummy and blocker.isTerminatorHunterChummy == myTbl.isTerminatorHunterChummy then
                             data.badCount = -50
                             return
