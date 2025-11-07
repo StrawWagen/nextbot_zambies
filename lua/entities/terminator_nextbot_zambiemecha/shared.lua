@@ -4,13 +4,14 @@ ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Mecha Zombie"
 ENT.Spawnable = false
+ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiemecha", {
     Name = "Mecha Zombie",
     Class = "terminator_nextbot_zambiemecha",
     Category = "Nextbot Zambies",
 } )
 
-ENT.SpawnHealth = 2250
+ENT.SpawnHealth = 1500
 ENT.WalkSpeed = 70
 ENT.MoveSpeed = 180
 ENT.RunSpeed = 300
@@ -34,37 +35,38 @@ ENT.term_SoundLevelShift = 10
 ENT.Mecha_LastShockwave = 0
 ENT.Mecha_ShockwaveCooldown = 5
 
--- Mechanical sounds
-ENT.term_LoseEnemySound = "npc/scanner/scanner_talk1.wav"
-ENT.term_CallingSound = "npc/scanner/scanner_talk2.wav"
-ENT.term_CallingSmallSound = "npc/scanner/combat_scan5.wav"
-ENT.term_FindEnemySound = "npc/scanner/scanner_alert1.wav"
-ENT.term_AttackSound = "npc/scanner/scanner_combat1.wav"
-ENT.term_AngerSound = "npc/manhack/bat_away.wav"
-ENT.term_DamagedSound = "npc/scanner/scanner_pain1.wav"
-ENT.term_DieSound = "npc/scanner/scanner_explode_crash2.wav"
-ENT.term_JumpSound = "npc/scanner/scanner_nearmiss1.wav"
+ENT.TERM_MODELSCALE = 1.5
+
+ENT.term_LoseEnemySound = "npc/strider/strider_alert2.wav"
+ENT.term_CallingSound = "npc/strider/strider_alert5.wav"
+ENT.term_CallingSmallSound = "npc/strider/strider_alert6.wav"
+ENT.term_FindEnemySound = "npc/attack_helicopter/aheli_charge_up.wav"
+ENT.term_AttackSound = "npc/strider/strider_step5.wav"
+ENT.term_AngerSound = "npc/strider/strider_pain5.wav"
+ENT.term_DamagedSound = "npc/strider/strider_pain1.wav"
+ENT.term_DieSound = "npc/strider/strider_die1.wav"
+ENT.term_JumpSound = "npc/strider/strider_step6.wav"
 
 ENT.IdleLoopingSounds = {
-    "npc/turret_floor/ping.wav",
+    "npc/strider/strider_ambient01.wav",
 }
 ENT.AngryLoopingSounds = {
-    "npc/scanner/scanner_scan_loop2.wav",
+    "npc/attack_helicopter/aheli_rotor_loop1.wav",
 }
+
+ENT.Mecha_MarchInterval = 4
+ENT.Mecha_StopInterval = 4
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambiemecha", ENT.PrintName )
-    
-    function ENT:AdditionalClientInitialize()
-        self:SetSubMaterial( 0, "phoenix_storms/cube" )
-    end
     return
 end
+
+terminator_Extras.Mecha_GlobalClock = terminator_Extras.Mecha_GlobalClock or CurTime()
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
-    self:SetModelScale( 1.5 )
     self:SetSubMaterial( 0, "phoenix_storms/cube" )
     self:SetColor( Color( 60, 60, 80 ) )
     
@@ -77,21 +79,70 @@ function ENT:AdditionalInitialize()
 end
 
 ENT.MyClassTask = {
+    DisableBehaviour = function( self, data )
+        local clockTime = CurTime() - terminator_Extras.Mecha_GlobalClock
+        local cycleTime = self.Mecha_MarchInterval + self.Mecha_StopInterval
+        local cycleProgress = clockTime % cycleTime
+        
+        if cycleProgress > self.Mecha_MarchInterval then
+            return true
+        end
+        
+        return false
+    end,
+    
     OnLandOnGround = function( self, data, landedOn, height )
         if height > 350 then
             self:CreateShockwave( height )
         end
     end,
+    
     OnKilled = function( self, data, damage, rag )
         self:SelfDestruct()
     end,
+    
     OnDamaged = function( self, data, damage )
-        -- Reduced fall damage
         if damage:IsFallDamage() and damage:GetDamage() < 50 then
             return true
         end
     end,
 }
+
+function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
+    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
+        if ent == self then continue end
+        if not IsValid( ent ) then continue end
+        
+        local entPos = ent:GetPos()
+        local dir = ( entPos - pos ):GetNormalized()
+        local dist = entPos:Distance( pos )
+        local distFrac = 1 - ( dist / radius )
+        
+        if ent:Health() and ent:Health() > 0 then
+            local dmg = DamageInfo()
+            dmg:SetDamage( damage * distFrac )
+            dmg:SetAttacker( game.GetWorld() )
+            dmg:SetInflictor( game.GetWorld() )
+            dmg:SetDamageType( DMG_BLAST )
+            dmg:SetDamageForce( dir * 25000 * distFrac )
+            ent:TakeDamageInfo( dmg )
+        end
+        
+        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
+            ent:SetVelocity( dir * 2000 * distFrac + Vector( 0, 0, 800 * distFrac ) )
+        elseif IsValid( ent:GetPhysicsObject() ) then
+            local phys = ent:GetPhysicsObject()
+            phys:ApplyForceCenter( dir * phys:GetMass() * 1500 * distFrac + Vector( 0, 0, phys:GetMass() * 600 * distFrac ) )
+        end
+        
+        if igniteRadius and dist < igniteRadius and ent:IsPlayer() then
+            local burnTime = math.min( 5 * distFrac, 3 )
+            if burnTime > 0.5 then
+                ent:Ignite( burnTime )
+            end
+        end
+    end
+end
 
 function ENT:CreateShockwave( height )
     local cur = CurTime()
@@ -102,11 +153,9 @@ function ENT:CreateShockwave( height )
     local radius = math.Clamp( height * 2, 300, 800 )
     local damage = math.Clamp( height * 0.5, 30, 150 )
     
-    -- Sound
     self:EmitSound( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", 100, 70 )
     self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 80 )
     
-    -- Create beam ring effects
     local rings = 5
     for i = 1, rings do
         timer.Simple( i * 0.1, function()
@@ -119,7 +168,6 @@ function ENT:CreateShockwave( height )
         end )
     end
     
-    -- Damage and push entities
     for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
         if ent == self then continue end
         if not IsValid( ent ) then continue end
@@ -129,7 +177,6 @@ function ENT:CreateShockwave( height )
         local dist = entPos:Distance( pos )
         local distFrac = 1 - ( dist / radius )
         
-        -- Damage
         if ent:Health() and ent:Health() > 0 then
             local dmg = DamageInfo()
             dmg:SetDamage( damage * distFrac )
@@ -140,16 +187,14 @@ function ENT:CreateShockwave( height )
             ent:TakeDamageInfo( dmg )
         end
         
-        -- Push
         if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
             ent:SetVelocity( dir * 1000 * distFrac + Vector( 0, 0, 400 * distFrac ) )
-        elseif ent:GetPhysicsObject():IsValid() then
+        elseif IsValid( ent:GetPhysicsObject() ) then
             local phys = ent:GetPhysicsObject()
             phys:ApplyForceCenter( dir * phys:GetMass() * 800 * distFrac + Vector( 0, 0, phys:GetMass() * 200 * distFrac ) )
         end
     end
     
-    -- Screen shake
     util.ScreenShake( pos, 15, 5, 1.5, radius * 1.5 )
 end
 
@@ -158,11 +203,9 @@ function ENT:SelfDestruct()
     local radius = 650
     local damage = 250
     
-    -- Mechanical explosion sounds
-    sound.Play( "npc/scanner/scanner_explode_crash2.wav", pos, 120, 70 )
+    sound.Play( "npc/strider/strider_die1.wav", pos, 120, 70 )
     sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 120, 70 )
     
-    -- Large explosion effect at center
     local explode = EffectData()
     explode:SetOrigin( pos )
     explode:SetMagnitude( 15 )
@@ -170,7 +213,6 @@ function ENT:SelfDestruct()
     explode:SetRadius( radius )
     util.Effect( "Explosion", explode )
     
-    -- Additional helicopter bomb effects
     for i = 1, 5 do
         timer.Simple( i * 0.08, function()
             local explode2 = EffectData()
@@ -181,7 +223,6 @@ function ENT:SelfDestruct()
         end )
     end
     
-    -- Massive sparks and metal debris
     for i = 1, 20 do
         timer.Simple( math.Rand( 0, 0.5 ), function()
             local sparkPos = pos + VectorRand() * 150
@@ -195,54 +236,10 @@ function ENT:SelfDestruct()
         end )
     end
     
-    -- Fire/smoke plume
-    for i = 1, 10 do
-        timer.Simple( i * 0.1, function()
-            local smoke = EffectData()
-            smoke:SetOrigin( pos + Vector( 0, 0, i * 30 ) )
-            smoke:SetScale( 20 )
-            util.Effect( "explosion_satchel", smoke )
-        end )
-    end
+    self:DamageAndPushEntities( pos, radius, damage, radius * 0.4 )
     
-    -- Damage and push entities
-    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
-        if not IsValid( ent ) then continue end
-        
-        local entPos = ent:GetPos()
-        local dir = ( entPos - pos ):GetNormalized()
-        local dist = entPos:Distance( pos )
-        local distFrac = 1 - ( dist / radius )
-        
-        -- Damage
-        if ent:Health() and ent:Health() > 0 then
-            local dmg = DamageInfo()
-            dmg:SetDamage( damage * distFrac )
-            dmg:SetAttacker( game.GetWorld() )
-            dmg:SetInflictor( game.GetWorld() )
-            dmg:SetDamageType( bit.bor( DMG_BLAST, DMG_BURN ) )
-            dmg:SetDamageForce( dir * 25000 * distFrac )
-            ent:TakeDamageInfo( dmg )
-        end
-        
-        -- Push
-        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-            ent:SetVelocity( dir * 2000 * distFrac + Vector( 0, 0, 800 * distFrac ) )
-        elseif ent:GetPhysicsObject():IsValid() then
-            local phys = ent:GetPhysicsObject()
-            phys:ApplyForceCenter( dir * phys:GetMass() * 1500 * distFrac + Vector( 0, 0, phys:GetMass() * 600 * distFrac ) )
-        end
-        
-        -- Ignite nearby entities
-        if dist < radius * 0.6 and ent.Ignite then
-            ent:Ignite( 15 * distFrac )
-        end
-    end
-    
-    -- Massive screen shake
     util.ScreenShake( pos, 30, 15, 3, radius * 2.5 )
     
-    -- Create sprite effect
     local sprite = EffectData()
     sprite:SetOrigin( pos )
     sprite:SetScale( 15 )

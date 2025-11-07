@@ -4,6 +4,7 @@ ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Paper Zombie"
 ENT.Spawnable = false
+ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiepaper", {
     Name = "Paper Zombie",
     Class = "terminator_nextbot_zambiepaper",
@@ -20,19 +21,20 @@ ENT.MyPhysicsMass = 40
 ENT.term_SoundPitchShift = 20
 ENT.zamb_BrainsChance = 5
 
+ENT.TERM_MODELSCALE = function() return math.Rand( 0.85, 0.95 ) end
+
+ENT.BleedDuration = 3
+ENT.BleedDamage = 2
+ENT.BleedTicks = 6
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiepaper", ENT.PrintName )
-    
-    function ENT:AdditionalClientInitialize()
-        self:SetSubMaterial( 0, "models/props_c17/paper01" )
-    end
     return
 end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
-    self:SetModelScale( math.Rand( 0.85, 0.95 ) )
     self:SetSubMaterial( 0, "models/props_c17/paper01" )
     self:SetColor( Color( 230, 220, 200 ) )
     
@@ -43,10 +45,9 @@ end
 
 ENT.MyClassTask = {
     OnStart = function( self, data )
-        -- Hook to apply bleed on successful damage
-        hook.Add( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:EntIndex(), function( target, dmg, took )
+        hook.Add( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID(), function( target, dmg, took )
             if not IsValid( self ) then 
-                hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:EntIndex() )
+                hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID() )
                 return 
             end
             if not took then return end
@@ -55,23 +56,22 @@ ENT.MyClassTask = {
             self:ApplyBleedEffect( target )
         end )
     end,
-    OnKilled = function( self, data )
-        -- Clean up hook
-        hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:EntIndex() )
-    end,
 }
+
+function ENT:OnRemove()
+    hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID() )
+end
 
 function ENT:ApplyBleedEffect( victim )
     if not IsValid( victim ) then return end
     if not victim:Health() or victim:Health() <= 0 then return end
     
-    -- Prevent multiple bleeds on same victim
     if victim.PaperZombie_Bleeding then return end
     victim.PaperZombie_Bleeding = true
     
-    local bleedDuration = 3
-    local bleedDamage = 2
-    local bleedTicks = 6
+    local bleedDuration = self.BleedDuration
+    local bleedDamage = self.BleedDamage
+    local bleedTicks = self.BleedTicks
     local tickDelay = bleedDuration / bleedTicks
     
     local effectdata = EffectData()
@@ -106,7 +106,6 @@ function ENT:ApplyBleedEffect( victim )
                 util.Effect( "bloodspray", bloodeffect )
             end
             
-            -- Clear bleeding flag on last tick
             if i == bleedTicks then
                 victim.PaperZombie_Bleeding = nil
             end

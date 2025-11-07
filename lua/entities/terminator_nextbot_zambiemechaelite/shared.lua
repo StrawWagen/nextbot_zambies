@@ -4,13 +4,14 @@ ENT.Base = "terminator_nextbot_zambiemecha"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Mecha Zombie Elite"
 ENT.Spawnable = false
+ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiemechaelite", {
     Name = "Mecha Zombie Elite",
     Class = "terminator_nextbot_zambiemechaelite",
     Category = "Nextbot Zambies",
 } )
 
-ENT.SpawnHealth = 5000
+ENT.SpawnHealth = 2500
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 2
 
@@ -37,7 +38,7 @@ ENT.Mecha_ShockwaveCooldown = 4
 ENT.Mecha_ShockwaveThreshold = 250
 ENT.Mecha_CriticalHealth = 0.25
 
-ENT.TERM_MODELSCALE = 1.5
+ENT.TERM_MODELSCALE = 2.25
 ENT.CollisionBounds = { Vector( -18, -18, 0 ), Vector( 18, 18, 90 ) }
 
 if CLIENT then
@@ -49,17 +50,12 @@ if CLIENT then
         render.SetColorModulation( 1, 1, 1 )
     end
     
-    function ENT:AdditionalClientInitialize()
-        self:SetSubMaterial( 0, "phoenix_storms/cube" )
-    end
-    
     return
 end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
-    self:SetModelScale( 2.25 )
     self:SetSubMaterial( 0, "phoenix_storms/cube" )
     self:SetColor( Color( 35, 35, 55 ) )
     
@@ -71,6 +67,18 @@ function ENT:AdditionalInitialize()
 end
 
 ENT.MyClassTask = {
+    DisableBehaviour = function( self, data )
+        local clockTime = CurTime() - terminator_Extras.Mecha_GlobalClock
+        local cycleTime = self.Mecha_MarchInterval + self.Mecha_StopInterval
+        local cycleProgress = clockTime % cycleTime
+        
+        if cycleProgress > self.Mecha_MarchInterval then
+            return true
+        end
+        
+        return false
+    end,
+    
     BehaveUpdate = function( self, data )
         local cur = CurTime()
         
@@ -111,6 +119,42 @@ ENT.MyClassTask = {
         end
     end,
 }
+
+function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
+    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
+        if ent == self then continue end
+        if not IsValid( ent ) then continue end
+        
+        local entPos = ent:GetPos()
+        local dir = ( entPos - pos ):GetNormalized()
+        local dist = entPos:Distance( pos )
+        local distFrac = 1 - ( dist / radius )
+        
+        if ent:Health() and ent:Health() > 0 then
+            local dmg = DamageInfo()
+            dmg:SetDamage( damage * distFrac )
+            dmg:SetAttacker( game.GetWorld() )
+            dmg:SetInflictor( game.GetWorld() )
+            dmg:SetDamageType( DMG_BLAST )
+            dmg:SetDamageForce( dir * 25000 * distFrac )
+            ent:TakeDamageInfo( dmg )
+        end
+        
+        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
+            ent:SetVelocity( dir * 2000 * distFrac + Vector( 0, 0, 800 * distFrac ) )
+        elseif IsValid( ent:GetPhysicsObject() ) then
+            local phys = ent:GetPhysicsObject()
+            phys:ApplyForceCenter( dir * phys:GetMass() * 1500 * distFrac + Vector( 0, 0, phys:GetMass() * 600 * distFrac ) )
+        end
+        
+        if igniteRadius and dist < igniteRadius and ent:IsPlayer() then
+            local burnTime = math.min( 5 * distFrac, 3 )
+            if burnTime > 0.5 then
+                ent:Ignite( burnTime )
+            end
+        end
+    end
+end
 
 function ENT:EnterEnragedState()
     self.Mecha_IsEnraged = true
@@ -236,7 +280,7 @@ function ENT:CreateEliteShockwave( height )
         
         if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
             ent:SetVelocity( dir * 1800 * distFrac + Vector( 0, 0, 700 * distFrac ) )
-        elseif ent:GetPhysicsObject():IsValid() then
+        elseif IsValid( ent:GetPhysicsObject() ) then
             local phys = ent:GetPhysicsObject()
             phys:ApplyForceCenter( dir * phys:GetMass() * 1400 * distFrac + Vector( 0, 0, phys:GetMass() * 500 * distFrac ) )
         end
@@ -304,15 +348,6 @@ function ENT:EliteSelfDestruct()
             end )
         end
         
-        for i = 1, 20 do
-            timer.Simple( i * 0.06, function()
-                local smoke = EffectData()
-                smoke:SetOrigin( pos + Vector( 0, 0, i * 50 ) + VectorRand() * 100 )
-                smoke:SetScale( 40 )
-                util.Effect( "explosion_satchel", smoke )
-            end )
-        end
-        
         for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
             if not IsValid( ent ) then continue end
             
@@ -326,20 +361,23 @@ function ENT:EliteSelfDestruct()
                 dmg:SetDamage( damage * distFrac )
                 dmg:SetAttacker( game.GetWorld() )
                 dmg:SetInflictor( game.GetWorld() )
-                dmg:SetDamageType( bit.bor( DMG_BLAST, DMG_BURN, DMG_SHOCK ) )
+                dmg:SetDamageType( DMG_BLAST )
                 dmg:SetDamageForce( dir * 40000 * distFrac )
                 ent:TakeDamageInfo( dmg )
             end
             
             if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
                 ent:SetVelocity( dir * 3000 * distFrac + Vector( 0, 0, 1200 * distFrac ) )
-            elseif ent:GetPhysicsObject():IsValid() then
+            elseif IsValid( ent:GetPhysicsObject() ) then
                 local phys = ent:GetPhysicsObject()
                 phys:ApplyForceCenter( dir * phys:GetMass() * 2500 * distFrac + Vector( 0, 0, phys:GetMass() * 1000 * distFrac ) )
             end
             
-            if dist < radius * 0.75 and ent.Ignite then
-                ent:Ignite( 25 * distFrac )
+            if dist < radius * 0.5 and ent:IsPlayer() then
+                local burnTime = math.min( 8 * distFrac, 4 )
+                if burnTime > 0.5 then
+                    ent:Ignite( burnTime )
+                end
             end
         end
         
