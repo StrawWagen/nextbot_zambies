@@ -2,11 +2,11 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiepaper"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Paper Zombie Elite"
+ENT.PrintName = "Zombie Paper Elite"
 ENT.Spawnable = false
 ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiepaperelite", {
-    Name = "Paper Zombie Elite",
+    Name = "Zombie Paper Elite",
     Class = "terminator_nextbot_zambiepaperelite",
     Category = "Nextbot Zambies",
 } )
@@ -43,7 +43,6 @@ function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
     self:SetSubMaterial( 0, "models/props_c17/paper01" )
-    self:SetColor( Color( 210, 190, 170 ) )
     
     self.HeightToStartTakingDamage = 120
     self.FallDamagePerHeight = 0.25

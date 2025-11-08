@@ -2,11 +2,11 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiemecha"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Mecha Zombie Elite"
+ENT.PrintName = "Zombie Mecha Elite"
 ENT.Spawnable = false
 ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiemechaelite", {
-    Name = "Mecha Zombie Elite",
+    Name = "Zombie Mecha Elite",
     Class = "terminator_nextbot_zambiemechaelite",
     Category = "Nextbot Zambies",
 } )
@@ -15,13 +15,14 @@ ENT.SpawnHealth = 2500
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 2
 
-ENT.WalkSpeed = 85
-ENT.MoveSpeed = 240
-ENT.RunSpeed = 420
-ENT.AccelerationSpeed = 1200
+ENT.WalkSpeed = 150
+ENT.MoveSpeed = 500
+ENT.RunSpeed = 750
+ENT.AccelerationSpeed = 3000
+ENT.DecelerationSpeed = 4000
 
 ENT.FistDamageMul = 2.0
-ENT.MyPhysicsMass = 300
+ENT.MyPhysicsMass = 5000
 ENT.JumpHeight = 300
 
 ENT.DuelEnemyDist = 500
@@ -39,7 +40,41 @@ ENT.Mecha_ShockwaveThreshold = 250
 ENT.Mecha_CriticalHealth = 0.25
 
 ENT.TERM_MODELSCALE = 2.25
-ENT.CollisionBounds = { Vector( -18, -18, 0 ), Vector( 18, 18, 90 ) }
+ENT.CollisionBounds = { Vector( -8, -8, 0 ), Vector( 8, 8, 30 ) }
+
+ENT.Term_FootstepTiming = "perfect"
+ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
+ENT.PerfectFootsteps_SteppingCriteria = -0.75
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "NPC_Strider.Footstep",
+        lvl = 88,
+        pitch = 70,
+    },
+    {
+        path = "NPC_Strider.Footstep",
+        lvl = 88,
+        pitch = 70,
+    },
+}
+ENT.Term_FootstepSound = {
+    {
+        path = "npc/antlion_guard/foot_heavy1.wav",
+        lvl = 95,
+        pitch = 60,
+    },
+    {
+        path = "npc/antlion_guard/foot_heavy2.wav",
+        lvl = 95,
+        pitch = 60,
+    },
+}
+ENT.Term_FootstepShake = {
+    amplitude = 4,
+    frequency = 20,
+    duration = 0.4,
+    radius = 2000,
+}
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambiemechaelite", ENT.PrintName )
@@ -57,20 +92,17 @@ function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
     self:SetSubMaterial( 0, "phoenix_storms/cube" )
-    self:SetColor( Color( 35, 35, 55 ) )
     
     self.HasBrains = true
     self.IsStupid = false
     
     self.Mecha_IsEnraged = false
-    self.Mecha_NextHealthRegen = 0
 end
 
 ENT.MyClassTask = {
     DisableBehaviour = function( self, data )
-        local clockTime = CurTime() - terminator_Extras.Mecha_GlobalClock
         local cycleTime = self.Mecha_MarchInterval + self.Mecha_StopInterval
-        local cycleProgress = clockTime % cycleTime
+        local cycleProgress = CurTime() % cycleTime
         
         if cycleProgress > self.Mecha_MarchInterval then
             return true
@@ -79,15 +111,7 @@ ENT.MyClassTask = {
         return false
     end,
     
-    BehaveUpdate = function( self, data )
-        local cur = CurTime()
-        
-        if self.Mecha_NextHealthRegen < cur then
-            self.Mecha_NextHealthRegen = cur + self.HealthRegenInterval
-            local newHealth = math.min( self:Health() + self.HealthRegen, self:GetMaxHealth() )
-            self:SetHealth( newHealth )
-        end
-        
+    Think = function( self, data )
         if not self.Mecha_IsEnraged then
             local healthPercent = self:Health() / self:GetMaxHealth()
             if healthPercent <= self.Mecha_CriticalHealth then
@@ -110,51 +134,8 @@ ENT.MyClassTask = {
         if damage:IsFallDamage() and damage:GetDamage() < 150 then
             return true
         end
-        
-        if not damage:IsFallDamage() and damage:GetDamage() > 20 and math.random( 1, 100 ) < 15 then
-            timer.Simple( 0.1, function()
-                if not IsValid( self ) then return end
-                self:CreateMiniShockwave()
-            end )
-        end
     end,
 }
-
-function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
-    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
-        if ent == self then continue end
-        if not IsValid( ent ) then continue end
-        
-        local entPos = ent:GetPos()
-        local dir = ( entPos - pos ):GetNormalized()
-        local dist = entPos:Distance( pos )
-        local distFrac = 1 - ( dist / radius )
-        
-        if ent:Health() and ent:Health() > 0 then
-            local dmg = DamageInfo()
-            dmg:SetDamage( damage * distFrac )
-            dmg:SetAttacker( game.GetWorld() )
-            dmg:SetInflictor( game.GetWorld() )
-            dmg:SetDamageType( DMG_BLAST )
-            dmg:SetDamageForce( dir * 25000 * distFrac )
-            ent:TakeDamageInfo( dmg )
-        end
-        
-        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-            ent:SetVelocity( dir * 2000 * distFrac + Vector( 0, 0, 800 * distFrac ) )
-        elseif IsValid( ent:GetPhysicsObject() ) then
-            local phys = ent:GetPhysicsObject()
-            phys:ApplyForceCenter( dir * phys:GetMass() * 1500 * distFrac + Vector( 0, 0, phys:GetMass() * 600 * distFrac ) )
-        end
-        
-        if igniteRadius and dist < igniteRadius and ent:IsPlayer() then
-            local burnTime = math.min( 5 * distFrac, 3 )
-            if burnTime > 0.5 then
-                ent:Ignite( burnTime )
-            end
-        end
-    end
-end
 
 function ENT:EnterEnragedState()
     self.Mecha_IsEnraged = true
@@ -183,37 +164,6 @@ function ENT:EnterEnragedState()
     end
     
     self:ReallyAnger( 100 )
-end
-
-function ENT:CreateMiniShockwave()
-    local pos = self:GetPos()
-    local radius = 250
-    local damage = 25
-    
-    self:EmitSound( "ambient/energy/zap" .. math.random( 1, 9 ) .. ".wav", 85, math.random( 80, 120 ) )
-    
-    for i = 1, 3 do
-        timer.Simple( i * 0.05, function()
-            local color = Color( 100, 100, 255 )
-            effects.BeamRingPoint( pos, 0.2, 5, ( radius / 3 ) * i, 12, 0, color, { material = "sprites/physbeam", framerate = 20 } )
-        end )
-    end
-    
-    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
-        if ent == self then continue end
-        if not IsValid( ent ) then continue end
-        if not ent:Health() or ent:Health() <= 0 then continue end
-        
-        local dist = ent:GetPos():Distance( pos )
-        local distFrac = 1 - ( dist / radius )
-        
-        local dmg = DamageInfo()
-        dmg:SetDamage( damage * distFrac )
-        dmg:SetAttacker( self )
-        dmg:SetInflictor( self )
-        dmg:SetDamageType( DMG_SHOCK )
-        ent:TakeDamageInfo( dmg )
-    end
 end
 
 function ENT:CreateEliteShockwave( height )
@@ -259,32 +209,7 @@ function ENT:CreateEliteShockwave( height )
         end )
     end
     
-    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
-        if ent == self then continue end
-        if not IsValid( ent ) then continue end
-        
-        local entPos = ent:GetPos()
-        local dir = ( entPos - pos ):GetNormalized()
-        local dist = entPos:Distance( pos )
-        local distFrac = 1 - ( dist / radius )
-        
-        if ent:Health() and ent:Health() > 0 then
-            local dmg = DamageInfo()
-            dmg:SetDamage( damage * distFrac )
-            dmg:SetAttacker( self )
-            dmg:SetInflictor( self )
-            dmg:SetDamageType( DMG_BLAST )
-            dmg:SetDamageForce( dir * 18000 * distFrac )
-            ent:TakeDamageInfo( dmg )
-        end
-        
-        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-            ent:SetVelocity( dir * 1800 * distFrac + Vector( 0, 0, 700 * distFrac ) )
-        elseif IsValid( ent:GetPhysicsObject() ) then
-            local phys = ent:GetPhysicsObject()
-            phys:ApplyForceCenter( dir * phys:GetMass() * 1400 * distFrac + Vector( 0, 0, phys:GetMass() * 500 * distFrac ) )
-        end
-    end
+    self:DamageAndPushEntities( pos, radius, damage )
     
     util.ScreenShake( pos, 25, 10, 2.5, radius * 2 )
 end
@@ -348,38 +273,7 @@ function ENT:EliteSelfDestruct()
             end )
         end
         
-        for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
-            if not IsValid( ent ) then continue end
-            
-            local entPos = ent:GetPos()
-            local dir = ( entPos - pos ):GetNormalized()
-            local dist = entPos:Distance( pos )
-            local distFrac = 1 - ( dist / radius )
-            
-            if ent:Health() and ent:Health() > 0 then
-                local dmg = DamageInfo()
-                dmg:SetDamage( damage * distFrac )
-                dmg:SetAttacker( game.GetWorld() )
-                dmg:SetInflictor( game.GetWorld() )
-                dmg:SetDamageType( DMG_BLAST )
-                dmg:SetDamageForce( dir * 40000 * distFrac )
-                ent:TakeDamageInfo( dmg )
-            end
-            
-            if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-                ent:SetVelocity( dir * 3000 * distFrac + Vector( 0, 0, 1200 * distFrac ) )
-            elseif IsValid( ent:GetPhysicsObject() ) then
-                local phys = ent:GetPhysicsObject()
-                phys:ApplyForceCenter( dir * phys:GetMass() * 2500 * distFrac + Vector( 0, 0, phys:GetMass() * 1000 * distFrac ) )
-            end
-            
-            if dist < radius * 0.5 and ent:IsPlayer() then
-                local burnTime = math.min( 8 * distFrac, 4 )
-                if burnTime > 0.5 then
-                    ent:Ignite( burnTime )
-                end
-            end
-        end
+        self:DamageAndPushEntities( pos, radius, damage, radius * 0.5 )
         
         util.ScreenShake( pos, 50, 25, 5, radius * 3 )
         
@@ -389,34 +283,4 @@ function ENT:EliteSelfDestruct()
         sprite:SetMagnitude( 8 )
         util.Effect( "cball_explode", sprite )
     end )
-end
-
-function ENT:AdditionalFootstep( _pos, _foot, _sound, volume, _filter )
-    local moveSpeed = self:GetVelocity():Length()
-    local speedFrac = moveSpeed / self.RunSpeed
-    
-    local snd = "npc/antlion_guard/foot_heavy" .. math.random( 1, 2 ) .. ".wav"
-    local lvl = 95
-    local pit = 60
-    
-    self:EmitSound( snd, lvl, pit, volume + 0.8, CHAN_STATIC )
-    
-    if math.random( 1, 100 ) < 50 then
-        self:EmitSound( "npc/scanner/scanner_nearmiss" .. math.random( 1, 2 ) .. ".wav", 75, 50, 0.3, CHAN_STATIC )
-    end
-    
-    if moveSpeed > self.WalkSpeed then
-        local shakeAmt = 2 + ( speedFrac * 4 )
-        util.ScreenShake( self:GetPos(), shakeAmt, 20, 0.2, 400 + ( moveSpeed * 0.5 ) )
-    end
-    
-    if speedFrac > 0.5 then
-        local dust = EffectData()
-        dust:SetOrigin( _pos )
-        dust:SetScale( 3 )
-        dust:SetMagnitude( 2 )
-        util.Effect( "ThumperDust", dust )
-    end
-    
-    return true
 end

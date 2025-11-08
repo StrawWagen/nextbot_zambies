@@ -2,22 +2,23 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Mecha Zombie"
+ENT.PrintName = "Zombie Mecha"
 ENT.Spawnable = false
 ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiemecha", {
-    Name = "Mecha Zombie",
+    Name = "Zombie Mecha",
     Class = "terminator_nextbot_zambiemecha",
     Category = "Nextbot Zambies",
 } )
 
-ENT.SpawnHealth = 1500
-ENT.WalkSpeed = 70
-ENT.MoveSpeed = 180
-ENT.RunSpeed = 300
-ENT.AccelerationSpeed = 1000
+ENT.SpawnHealth = 500
+ENT.WalkSpeed = 120
+ENT.MoveSpeed = 350
+ENT.RunSpeed = 550
+ENT.AccelerationSpeed = 2000
+ENT.DecelerationSpeed = 3000
 ENT.FistDamageMul = 1.5
-ENT.MyPhysicsMass = 200
+ENT.MyPhysicsMass = 1000
 ENT.JumpHeight = 200
 
 ENT.DoMetallicDamage = true
@@ -29,40 +30,73 @@ ENT.HasBrains = true
 ENT.IsStupid = false
 ENT.IsFodder = false
 
-ENT.term_SoundPitchShift = -30
-ENT.term_SoundLevelShift = 10
+ENT.term_SoundPitchShift = -15
+ENT.term_SoundLevelShift = 5
 
 ENT.Mecha_LastShockwave = 0
 ENT.Mecha_ShockwaveCooldown = 5
 
-ENT.TERM_MODELSCALE = 1.5
+ENT.TERM_MODELSCALE = 1.2
+ENT.CollisionBounds = { Vector( -12.5, -12.5, 0 ), Vector( 12.5, 12.5, 57 ) }
 
-ENT.term_LoseEnemySound = "npc/strider/strider_alert2.wav"
-ENT.term_CallingSound = "npc/strider/strider_alert5.wav"
-ENT.term_CallingSmallSound = "npc/strider/strider_alert6.wav"
-ENT.term_FindEnemySound = "npc/attack_helicopter/aheli_charge_up.wav"
-ENT.term_AttackSound = "npc/strider/strider_step5.wav"
-ENT.term_AngerSound = "npc/strider/strider_pain5.wav"
-ENT.term_DamagedSound = "npc/strider/strider_pain1.wav"
-ENT.term_DieSound = "npc/strider/strider_die1.wav"
-ENT.term_JumpSound = "npc/strider/strider_step6.wav"
+ENT.term_LoseEnemySound = "Zombie.Idle"
+ENT.term_CallingSound = "npc/zombie/zombie_voice_idle1.wav"
+ENT.term_CallingSmallSound = "npc/zombie/zombie_voice_idle6.wav"
+ENT.term_FindEnemySound = "Zombie.Alert"
+ENT.term_AttackSound = "npc/zombie/zombie_alert1.wav"
+ENT.term_AngerSound = "npc/zombie/zombie_alert2.wav"
+ENT.term_DamagedSound = "Zombie.Pain"
+ENT.term_DieSound = "Zombie.Die"
+ENT.term_JumpSound = "npc/zombie/foot1.wav"
 
 ENT.IdleLoopingSounds = {
-    "npc/strider/strider_ambient01.wav",
+    "npc/zombie/moan_loop1.wav",
 }
 ENT.AngryLoopingSounds = {
-    "npc/attack_helicopter/aheli_rotor_loop1.wav",
+    "npc/zombie/moan_loop3.wav",
 }
 
 ENT.Mecha_MarchInterval = 4
 ENT.Mecha_StopInterval = 4
 
+ENT.Term_FootstepTiming = "perfect"
+ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
+ENT.PerfectFootsteps_SteppingCriteria = -0.75
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "npc/zombie/foot2.wav",
+        lvl = 78,
+        pitch = 80,
+    },
+    {
+        path = "npc/zombie/foot3.wav",
+        lvl = 78,
+        pitch = 80,
+    },
+}
+ENT.Term_FootstepSound = {
+    {
+        path = "npc/zombie/foot1.wav",
+        lvl = 85,
+        pitch = 75,
+    },
+    {
+        path = "npc/zombie/foot2.wav",
+        lvl = 85,
+        pitch = 75,
+    },
+}
+ENT.Term_FootstepShake = {
+    amplitude = 1,
+    frequency = 20,
+    duration = 0.25,
+    radius = 800,
+}
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiemecha", ENT.PrintName )
     return
 end
-
-terminator_Extras.Mecha_GlobalClock = terminator_Extras.Mecha_GlobalClock or CurTime()
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
@@ -80,9 +114,8 @@ end
 
 ENT.MyClassTask = {
     DisableBehaviour = function( self, data )
-        local clockTime = CurTime() - terminator_Extras.Mecha_GlobalClock
         local cycleTime = self.Mecha_MarchInterval + self.Mecha_StopInterval
-        local cycleProgress = clockTime % cycleTime
+        local cycleProgress = CurTime() % cycleTime
         
         if cycleProgress > self.Mecha_MarchInterval then
             return true
@@ -153,8 +186,8 @@ function ENT:CreateShockwave( height )
     local radius = math.Clamp( height * 2, 300, 800 )
     local damage = math.Clamp( height * 0.5, 30, 150 )
     
-    self:EmitSound( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", 100, 70 )
-    self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 100, 80 )
+    self:EmitSound( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", 90, 70 )
+    self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 90, 80 )
     
     local rings = 5
     for i = 1, rings do
@@ -168,32 +201,7 @@ function ENT:CreateShockwave( height )
         end )
     end
     
-    for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
-        if ent == self then continue end
-        if not IsValid( ent ) then continue end
-        
-        local entPos = ent:GetPos()
-        local dir = ( entPos - pos ):GetNormalized()
-        local dist = entPos:Distance( pos )
-        local distFrac = 1 - ( dist / radius )
-        
-        if ent:Health() and ent:Health() > 0 then
-            local dmg = DamageInfo()
-            dmg:SetDamage( damage * distFrac )
-            dmg:SetAttacker( self )
-            dmg:SetInflictor( self )
-            dmg:SetDamageType( DMG_BLAST )
-            dmg:SetDamageForce( dir * 10000 * distFrac )
-            ent:TakeDamageInfo( dmg )
-        end
-        
-        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-            ent:SetVelocity( dir * 1000 * distFrac + Vector( 0, 0, 400 * distFrac ) )
-        elseif IsValid( ent:GetPhysicsObject() ) then
-            local phys = ent:GetPhysicsObject()
-            phys:ApplyForceCenter( dir * phys:GetMass() * 800 * distFrac + Vector( 0, 0, phys:GetMass() * 200 * distFrac ) )
-        end
-    end
+    self:DamageAndPushEntities( pos, radius, damage )
     
     util.ScreenShake( pos, 15, 5, 1.5, radius * 1.5 )
 end
@@ -203,8 +211,8 @@ function ENT:SelfDestruct()
     local radius = 650
     local damage = 250
     
-    sound.Play( "npc/strider/strider_die1.wav", pos, 120, 70 )
-    sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 120, 70 )
+    sound.Play( "npc/zombie/zombie_die1.wav", pos, 100, 50 )
+    sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 100, 70 )
     
     local explode = EffectData()
     explode:SetOrigin( pos )
