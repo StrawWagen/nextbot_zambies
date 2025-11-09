@@ -35,8 +35,10 @@ if CLIENT then
         render.SetColorModulation( 0.85, 0.75, 0.65 )
         self:DrawModel()
         render.SetColorModulation( 1, 1, 1 )
+
     end
     return
+
 end
 
 function ENT:AdditionalInitialize()
