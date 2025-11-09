@@ -30,84 +30,91 @@ ENT.BleedTicks = 6
 if CLIENT then
     language.Add( "terminator_nextbot_zambiepaper", ENT.PrintName )
     return
+
 end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
-    
+
     self:SetSubMaterial( 0, "models/props_c17/paper01" )
     self:SetColor( Color( 230, 220, 200 ) )
-    
+
     self.HeightToStartTakingDamage = 100
     self.FallDamagePerHeight = 0.3
     self.DeathDropHeight = 500
+
 end
 
 ENT.MyClassTask = {
     OnStart = function( self, data )
         hook.Add( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID(), function( target, dmg, took )
-            if not IsValid( self ) then 
+            if not IsValid( self ) then
                 hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID() )
-                return 
+                return
+
             end
             if not took then return end
             if dmg:GetAttacker() ~= self then return end
-            
+
             self:ApplyBleedEffect( target )
+
         end )
     end,
 }
 
 function ENT:OnRemove()
     hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID() )
+
 end
 
 function ENT:ApplyBleedEffect( victim )
     if not IsValid( victim ) then return end
     if not victim:Health() or victim:Health() <= 0 then return end
-    
+
     local cur = CurTime()
     if victim.PaperZombie_BleedingUntil and victim.PaperZombie_BleedingUntil > cur then return end
-    
+
     local bleedDuration = self.BleedDuration
     local bleedDamage = self.BleedDamage
     local bleedTicks = self.BleedTicks
     local tickDelay = bleedDuration / bleedTicks
-    
+
     victim.PaperZombie_BleedingUntil = cur + bleedDuration
-    
+
     local effectdata = EffectData()
     effectdata:SetOrigin( victim:GetPos() + Vector( 0, 0, 40 ) )
     effectdata:SetColor( victim:GetBloodColor() )
     effectdata:SetScale( 1 )
     util.Effect( "bloodspray", effectdata )
-    
+
     victim:EmitSound( "physics/flesh/flesh_squishy_impact_hard" .. math.random( 1, 4 ) .. ".wav", 70, math.random( 90, 110 ) )
-    
+
     local timerName = "PaperZombie_Bleed_" .. victim:EntIndex() .. "_" .. cur
     local tickCount = 0
-    
+
     timer.Create( timerName, tickDelay, bleedTicks, function()
-        if not IsValid( victim ) or not victim:Health() or victim:Health() <= 0 then 
+        if not IsValid( victim ) or not victim:Health() or victim:Health() <= 0 then
             timer.Remove( timerName )
-            return 
+            return
+
         end
-        
+
         tickCount = tickCount + 1
-        
+
         local dmg = DamageInfo()
         dmg:SetDamage( bleedDamage )
         dmg:SetAttacker( IsValid( self ) and self or game.GetWorld() )
         dmg:SetInflictor( IsValid( self ) and self or game.GetWorld() )
         dmg:SetDamageType( DMG_SLASH )
         victim:TakeDamageInfo( dmg )
-        
+
         if tickCount % 2 == 0 then
             local bloodeffect = EffectData()
             bloodeffect:SetOrigin( victim:GetPos() + Vector( 0, 0, 40 ) )
             bloodeffect:SetColor( victim:GetBloodColor() )
             bloodeffect:SetScale( 0.5 )
             util.Effect( "bloodspray", bloodeffect )
+
         end
     end )
 end

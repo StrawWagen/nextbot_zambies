@@ -41,12 +41,13 @@ end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
-    
+
     self:SetSubMaterial( 0, "models/props_c17/paper01" )
-    
+
     self.HeightToStartTakingDamage = 120
     self.FallDamagePerHeight = 0.25
     self.DeathDropHeight = 600
-    
+
     self.HasBrains = math.random( 1, 100 ) < 40
+
 end

@@ -66,8 +66,9 @@ if CLIENT then
         render.SetColorModulation( 0.4, 0.4, 0.6 )
         self:DrawModel()
         render.SetColorModulation( 1, 1, 1 )
+
     end
-    
+
     return
 end
 
@@ -119,6 +120,7 @@ ENT.Term_DeathAnim = {
 ENT.MyClassTask = {
     Think = function( self, data )
         if self.Mecha_IsEnraged then return end
+
         local healthPercent = self:Health() / self:GetMaxHealth()
         if healthPercent >= self.Mecha_CriticalHealth then return end
 
@@ -145,6 +147,7 @@ ENT.MyClassTask = {
                 sparks:SetScale( 5 )
                 sparks:SetRadius( 10 )
                 util.Effect( "ElectricSpark", sparks )
+
             end )
         end
 
@@ -158,17 +161,19 @@ ENT.MyClassTask = {
         self:ZAMB_AngeringCall( true, 1, false )
 
         self:ReallyAnger( 100 )
+
     end,
 
-    OnLandOnGround = function( self, data, landedOn, height )
-        if height > self.Mecha_ShockwaveThreshold then
-            self:CreateEliteShockwave( height )
-        end
+    OnLandOnGround = function( self, data, landedOn, height ) -- note, OnLandOnGround in the normal mecha zombie is also being called
+        if height < self.Mecha_ShockwaveThreshold then return end
+        self:CreateEliteShockwave( height )
+
     end,
 
     OnDamaged = function( self, data, damage )
         if damage:IsFallDamage() and damage:GetDamage() < 150 then
             return true
+
         end
     end,
 
@@ -179,6 +184,7 @@ ENT.MyClassTask = {
         local timerName = "zamb_elitemecha_warpbonesondeath_" .. self:GetCreationID()
         timer.Create( timerName, 0.1, 0, function()
             if not IsValid( self ) then timer.Remove( timerName ) return end
+
             scale = scale + 0.01
             -- manupulate our bones's scale, warping them as time goes on
             local bones = self:GetBoneCount()
@@ -192,6 +198,7 @@ ENT.MyClassTask = {
 
     OnKilled = function( self, data, damage, rag )
         self:EliteSelfDestruct()
+
     end,
 }
 
@@ -199,37 +206,38 @@ function ENT:CreateEliteShockwave( height )
     local cur = CurTime()
     if self.Mecha_LastShockwave + self.Mecha_ShockwaveCooldown > cur then return end
     self.Mecha_LastShockwave = cur
-    
+
     local pos = self:GetPos()
     local radius = math.Clamp( height * 3, 400, 1200 )
     local damage = math.Clamp( height * 0.8, 60, 300 )
-    
+
     self:EmitSound( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", 115, 50 )
     self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 115, 60 )
     self:EmitSound( "npc/strider/fire.wav", 110, 80 )
-    
+
     local rings = 8
     for i = 1, rings do
         timer.Simple( i * 0.07, function()
             if not IsValid( self ) then return end
-            
+
             local ringRadius = ( radius / rings ) * i
-            
+
             local color1 = Color( 255, 120, 20 )
             effects.BeamRingPoint( pos, 0.5, 20, ringRadius, 24, 0, color1, { material = "sprites/physbeam", framerate = 20 } )
-            
+
             timer.Simple( 0.04, function()
                 local color2 = Color( 80, 120, 255 )
                 effects.BeamRingPoint( pos, 0.4, 15, ringRadius * 0.8, 20, 0, color2, { material = "sprites/physbeam", framerate = 20 } )
+
             end )
         end )
     end
-    
-    for i = 1, 12 do
+
+    for _ = 1, 12 do
         timer.Simple( math.Rand( 0, 0.3 ), function()
             local dustPos = pos + VectorRand() * ( radius * 0.5 )
             dustPos.z = pos.z
-            
+
             local dust = EffectData()
             dust:SetOrigin( dustPos )
             dust:SetScale( 10 )
@@ -237,30 +245,31 @@ function ENT:CreateEliteShockwave( height )
             util.Effect( "ThumperDust", dust )
         end )
     end
-    
+
     self:DamageAndPushEntities( pos, radius, damage )
-    
+
     util.ScreenShake( pos, 25, 10, 2.5, radius * 2 )
+
 end
 
 function ENT:EliteSelfDestruct()
     local pos = self:GetPos()
     local radius = 1000
     local damage = 500
-    
+
     timer.Simple( 0.15, function()
         sound.Play( "npc/strider/strider_die1.wav", pos, 140, 50 )
         sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 140, 50 )
         sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 140, 70 )
         sound.Play( "ambient/levels/labs/electric_explosion1.wav", pos, 140, 60 )
-        
+
         local explode = EffectData()
         explode:SetOrigin( pos )
         explode:SetMagnitude( 25 )
         explode:SetScale( 15 )
         explode:SetRadius( radius )
         util.Effect( "Explosion", explode )
-        
+
         for i = 1, 12 do
             timer.Simple( i * 0.05, function()
                 local bombPos = pos + VectorRand() * 150
@@ -269,10 +278,11 @@ function ENT:EliteSelfDestruct()
                 bomb:SetMagnitude( 18 )
                 bomb:SetScale( 8 )
                 util.Effect( "HelicopterMegaBomb", bomb )
+
             end )
         end
-        
-        for i = 1, 40 do
+
+        for _ = 1, 40 do
             timer.Simple( math.Rand( 0, 0.8 ), function()
                 local sparkPos = pos + VectorRand() * 250
                 local sparks = EffectData()
@@ -282,10 +292,11 @@ function ENT:EliteSelfDestruct()
                 sparks:SetScale( 12 )
                 sparks:SetRadius( 15 )
                 util.Effect( "MetalSpark", sparks )
+
             end )
         end
-        
-        for i = 1, 20 do
+
+        for _ = 1, 20 do
             timer.Simple( math.Rand( 0, 0.6 ), function()
                 local arcPos = pos + VectorRand() * 300
                 local arc = EffectData()
@@ -293,17 +304,19 @@ function ENT:EliteSelfDestruct()
                 arc:SetMagnitude( 12 )
                 arc:SetScale( 5 )
                 util.Effect( "ElectricSpark", arc )
+
             end )
         end
-        
+
         self:DamageAndPushEntities( pos, radius, damage, radius * 0.5 )
-        
+
         util.ScreenShake( pos, 50, 25, 5, radius * 3 )
-        
+
         local sprite = EffectData()
         sprite:SetOrigin( pos )
         sprite:SetScale( 30 )
         sprite:SetMagnitude( 8 )
         util.Effect( "cball_explode", sprite )
+
     end )
 end
