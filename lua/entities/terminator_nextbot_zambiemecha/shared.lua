@@ -11,6 +11,10 @@ list.Set( "NPC", "terminator_nextbot_zambiemecha", {
     Category = "Nextbot Zambies",
 } )
 
+ENT.HasBrains = true
+ENT.IsStupid = false
+ENT.IsFodder = true
+
 ENT.SpawnHealth = 500
 ENT.ExtraSpawnHealthPerPlayer = 50
 ENT.WalkSpeed = 120
@@ -21,7 +25,7 @@ ENT.DecelerationSpeed = 3000
 ENT.MyPhysicsMass = 1000
 ENT.JumpHeight = 200
 
-ENT.FistDamageMul = 2
+ENT.FistDamageMul = 3
 ENT.FistRangeMul = 1.5
 ENT.FistForceMul = 5
 
@@ -29,10 +33,6 @@ ENT.DoMetallicDamage = true
 ENT.MetallicMoveSounds = true
 ENT.ReallyStrong = true
 ENT.ReallyHeavy = true
-
-ENT.HasBrains = true
-ENT.IsStupid = false
-ENT.IsFodder = false
 
 ENT.term_SoundPitchShift = -15
 ENT.term_SoundLevelShift = 5
@@ -44,8 +44,6 @@ ENT.TERM_MODELSCALE = 1.2
 ENT.CollisionBounds = { Vector( -12.5, -12.5, 0 ), Vector( 12.5, 12.5, 58.5 ) }
 
 ENT.term_LoseEnemySound = "Zombie.Idle"
-ENT.term_CallingSound = "npc/zombie/zombie_voice_idle1.wav"
-ENT.term_CallingSmallSound = "npc/zombie/zombie_voice_idle6.wav"
 ENT.term_FindEnemySound = "npc/dog/dog_alarmed1.wav"
 ENT.term_AttackSound = "npc/dog/dog_angry2.wav"
 ENT.term_AngerSound = "npc/dog/dog_alarmed3.wav"
@@ -206,8 +204,13 @@ function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
         if ent:Health() and ent:Health() > 0 then
             local dmg = DamageInfo()
             dmg:SetDamage( damage * distFrac )
-            dmg:SetAttacker( game.GetWorld() )
-            dmg:SetInflictor( game.GetWorld() )
+            local attacker = self
+            if not IsValid( attacker ) then
+                attacker = game.GetWorld()
+
+            end
+            dmg:SetAttacker( attacker )
+            dmg:SetInflictor( attacker )
             dmg:SetDamageType( DMG_BLAST )
             dmg:SetDamageForce( dir * 25000 * distFrac )
             ent:TakeDamageInfo( dmg )
@@ -215,7 +218,7 @@ function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
         end
 
         if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-            ent:SetVelocity( dir * 2000 * distFrac + Vector( 0, 0, 800 * distFrac ) )
+            ent:SetVelocity( dir * 1500 * distFrac + Vector( 0, 0, 800 * distFrac ) )
 
         elseif IsValid( ent:GetPhysicsObject() ) then
             local phys = ent:GetPhysicsObject()

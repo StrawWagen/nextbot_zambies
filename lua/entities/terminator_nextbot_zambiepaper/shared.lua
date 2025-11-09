@@ -27,6 +27,8 @@ ENT.BleedDuration = 3
 ENT.BleedDamage = 2
 ENT.BleedTicks = 6
 
+ENT.IsPaperZambie = true
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiepaper", ENT.PrintName )
     return
@@ -45,26 +47,31 @@ function ENT:AdditionalInitialize()
 
 end
 
+local paperZombieCount = #ents.FindByClass( "terminator_nextbot_zambiepaper*" )
+
 ENT.MyClassTask = {
     OnStart = function( self, data )
-        hook.Add( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID(), function( target, dmg, took )
-            if not IsValid( self ) then
-                hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID() )
-                return
+        paperZombieCount = paperZombieCount + 1
+        if paperZombieCount <= 1 then
+            hook.Add( "PostEntityTakeDamage", "PaperZombie_BleedEffect", function( target, dmg, took )
+                if not took then return end
 
-            end
-            if not took then return end
-            if dmg:GetAttacker() ~= self then return end
+                local attacker = dmg:GetAttacker()
+                if not attacker.IsPaperZambie then return end
 
-            self:ApplyBleedEffect( target )
+                attacker:ApplyBleedEffect( target )
 
-        end )
+            end )
+        end
     end,
 }
 
 function ENT:OnRemove()
-    hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect_" .. self:GetCreationID() )
+    paperZombieCount = paperZombieCount - 1
+    if paperZombieCount <= 0 then
+        hook.Remove( "PostEntityTakeDamage", "PaperZombie_BleedEffect" )
 
+    end
 end
 
 function ENT:ApplyBleedEffect( victim )

@@ -11,6 +11,8 @@ list.Set( "NPC", "terminator_nextbot_zambiemechaelite", {
     Category = "Nextbot Zambies",
 } )
 
+ENT.IsFodder = false
+
 ENT.SpawnHealth = 3000
 ENT.ExtraSpawnHealthPerPlayer = 500
 ENT.HealthRegen = 5
