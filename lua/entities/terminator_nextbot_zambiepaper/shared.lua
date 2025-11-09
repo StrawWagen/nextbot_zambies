@@ -110,8 +110,13 @@ function ENT:ApplyBleedEffect( victim )
 
         local dmg = DamageInfo()
         dmg:SetDamage( bleedDamage )
-        dmg:SetAttacker( IsValid( self ) and self or game.GetWorld() )
-        dmg:SetInflictor( IsValid( self ) and self or game.GetWorld() )
+        local attacker = self
+        if not IsValid( attacker ) then
+            attacker = game.GetWorld()
+
+        end
+        dmg:SetAttacker( attacker )
+        dmg:SetInflictor( attacker )
         dmg:SetDamageType( DMG_SLASH )
         victim:TakeDamageInfo( dmg )
 
