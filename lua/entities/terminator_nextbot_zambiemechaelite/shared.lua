@@ -11,19 +11,20 @@ list.Set( "NPC", "terminator_nextbot_zambiemechaelite", {
     Category = "Nextbot Zambies",
 } )
 
-ENT.SpawnHealth = 2500
+ENT.SpawnHealth = 3000
+ENT.ExtraSpawnHealthPerPlayer = 500
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 2
 
-ENT.WalkSpeed = 150
-ENT.MoveSpeed = 500
-ENT.RunSpeed = 750
+ENT.WalkSpeed = 120
+ENT.MoveSpeed = 400
+ENT.RunSpeed = 600
 ENT.AccelerationSpeed = 3000
 ENT.DecelerationSpeed = 4000
 
 ENT.FistDamageMul = 2.0
 ENT.MyPhysicsMass = 5000
-ENT.JumpHeight = 300
+ENT.JumpHeight = 600
 
 ENT.DuelEnemyDist = 500
 ENT.CloseEnemyDistance = 600
@@ -32,49 +33,31 @@ ENT.HeightToStartTakingDamage = 500
 ENT.FallDamagePerHeight = 0.025
 ENT.DeathDropHeight = 3000
 
-ENT.term_SoundPitchShift = -45
-ENT.term_SoundLevelShift = 20
+ENT.term_SoundPitchShift = -30
+ENT.term_SoundLevelShift = 40
 
 ENT.Mecha_ShockwaveCooldown = 4
 ENT.Mecha_ShockwaveThreshold = 250
-ENT.Mecha_CriticalHealth = 0.25
+ENT.Mecha_CriticalHealth = 0.5
 
 ENT.TERM_MODELSCALE = 2.25
-ENT.CollisionBounds = { Vector( -8, -8, 0 ), Vector( 8, 8, 30 ) }
+ENT.CollisionBounds = { Vector( -8, -8, 0 ), Vector( 8, 8, 28 ) }
+ENT.CrouchCollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 16 ) }
 
 ENT.Term_FootstepTiming = "perfect"
 ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
-ENT.PerfectFootsteps_SteppingCriteria = -0.75
-ENT.Term_FootstepSoundWalking = {
-    {
-        path = "NPC_Strider.Footstep",
-        lvl = 88,
-        pitch = 70,
-    },
-    {
-        path = "NPC_Strider.Footstep",
-        lvl = 88,
-        pitch = 70,
-    },
-}
-ENT.Term_FootstepSound = {
-    {
-        path = "npc/antlion_guard/foot_heavy1.wav",
-        lvl = 95,
-        pitch = 60,
-    },
-    {
-        path = "npc/antlion_guard/foot_heavy2.wav",
-        lvl = 95,
-        pitch = 60,
-    },
-}
+ENT.PerfectFootsteps_SteppingCriteria = -0.8
+
 ENT.Term_FootstepShake = {
-    amplitude = 4,
+    amplitude = 8,
     frequency = 20,
     duration = 0.4,
     radius = 2000,
 }
+
+ENT.FistDamageMul = 15
+ENT.FistRangeMul = 2
+ENT.FistForceMul = 100
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambiemechaelite", ENT.PrintName )
@@ -90,81 +73,127 @@ end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
-    
+
     self:SetSubMaterial( 0, "phoenix_storms/cube" )
-    
+
     self.HasBrains = true
     self.IsStupid = false
-    
+
+    self.Mecha_MarchInterval = 10
+    self.Mecha_StopInterval = 5
+
     self.Mecha_IsEnraged = false
+    self.Term_FootstepSoundWalking = {
+        {
+            path = "npc/dog/dog_footstep_run4.wav",
+            lvl = 90,
+            pitch = 60,
+        },
+        {
+            path = "npc/dog/dog_footstep_run8.wav",
+            lvl = 90,
+            pitch = 60,
+        },
+    }
+    self.Term_FootstepSound = {
+        {
+            path = "NPC_Strider.Footstep",
+            lvl = 95,
+            pitch = 100,
+        },
+    }
+    self.IdleLoopingSounds = {
+        "ambient/machines/train_idle.wav",
+    }
+    self.AngryLoopingSounds = {
+        "ambient/machines/train_freight_loop1.wav",
+    }
 end
 
+-- makes us wait a second at 0 hp when dying
+ENT.Term_DeathAnim = {
+    act = ACT_GMOD_GESTURE_TAUNT_ZOMBIE,
+    rate = 0.75,
+}
+
 ENT.MyClassTask = {
-    DisableBehaviour = function( self, data )
-        local cycleTime = self.Mecha_MarchInterval + self.Mecha_StopInterval
-        local cycleProgress = CurTime() % cycleTime
-        
-        if cycleProgress > self.Mecha_MarchInterval then
-            return true
-        end
-        
-        return false
-    end,
-    
     Think = function( self, data )
-        if not self.Mecha_IsEnraged then
-            local healthPercent = self:Health() / self:GetMaxHealth()
-            if healthPercent <= self.Mecha_CriticalHealth then
-                self:EnterEnragedState()
-            end
+        if self.Mecha_IsEnraged then return end
+        local healthPercent = self:Health() / self:GetMaxHealth()
+        if healthPercent >= self.Mecha_CriticalHealth then return end
+
+        self.Mecha_IsEnraged = true
+
+        self.RunSpeed = self.RunSpeed * 1.3
+        self.FistDamageMul = self.FistDamageMul * 1.4
+        self.Mecha_ShockwaveCooldown = 2.5
+
+        self:EmitSound( "npc/strider/strider_pain" .. math.random( 1, 5 ) .. ".wav", 110, 60 )
+        self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 110, 70 )
+
+        util.ScreenShake( self:GetPos(), 25, 10, 2, 3000 )
+
+        for i = 1, 11 do
+            timer.Simple( i * 0.1, function()
+                if not IsValid( self ) then return end
+
+                local pos = self:WorldSpaceCenter()
+                local sparks = EffectData()
+                sparks:SetOrigin( pos + VectorRand() * 50 )
+                sparks:SetNormal( VectorRand() )
+                sparks:SetMagnitude( 10 )
+                sparks:SetScale( 5 )
+                sparks:SetRadius( 10 )
+                util.Effect( "ElectricSpark", sparks )
+            end )
         end
+
+        self.AngryLoopingSounds = {
+            "npc/dog/dog_angry1.wav",
+            "npc/dog/dog_angry2.wav",
+            "npc/dog/dog_angry3.wav",
+
+        }
+
+        self:ZAMB_AngeringCall( true, 1, false )
+
+        self:ReallyAnger( 100 )
     end,
-    
+
     OnLandOnGround = function( self, data, landedOn, height )
         if height > self.Mecha_ShockwaveThreshold then
             self:CreateEliteShockwave( height )
         end
     end,
-    
-    OnKilled = function( self, data, damage, rag )
-        self:EliteSelfDestruct()
-    end,
-    
+
     OnDamaged = function( self, data, damage )
         if damage:IsFallDamage() and damage:GetDamage() < 150 then
             return true
         end
     end,
-}
 
-function ENT:EnterEnragedState()
-    self.Mecha_IsEnraged = true
-    
-    self.RunSpeed = self.RunSpeed * 1.3
-    self.FistDamageMul = self.FistDamageMul * 1.4
-    self.Mecha_ShockwaveCooldown = 2.5
-    
-    self:EmitSound( "npc/strider/strider_pain" .. math.random( 1, 5 ) .. ".wav", 110, 60 )
-    self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 110, 70 )
-    
-    util.ScreenShake( self:GetPos(), 15, 10, 2, 1000 )
-    
-    for i = 1, 5 do
-        timer.Simple( i * 0.1, function()
-            if not IsValid( self ) then return end
-            
-            local pos = self:WorldSpaceCenter()
-            local sparks = EffectData()
-            sparks:SetOrigin( pos + VectorRand() * 50 )
-            sparks:SetNormal( VectorRand() )
-            sparks:SetMagnitude( 10 )
-            sparks:SetScale( 5 )
-            util.Effect( "ElectricSpark", sparks )
+    OnStartDying = function( self, data )
+        local scale = 1
+        self:ZAMB_AngeringCall( true, 1, false )
+
+        local timerName = "zamb_elitemecha_warpbonesondeath_" .. self:GetCreationID()
+        timer.Create( timerName, 0.1, 0, function()
+            if not IsValid( self ) then timer.Remove( timerName ) return end
+            scale = scale + 0.01
+            -- manupulate our bones's scale, warping them as time goes on
+            local bones = self:GetBoneCount()
+            for bone = 0, bones - 1 do
+                local finalScale = Vector( math.Rand( 0.5, 1.5 ), math.Rand( 0.5, 1.5 ), math.Rand( 0.1, 2 ) ) * scale
+                self:ManipulateBoneScale( bone, finalScale )
+
+            end
         end )
-    end
-    
-    self:ReallyAnger( 100 )
-end
+    end,
+
+    OnKilled = function( self, data, damage, rag )
+        self:EliteSelfDestruct()
+    end,
+}
 
 function ENT:CreateEliteShockwave( height )
     local cur = CurTime()
@@ -219,13 +248,7 @@ function ENT:EliteSelfDestruct()
     local radius = 1000
     local damage = 500
     
-    for i = 1, 3 do
-        timer.Simple( i * 0.2, function()
-            sound.Play( "buttons/button17.wav", pos, 100, 150 - ( i * 30 ) )
-        end )
-    end
-    
-    timer.Simple( 0.6, function()
+    timer.Simple( 0.15, function()
         sound.Play( "npc/strider/strider_die1.wav", pos, 140, 50 )
         sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 140, 50 )
         sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 140, 70 )

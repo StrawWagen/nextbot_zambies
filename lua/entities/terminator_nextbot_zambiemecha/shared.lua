@@ -12,14 +12,18 @@ list.Set( "NPC", "terminator_nextbot_zambiemecha", {
 } )
 
 ENT.SpawnHealth = 500
+ENT.ExtraSpawnHealthPerPlayer = 50
 ENT.WalkSpeed = 120
 ENT.MoveSpeed = 350
 ENT.RunSpeed = 550
 ENT.AccelerationSpeed = 2000
 ENT.DecelerationSpeed = 3000
-ENT.FistDamageMul = 1.5
 ENT.MyPhysicsMass = 1000
 ENT.JumpHeight = 200
+
+ENT.FistDamageMul = 2
+ENT.FistRangeMul = 1.5
+ENT.FistForceMul = 5
 
 ENT.DoMetallicDamage = true
 ENT.MetallicMoveSounds = true
@@ -37,57 +41,60 @@ ENT.Mecha_LastShockwave = 0
 ENT.Mecha_ShockwaveCooldown = 5
 
 ENT.TERM_MODELSCALE = 1.2
-ENT.CollisionBounds = { Vector( -12.5, -12.5, 0 ), Vector( 12.5, 12.5, 57 ) }
+ENT.CollisionBounds = { Vector( -12.5, -12.5, 0 ), Vector( 12.5, 12.5, 58.5 ) }
 
 ENT.term_LoseEnemySound = "Zombie.Idle"
 ENT.term_CallingSound = "npc/zombie/zombie_voice_idle1.wav"
 ENT.term_CallingSmallSound = "npc/zombie/zombie_voice_idle6.wav"
-ENT.term_FindEnemySound = "Zombie.Alert"
-ENT.term_AttackSound = "npc/zombie/zombie_alert1.wav"
-ENT.term_AngerSound = "npc/zombie/zombie_alert2.wav"
-ENT.term_DamagedSound = "Zombie.Pain"
-ENT.term_DieSound = "Zombie.Die"
-ENT.term_JumpSound = "npc/zombie/foot1.wav"
+ENT.term_FindEnemySound = "npc/dog/dog_alarmed1.wav"
+ENT.term_AttackSound = "npc/dog/dog_angry2.wav"
+ENT.term_AngerSound = "npc/dog/dog_alarmed3.wav"
+ENT.term_DamagedSound = { 
+    "npc/dog/dog_growl2.wav",
+    "npc/dog/dog_growl1.wav",
+    "npc/dog/dog_angry1.wav",
+    "npc/dog/dog_angry2.wav",
+    "npc/dog/dog_angry3.wav"
+}
+ENT.term_DieSound = "npc/dog/dog_on_dropship.wav"
+ENT.term_JumpSound = "npc/dog/dog_drop_gate1.wav"
 
-ENT.IdleLoopingSounds = {
-    "npc/zombie/moan_loop1.wav",
-}
-ENT.AngryLoopingSounds = {
-    "npc/zombie/moan_loop3.wav",
-}
+ENT.AlwaysPlayLooping = true
 
 ENT.Mecha_MarchInterval = 4
 ENT.Mecha_StopInterval = 4
 
-ENT.Term_FootstepTiming = "perfect"
-ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
-ENT.PerfectFootsteps_SteppingCriteria = -0.75
+ENT.Term_BaseMsBetweenSteps = 200
+ENT.Term_FootstepMsReductionPerUnitSpeed = 1
+ENT.Term_FootstepTiming = "timed"
 ENT.Term_FootstepSoundWalking = {
     {
-        path = "npc/zombie/foot2.wav",
-        lvl = 78,
-        pitch = 80,
+        path = "NPC_dog.FootstepLeft",
+        lvl = 80,
+        pitch = 75,
     },
     {
-        path = "npc/zombie/foot3.wav",
-        lvl = 78,
-        pitch = 80,
+        path = "NPC_dog.FootstepRight",
+        lvl = 80,
+        pitch = 75,
     },
 }
 ENT.Term_FootstepSound = {
     {
-        path = "npc/zombie/foot1.wav",
-        lvl = 85,
-        pitch = 75,
+        path = "NPC_dog.RunFootstepLeft",
+        lvl = 88,
+        pitch = 80,
+        chan = CHAN_BODY,
     },
     {
-        path = "npc/zombie/foot2.wav",
-        lvl = 85,
-        pitch = 75,
+        path = "NPC_dog.RunFootstepRight",
+        lvl = 88,
+        pitch = 85,
+        chan = CHAN_BODY,
     },
 }
 ENT.Term_FootstepShake = {
-    amplitude = 1,
+    amplitude = 5,
     frequency = 20,
     duration = 0.25,
     radius = 800,
@@ -100,28 +107,62 @@ end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
-    
+
     self:SetSubMaterial( 0, "phoenix_storms/cube" )
     self:SetColor( Color( 60, 60, 80 ) )
-    
+
     self.HeightToStartTakingDamage = 400
     self.FallDamagePerHeight = 0.05
     self.DeathDropHeight = 2000
-    
+
     self.HasBrains = true
     self.IsStupid = false
+
+    -- have to override these in AdditionalInitialize otherwise the base zombie's sounds don't all go away
+    self.IdleLoopingSounds = {
+        "npc/dog/dog_combatmode_loop1.wav",
+    }
+    self.AngryLoopingSounds = {
+        "plats/squeekmove1.wav",
+    }
 end
 
 ENT.MyClassTask = {
-    DisableBehaviour = function( self, data )
+    Think = function( self, data )
+        local wasDisabled = data.WasDisabled
         local cycleTime = self.Mecha_MarchInterval + self.Mecha_StopInterval
-        local cycleProgress = CurTime() % cycleTime
-        
-        if cycleProgress > self.Mecha_MarchInterval then
-            return true
+        local myPersonalOffset = ( self:GetCreationID() % 1000 ) / 2000
+        local cycleProgress = ( CurTime() + myPersonalOffset ) % cycleTime
+        local shouldBeDisabled = cycleProgress > self.Mecha_MarchInterval
+
+        self.mechaZamb_IsDisabled = shouldBeDisabled
+        data.WasDisabled = shouldBeDisabled
+
+        if shouldBeDisabled then
+            self:DoGesture( ACT_HL2MP_IDLE_COWER, 1 ) -- kinda hacky to spam DoGesture this much, but it works
+
         end
-        
-        return false
+
+        if shouldBeDisabled and not wasDisabled then
+            self:Term_SpeakSoundNow( "npc/dog/dog_straining3.wav", math.random( -5, -15 ) )
+            if self:IsAngry() and self:GetIdealMoveSpeed() > self.MoveSpeed then
+                self:EmitSound( "npc/dog/car_impact2.wav", 75 + self.term_SoundLevelShift, math.random( 110, 130 ) + self.term_SoundPitchShift, 1, CHAN_STATIC )
+
+            end
+        elseif not shouldBeDisabled and wasDisabled then
+            if self:IsAngry() and math.random( 1, 100 ) < 25 then
+                self:ZAMB_NormalCall()
+
+            else
+                self:Term_SpeakSoundNow( "ambient/machines/spinup.wav", -10 )
+
+            end
+        end
+    end,
+
+    DisableBehaviour = function( self, data )
+        return self.mechaZamb_IsDisabled
+
     end,
     
     OnLandOnGround = function( self, data, landedOn, height )
@@ -135,9 +176,16 @@ ENT.MyClassTask = {
     end,
     
     OnDamaged = function( self, data, damage )
+        if self.mechaZamb_IsDisabled then
+            damage:ScaleDamage( 0.25 )
+        end
         if damage:IsFallDamage() and damage:GetDamage() < 50 then
             return true
         end
+    end,
+
+    BlockClawSwipe = function( self, data )
+        return self.mechaZamb_IsDisabled
     end,
 }
 
@@ -163,16 +211,20 @@ function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
         
         if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
             ent:SetVelocity( dir * 2000 * distFrac + Vector( 0, 0, 800 * distFrac ) )
+
         elseif IsValid( ent:GetPhysicsObject() ) then
             local phys = ent:GetPhysicsObject()
             phys:ApplyForceCenter( dir * phys:GetMass() * 1500 * distFrac + Vector( 0, 0, phys:GetMass() * 600 * distFrac ) )
+
         end
         
-        if igniteRadius and dist < igniteRadius and ent:IsPlayer() then
+        if igniteRadius and dist < igniteRadius then
+            if IsValid( ent:GetParent() ) then continue end
+
             local burnTime = math.min( 5 * distFrac, 3 )
-            if burnTime > 0.5 then
-                ent:Ignite( burnTime )
-            end
+            if ent:IsPlayer() then burnTime = burnTime * 0.5 end
+
+            ent:Ignite( burnTime )
         end
     end
 end
@@ -183,8 +235,8 @@ function ENT:CreateShockwave( height )
     self.Mecha_LastShockwave = cur
     
     local pos = self:GetPos()
-    local radius = math.Clamp( height * 2, 300, 800 )
-    local damage = math.Clamp( height * 0.5, 30, 150 )
+    local radius = math.Clamp( height * 1.15, 100, 400 )
+    local damage = math.Clamp( height * 0.15, 1, 100 )
     
     self:EmitSound( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", 90, 70 )
     self:EmitSound( "ambient/levels/labs/electric_explosion1.wav", 90, 80 )
@@ -208,8 +260,8 @@ end
 
 function ENT:SelfDestruct()
     local pos = self:GetPos()
-    local radius = 650
-    local damage = 250
+    local radius = 500
+    local damage = 65
     
     sound.Play( "npc/zombie/zombie_die1.wav", pos, 100, 50 )
     sound.Play( "ambient/explosions/explode_" .. math.random( 1, 9 ) .. ".wav", pos, 100, 70 )
