@@ -2,11 +2,11 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiepaper"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Zombie Paper Elite"
+ENT.PrintName = "Fast Papercut Zombie"
 ENT.Spawnable = false
 ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiepaperelite", {
-    Name = "Zombie Paper Elite",
+    Name = "Zombie Papercut Fast", -- diff name in list, so when its spawned by non-spawnmenu, ENT.PrintName will be used
     Class = "terminator_nextbot_zambiepaperelite",
     Category = "Nextbot Zambies",
 } )
@@ -27,7 +27,7 @@ ENT.MoveSpeed = 300
 ENT.RunSpeed = 400
 ENT.AccelerationSpeed = 450
 
-ENT.zamb_LookAheadWhenRunning = true
+ENT.zamb_LookAheadWhenRunning = true -- fast zombie model doesnt have aimlayers
 ENT.zamb_MeleeAttackSpeed = 1.15
 
 ENT.FistDamageMul = 0.4
@@ -101,7 +101,7 @@ end
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
-    
+
     self:SetModel( FAST_ZAMBIE_MODEL )
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/props_c17/paper01" )
@@ -132,4 +132,5 @@ function ENT:AdditionalInitialize()
     self.HeightToStartTakingDamage = 400
     self.FallDamagePerHeight = 0.015
     self.DeathDropHeight = 1500
+
 end

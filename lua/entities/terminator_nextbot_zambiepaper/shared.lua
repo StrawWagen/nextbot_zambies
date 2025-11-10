@@ -2,11 +2,11 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Zombie Paper"
+ENT.PrintName = "Papercut Zombie"
 ENT.Spawnable = false
 ENT.Author = "regunkyle"
 list.Set( "NPC", "terminator_nextbot_zambiepaper", {
-    Name = "Zombie Paper",
+    Name = "Zombie Papercut", -- diff name in list, so when its spawned by non-spawnmenu, ENT.PrintName will be used
     Class = "terminator_nextbot_zambiepaper",
     Category = "Nextbot Zambies",
 } )
@@ -23,9 +23,9 @@ ENT.zamb_BrainsChance = 5
 
 ENT.TERM_MODELSCALE = function() return math.Rand( 0.85, 0.95 ) end
 
-ENT.BleedDuration = 3
-ENT.BleedDamage = 2
-ENT.BleedTicks = 6
+ENT.BleedDuration = 6
+ENT.BleedDamage = 1
+ENT.BleedTicks = 12
 
 ENT.IsPaperZambie = true
 
@@ -58,6 +58,9 @@ ENT.MyClassTask = {
 
                 local attacker = dmg:GetAttacker()
                 if not attacker.IsPaperZambie then return end
+
+                local inflictor = dmg:GetInflictor()
+                if inflictor:GetClass() ~= attacker.TERM_FISTS then return end
 
                 attacker:ApplyBleedEffect( target )
 
@@ -94,10 +97,11 @@ function ENT:ApplyBleedEffect( victim )
     effectdata:SetScale( 1 )
     util.Effect( "bloodspray", effectdata )
 
-    victim:EmitSound( "physics/flesh/flesh_squishy_impact_hard" .. math.random( 1, 4 ) .. ".wav", 70, math.random( 90, 110 ) )
-
     local timerName = "PaperZombie_Bleed_" .. victim:EntIndex() .. "_" .. cur
     local tickCount = 0
+
+    local path = "physics/flesh/flesh_squishy_impact_hard" .. math.random( 1, 4 ) .. ".wav"
+    victim:EmitSound( path, 70, math.random( 100, 110 ) )
 
     timer.Create( timerName, tickDelay, bleedTicks, function()
         if not IsValid( victim ) or not victim:Health() or victim:Health() <= 0 then
@@ -108,6 +112,8 @@ function ENT:ApplyBleedEffect( victim )
 
         tickCount = tickCount + 1
 
+        local xy = 5
+
         local dmg = DamageInfo()
         dmg:SetDamage( bleedDamage )
         local attacker = self
@@ -117,6 +123,7 @@ function ENT:ApplyBleedEffect( victim )
         end
         dmg:SetAttacker( attacker )
         dmg:SetInflictor( attacker )
+        dmg:SetDamagePosition( victim:WorldSpaceCenter() + Vector( math.Rand( -xy, xy ), math.Rand( -xy, xy ), -10 ) )
         dmg:SetDamageType( DMG_SLASH )
         victim:TakeDamageInfo( dmg )
 
@@ -128,5 +135,12 @@ function ENT:ApplyBleedEffect( victim )
             util.Effect( "bloodspray", bloodeffect )
 
         end
+        local startPos = victim:WorldSpaceCenter()
+        local endPos = startPos + Vector( math.Rand( -xy, xy ), math.Rand( -xy, xy ), -50 )
+        util.Decal( "Blood", startPos, endPos, victim )
+
+        local path = "physics/flesh/flesh_squishy_impact_hard" .. math.random( 1, 4 ) .. ".wav"
+        victim:EmitSound( path, 70, math.random( 120, 140 ), 0.6 )
+
     end )
 end
