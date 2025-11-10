@@ -38,7 +38,6 @@ ENT.DeathDropHeight = 3000
 ENT.term_SoundPitchShift = -30
 ENT.term_SoundLevelShift = 40
 
-ENT.Mecha_ShockwaveCooldown = 4
 ENT.Mecha_ShockwaveThreshold = 250
 ENT.Mecha_CriticalHealth = 0.5
 
@@ -205,10 +204,6 @@ ENT.MyClassTask = {
 }
 
 function ENT:CreateEliteShockwave( height )
-    local cur = CurTime()
-    if self.Mecha_LastShockwave + self.Mecha_ShockwaveCooldown > cur then return end
-    self.Mecha_LastShockwave = cur
-
     local pos = self:GetPos()
     local radius = math.Clamp( height * 3, 400, 1200 )
     local damage = math.Clamp( height * 0.8, 60, 300 )
@@ -225,11 +220,11 @@ function ENT:CreateEliteShockwave( height )
             local ringRadius = ( radius / rings ) * i
 
             local color1 = Color( 255, 120, 20 )
-            effects.BeamRingPoint( pos, 0.5, 20, ringRadius, 24, 0, color1, { material = "sprites/physbeam", framerate = 20 } )
+            effects.BeamRingPoint( pos, 0.1, 20, ringRadius, 24, 0, color1, { material = "sprites/physbeam", framerate = 20 } )
 
             timer.Simple( 0.04, function()
                 local color2 = Color( 80, 120, 255 )
-                effects.BeamRingPoint( pos, 0.4, 15, ringRadius * 0.8, 20, 0, color2, { material = "sprites/physbeam", framerate = 20 } )
+                effects.BeamRingPoint( pos, 0.2, 15, ringRadius * 0.8, 20, 0, color2, { material = "sprites/physbeam", framerate = 20 } )
 
             end )
         end )
@@ -251,6 +246,26 @@ function ENT:CreateEliteShockwave( height )
     self:DamageAndPushEntities( pos, radius, damage )
 
     util.ScreenShake( pos, 25, 10, 2.5, radius * 2 )
+
+    if height <= 150 then return end -- godcrabcore
+    local myPos = self:GetPos()
+    local scale = height / 2000
+    scale = math.Clamp( scale, 0, 2.5 )
+
+    local shock = EffectData()
+    shock:SetOrigin( myPos )
+    shock:SetScale( scale )
+    util.Effect( "m9k_yoinked_shockwave", shock )
+
+    self:ZAMB_AngeringCall( false, 1.2, false )
+
+    if height < 1000 then return end
+
+    local splode = EffectData()
+    splode:SetOrigin( myPos )
+    splode:SetNormal( Vector( 0, 0, 1 ) )
+    splode:SetScale( scale * 2 )
+    util.Effect( "huge_m9k_yoinked_splode", splode )
 
 end
 
@@ -309,6 +324,20 @@ function ENT:EliteSelfDestruct()
 
             end )
         end
+
+        local filterAllPlayers = RecipientFilter()
+        filterAllPlayers:AddAllPlayers()
+
+        local splode = EffectData()
+        splode:SetOrigin( pos )
+        splode:SetNormal( Vector( 0, 0, 1 ) )
+        splode:SetScale( 4 )
+        util.Effect( "huge_m9k_yoinked_splode", splode, true, filterAllPlayers )
+
+        local shock = EffectData()
+        shock:SetOrigin( pos )
+        shock:SetScale( 1 )
+        util.Effect( "m9k_yoinked_shockwave", shock, true, filterAllPlayers )
 
         self:DamageAndPushEntities( pos, radius, damage, radius * 0.5 )
 

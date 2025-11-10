@@ -37,9 +37,6 @@ ENT.ReallyHeavy = true
 ENT.term_SoundPitchShift = -15
 ENT.term_SoundLevelShift = 5
 
-ENT.Mecha_LastShockwave = 0
-ENT.Mecha_ShockwaveCooldown = 5
-
 ENT.TERM_MODELSCALE = 1.2
 ENT.CollisionBounds = { Vector( -12.5, -12.5, 0 ), Vector( 12.5, 12.5, 58.5 ) }
 
@@ -195,34 +192,37 @@ function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
     for _, ent in ipairs( ents.FindInSphere( pos, radius ) ) do
         if ent == self then continue end
         if not IsValid( ent ) then continue end
+        if IsValid( ent:GetParent() ) then continue end
 
         local entPos = ent:GetPos()
         local dir = ( entPos - pos ):GetNormalized()
         local dist = entPos:Distance( pos )
         local distFrac = 1 - ( dist / radius )
 
-        if ent:Health() and ent:Health() > 0 then
-            local dmg = DamageInfo()
-            dmg:SetDamage( damage * distFrac )
-            local attacker = self
-            if not IsValid( attacker ) then
-                attacker = game.GetWorld()
+        local dmg = DamageInfo()
+        dmg:SetDamage( damage * distFrac )
+        local attacker = self
+        if not IsValid( attacker ) then
+            attacker = game.GetWorld()
 
-            end
-            dmg:SetAttacker( attacker )
-            dmg:SetInflictor( attacker )
-            dmg:SetDamageType( DMG_BLAST )
-            dmg:SetDamageForce( dir * 25000 * distFrac )
-            ent:TakeDamageInfo( dmg )
+        end
+        dmg:SetAttacker( attacker )
+        dmg:SetInflictor( attacker )
+        dmg:SetDamageType( DMG_BLAST )
+
+        local phys = ent:GetPhysicsObject()
+        if IsValid( phys ) then
+            local force = dir * phys:GetMass() * 1500 * distFrac
+            local upAdd = phys:GetMass() * 600 * distFrac
+            force.z = force.z + upAdd
+            dmg:SetDamageForce( force )
 
         end
 
+        ent:TakeDamageInfo( dmg )
+
         if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
             ent:SetVelocity( dir * 1500 * distFrac + Vector( 0, 0, 800 * distFrac ) )
-
-        elseif IsValid( ent:GetPhysicsObject() ) then
-            local phys = ent:GetPhysicsObject()
-            phys:ApplyForceCenter( dir * phys:GetMass() * 1500 * distFrac + Vector( 0, 0, phys:GetMass() * 600 * distFrac ) )
 
         end
 
@@ -239,10 +239,6 @@ function ENT:DamageAndPushEntities( pos, radius, damage, igniteRadius )
 end
 
 function ENT:CreateShockwave( height )
-    local cur = CurTime()
-    if self.Mecha_LastShockwave + self.Mecha_ShockwaveCooldown > cur then return end
-    self.Mecha_LastShockwave = cur
-
     local pos = self:GetPos()
     local radius = math.Clamp( height * 1.15, 100, 400 )
     local damage = math.Clamp( height * 0.15, 1, 100 )
@@ -258,7 +254,7 @@ function ENT:CreateShockwave( height )
             local ringRadius = ( radius / rings ) * i
             local color = Color( 255, 100, 0 )
 
-            effects.BeamRingPoint( pos, 0.3, 10, ringRadius, 16, 0, color, { material = "sprites/physbeam", framerate = 20 } )
+            effects.BeamRingPoint( pos, 0.1, 10, ringRadius, 16, 0, color, { material = "sprites/physbeam", framerate = 20 } )
 
         end )
     end
