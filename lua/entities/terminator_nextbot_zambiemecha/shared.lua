@@ -33,6 +33,7 @@ ENT.DoMetallicDamage = true
 ENT.MetallicMoveSounds = true
 ENT.ReallyStrong = true
 ENT.ReallyHeavy = true
+ENT.CanSwim = false
 
 ENT.term_SoundPitchShift = -15
 ENT.term_SoundLevelShift = 5
