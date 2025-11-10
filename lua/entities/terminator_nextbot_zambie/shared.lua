@@ -274,7 +274,7 @@ function ENT:AdditionalThink()
 end
 
 ENT.FootstepClomping = false
-ENT.Term_FootstepMode = "custom"
+ENT.Term_FootstepMode = "custom" -- make it use the sounds defined below, as opposed to picking right sound for the material its standing on
 ENT.Term_FootstepSoundWalking = {
     {
         path = "Zombie.ScuffLeft",
