@@ -14,12 +14,6 @@ list.Set( "NPC", "terminator_nextbot_zambiebigheadcrab", {
 
 ENT.IsEldritch = true -- GLEE
 
-if CLIENT then
-    language.Add( "terminator_nextbot_zambiebigheadcrab", ENT.PrintName )
-
-    return
-end
-
 ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
@@ -32,6 +26,12 @@ ENT.MySpecialActions = {
         end,
     }
 }
+
+if CLIENT then
+    language.Add( "terminator_nextbot_zambiebigheadcrab", ENT.PrintName )
+
+    return
+end
 
 ENT.IsFodder = false
 ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 2
@@ -200,6 +200,8 @@ function ENT:AdditionalInitialize()
     self.zamb_LoseCoolRatio = 0.5
     self.ZAMBIE_MINIONS = {}
     self.zamb_NextMinionCheck = CurTime() + 10
+
+    self.necro_MinionsWasteAway = false
 
     self.necro_MinionCountMul = 1
     self.necro_MinMinionCount = 0

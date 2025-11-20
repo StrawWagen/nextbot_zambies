@@ -14,19 +14,6 @@ list.Set( "NPC", "terminator_nextbot_zambiebiggerheadcrab", {
 
 ENT.IsEldritch = true -- GLEE
 
-ENT.MySpecialActions = {
-    ["call"] = {
-        inBind = IN_RELOAD,
-        drawHint = true,
-        name = "Release your spawn.", -- just a diff name
-        ratelimit = 8, -- seconds between uses
-        svAction = function( _drive, _driver, bot )
-            bot:NECRO_TrySpawnMinions( true )
-
-        end,
-    }
-}
-
 if CLIENT then
     language.Add( "terminator_nextbot_zambiebiggerheadcrab", ENT.PrintName )
 
@@ -142,6 +129,8 @@ function ENT:AdditionalInitialize()
     self.ZAMBIE_MINIONS = {}
     self.zamb_NextMinionCheck = CurTime() + 10
 
+    self.necro_MinionsWasteAway = false
+
     self.necro_MinionCountMul = 2
     self.necro_MinMinionCount = 0
     self.necro_MaxMinionCount = 20
@@ -150,11 +139,13 @@ function ENT:AdditionalInitialize()
 
     }
 
-    self.necro_ReachableFastMinionChance = 0
-    self.necro_UnReachableFastMinionChance = 0
-    self.necro_UnreachableCountAdd = 0
+    self.necro_ReachableFastMinionChance = 1
+    self.necro_UnReachableFastMinionChance = 2
+    self.necro_UnreachableCountAdd = 1
+    self.necro_FastMinionClass = "terminator_nextbot_zambiebigheadcrab"
 
-    self.necro_NearDeathClassChance = 0
+    self.necro_NearDeathClassChance = 5
+    self.necro_NearDeathMinionClass = "terminator_nextbot_zambiebigheadcrab" -- demigod crab lol
 
 end
 

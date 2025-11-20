@@ -39,7 +39,7 @@ ENT.DuelEnemyDist = 500
 
 local BABY_CRAB_MODEL = "models/headcrab.mdl"
 ENT.ARNOLD_MODEL = BABY_CRAB_MODEL
-ENT.TERM_MODELSCALE = 1.5
+ENT.TERM_MODELSCALE = function() return math.Rand( 1, 2 ) end
 ENT.CollisionBounds = { Vector( -5, -5, 0 ), Vector( 5, 5, 12 ) }
 ENT.MyPhysicsMass = 55
 ENT.AlwaysCrouching = true

@@ -16,7 +16,7 @@ ENT.MySpecialActions = {
         drawHint = true,
         name = "Raise the dead.",
         desc = "",
-        ratelimit = 4, -- seconds between uses
+        ratelimit = 2, -- seconds between uses
         svAction = function( _drive, _driver, bot )
             bot:NECRO_TrySpawnMinions( true )
 
@@ -138,6 +138,8 @@ function ENT:AdditionalInitialize()
         table.insert( me.ZAMBIE_MINIONS, newTorso )
 
     end )
+
+    self.necro_MinionsWasteAway = true
 
     self.necro_MinionCountMul = 1
     self.necro_MinMinionCount = 0
@@ -293,6 +295,7 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
 
                 minion:SetOwner( self )
                 table.insert( self.ZAMBIE_MINIONS, minion )
+                minion.zamb_NecroMaster = self
 
                 local flatRand = VectorRand() * flattener
                 flatRand:Normalize()
@@ -303,9 +306,18 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
 
                 minion:SetPos( minionPos )
                 minion:SetAngles( Angle( 0, math.random( -180, 180 ), 0 ) )
+
+                if not self.necro_MinionsWasteAway then
+                    minion:Spawn()
+                    return
+
+                end
+
                 minion.HealthRegen = 0
+                minion.ExtraSpawnHealthPerPlayer = 0
                 minion:Spawn()
                 minion.HealthRegen = 0 -- here also for good measure
+                minion.ExtraSpawnHealthPerPlayer = 0
                 minion:SetHealth( math.max( minion:GetMaxHealth() / 2, 1 ) )
 
                 minion:SetSubMaterial( 0, "models/flesh" )
@@ -338,6 +350,8 @@ function ENT:AdditionalThink()
     if self:IsGestureActive() then return end
 
     self.zamb_NextMinionCheck = CurTime() + 1
+
+    if IsValid( self.zamb_NecroMaster ) then return end -- we're... a minion!???
 
     if self:IsControlledByPlayer() then return end -- let driver choose when to spawn stuff
     self:NECRO_TrySpawnMinions()
