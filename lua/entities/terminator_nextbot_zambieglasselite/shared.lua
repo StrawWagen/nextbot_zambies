@@ -138,6 +138,7 @@ function ENT:KeyValue( sKey, sValue )
 end
 
 local EffectData = EffectData
+local util = util
 local util_Effect = util.Effect
 local ents_Create = ents.Create
 local math = math
@@ -233,4 +234,5 @@ function ENT:GlassZambDie()
 
         end
     end
+
 end
