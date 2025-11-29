@@ -359,6 +359,8 @@ function ENT:AdditionalThink()
 end
 
 function ENT:OnRemove()
+    if not self.ZAMBIE_MINIONS then return end
+
     for _, minion in ipairs( self.ZAMBIE_MINIONS ) do
         if IsValid( minion ) then
             minion:SetHealth( math.min( minion:Health(), 10 ) )
