@@ -9,6 +9,24 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
     Class = "terminator_nextbot_zambieglasselite",
     Category = "Nextbot Zambies",
 } )
+// TODO: Add spawnicons
+list.Set( "NPC", "terminator_nextbot_zambieglasselite_mega", {
+    Name = "Zombie Glass Elite Mega",
+    Class = "terminator_nextbot_zambieglasselite",
+    Category = "Nextbot Zambies",
+	KeyValues = { iShards = 50 }
+} )
+// This much particles causes the frame to freeze,
+// and I doubt that even setting it to admin only will help!
+//	// This one is purely for comedic effect,
+//	// and has no intention of being, as
+//	// id Software says, "even remotely fair"
+//	list.Set( "NPC", "terminator_nextbot_zambieglasselite_giga", {
+//	    Name = "Zombie Glass Elite Giga",
+//	    Class = "terminator_nextbot_zambieglasselite",
+//	    Category = "Nextbot Zambies",
+//		KeyValues = { iShards = 100 }
+//	} )
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
@@ -73,32 +91,69 @@ function ENT:Think()
 
 end
 
+ENT.iShards = 25
+
+local sound_Add = sound.Add
+sound_Add {
+	name = "nextbotZambies_GlassBreakEliteA",
+	level = 95,
+	pitch = 90,
+	sound = {
+		"physics/glass/glass_largesheet_break1.wav",
+		"physics/glass/glass_largesheet_break2.wav",
+		"physics/glass/glass_largesheet_break3.wav"
+	}
+}
+sound_Add {
+	name = "nextbotZambies_GlassBreakEliteB",
+	level = 90,
+	sound = {
+		"physics/glass/glass_sheet_break1.wav",
+		"physics/glass/glass_sheet_break2.wav",
+		"physics/glass/glass_sheet_break3.wav"
+	}
+}
+
+local SHARD_MODELS = {
+	"models/gibs/glass_shard01.mdl",
+	"models/gibs/glass_shard02.mdl",
+	"models/gibs/glass_shard03.mdl",
+	"models/gibs/glass_shard04.mdl",
+	"models/gibs/glass_shard05.mdl",
+	"models/gibs/glass_shard06.mdl",
+}
+local SHARD_MODELS_LENGTH = 6
+
+function ENT:KeyValue( sKey, sValue )
+	if string.lower( sKey ) == "ishards" then
+		local f = tonumber( sValue )
+		if f then self.iShards = f end
+		return
+	end
+	return BaseClass.KeyValue( self, sKey, sValue )
+end
+
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound( "physics/glass/glass_largesheet_break" .. math.random( 1, 3 ) .. ".wav", 95, 90 )
-    self:EmitSound( "physics/glass/glass_sheet_break" .. math.random( 1, 3 ) .. ".wav", 90, 100 )
+    self:EmitSound "nextbotZambies_GlassBreakA"
+    self:EmitSound "nextbotZambies_GlassBreakB"
 
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
     effectdata:SetScale( 2 )
     util.Effect( "GlassImpact", effectdata )
 
-    local glassGibs = {
-        "models/gibs/glass_shard01.mdl",
-        "models/gibs/glass_shard02.mdl",
-        "models/gibs/glass_shard03.mdl",
-        "models/gibs/glass_shard04.mdl",
-        "models/gibs/glass_shard05.mdl",
-        "models/gibs/glass_shard06.mdl",
-    }
-
-    for _ = 1, 25 do
+	local iShards = self.iShards
+	if iShards <= 0 then return end
+	local flAngularVelocity = iShards * 40
+	local flVelocityMin, flVelocityMax = iShards * 32, iShards * 48
+    for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
         if IsValid( gib ) then
             pos = pos + VectorRand() * 15
             pos.z = pos.z + math.random( -5, 5 )
-            gib:SetModel( table.Random( glassGibs ) )
+            gib:SetModel( SHARD_MODELS[ math.random( 1, SHARD_MODELS_LENGTH ) ] )
             gib:SetPos( pos )
             gib:SetAngles( AngleRand() )
             gib:SetMaterial( "models/props_windows/window_glass" )
@@ -109,8 +164,8 @@ function ENT:GlassZambDie()
             if IsValid( phys ) then
                 local velDir = VectorRand() + self:GetAimVector() * 0.5 -- bias forward
                 phys:Wake()
-                phys:SetVelocity( velDir * math.Rand( 800, 1200 ) )
-                phys:AddAngleVelocity( VectorRand() * 1000 )
+                phys:SetVelocity( velDir * math.Rand( flVelocityMin, flVelocityMax ) )
+                phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
 
             end
 
