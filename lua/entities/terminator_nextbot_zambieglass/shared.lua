@@ -166,7 +166,7 @@ function ENT:GlassZambDie()
 	local iShards = self.iShards
 	if iShards <= 0 then return end
 	local flAngularVelocity = iShards * 50
-	// Replace with 20 and 40 if you want the older version feel
+	// Replace with 20 and 40 for the older version feel
 	local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
     for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
