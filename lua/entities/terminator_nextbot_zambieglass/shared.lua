@@ -41,6 +41,7 @@ if CLIENT then
     local setupMat
     local desiredBaseTexture = "glass/glasswindow007a"
     local mat = "nextbotZambies_GlassMaterial"
+	local CreateMaterial = CreateMaterial
     function ENT:AdditionalClientInitialize()
         if setupMat then return end
         setupMat = true
@@ -148,14 +149,28 @@ local SHARD_MODELS = {
 }
 local SHARD_MODELS_LENGTH = 6
 
+local string_lower = string.lower
+local tonumber = tonumber
+
 function ENT:KeyValue( sKey, sValue )
-	if string.lower( sKey ) == "ishards" then
+	if string_lower( sKey ) == "ishards" then
 		local f = tonumber( sValue )
 		if f then self.iShards = f end
 		return
 	end
 	return BaseClass.KeyValue( self, sKey, sValue )
 end
+
+local EffectData = EffectData
+local util_Effect = util.Effect
+local ents_Create = ents.Create
+local math = math
+local math_random = math.random
+local VectorRand = VectorRand
+local AngleRand = AngleRand
+local COLLISION_GROUP_DEBRIS = COLLISION_GROUP_DEBRIS
+local math_Rand = math.Rand
+local SafeRemoveEntityDelayed = SafeRemoveEntityDelayed
 
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
@@ -169,9 +184,9 @@ function ENT:GlassZambDie()
 	// Replace with 20 and 40 for the older version feel
 	local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
     for _ = 1, iShards do
-        local gib = ents.Create( "prop_physics" )
+        local gib = ents_Create "prop_physics"
         if IsValid( gib ) then
-            gib:SetModel( SHARD_MODELS[ math.random( 1, SHARD_MODELS_LENGTH ) ] )
+            gib:SetModel( SHARD_MODELS[ math_random( 1, SHARD_MODELS_LENGTH ) ] )
             gib:SetPos( pos + VectorRand() * 20 )
             gib:SetAngles( AngleRand() )
             gib:SetMaterial( "models/props_windows/window_glass" )
@@ -183,7 +198,7 @@ function ENT:GlassZambDie()
             local phys = gib:GetPhysicsObject()
             if IsValid( phys ) then
                 phys:Wake()
-                phys:SetVelocity( VectorRand() * math.Rand( flVelocityMin, flVelocityMax ) )
+                phys:SetVelocity( VectorRand() * math_Rand( flVelocityMin, flVelocityMax ) )
                 phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
 
             end

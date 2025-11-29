@@ -31,8 +31,9 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite_mega", {
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
 
+	local render_SetColorModulation = render.SetColorModulation
     function ENT:Draw()
-        render.SetColorModulation( 0.5, 0.7, 1.0 )
+        render_SetColorModulation( .5, .7, 1.0 )
         self:DrawModel()
     end
     return
@@ -124,6 +125,9 @@ local SHARD_MODELS = {
 }
 local SHARD_MODELS_LENGTH = 6
 
+local string_lower = string.lower
+local tonumber = tonumber
+
 function ENT:KeyValue( sKey, sValue )
 	if string.lower( sKey ) == "ishards" then
 		local f = tonumber( sValue )
@@ -132,6 +136,17 @@ function ENT:KeyValue( sKey, sValue )
 	end
 	return BaseClass.KeyValue( self, sKey, sValue )
 end
+
+local EffectData = EffectData
+local util_Effect = util.Effect
+local ents_Create = ents.Create
+local math = math
+local math_random = math.random
+local VectorRand = VectorRand
+local AngleRand = AngleRand
+local math_Rand = math.Rand
+local util_SpriteTrail = util.SpriteTrail
+local SafeRemoveEntityDelayed = SafeRemoveEntityDelayed
 
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
@@ -142,18 +157,18 @@ function ENT:GlassZambDie()
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
     effectdata:SetScale( 2 )
-    util.Effect( "GlassImpact", effectdata )
+    util_Effect( "GlassImpact", effectdata )
 
 	local iShards = self.iShards
 	if iShards <= 0 then return end
 	local flAngularVelocity = iShards * 40
 	local flVelocityMin, flVelocityMax = iShards * 32, iShards * 48
     for _ = 1, iShards do
-        local gib = ents.Create( "prop_physics" )
+        local gib = ents_Create "prop_physics"
         if IsValid( gib ) then
             pos = pos + VectorRand() * 15
-            pos.z = pos.z + math.random( -5, 5 )
-            gib:SetModel( SHARD_MODELS[ math.random( 1, SHARD_MODELS_LENGTH ) ] )
+            pos.z = pos.z + math_random( -5, 5 )
+            gib:SetModel( SHARD_MODELS[ math_random( 1, SHARD_MODELS_LENGTH ) ] )
             gib:SetPos( pos )
             gib:SetAngles( AngleRand() )
             gib:SetMaterial( "models/props_windows/window_glass" )
@@ -164,12 +179,12 @@ function ENT:GlassZambDie()
             if IsValid( phys ) then
                 local velDir = VectorRand() + self:GetAimVector() * 0.5 -- bias forward
                 phys:Wake()
-                phys:SetVelocity( velDir * math.Rand( flVelocityMin, flVelocityMax ) )
+                phys:SetVelocity( velDir * math_Rand( flVelocityMin, flVelocityMax ) )
                 phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
 
             end
 
-            util.SpriteTrail( gib, 0, Color( 150, 200, 255, 220 ), false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
+            util_SpriteTrail( gib, 0, Color( 150, 200, 255, 220 ), false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
 
             gib.IsGlassShrapnel = true
             gib.ShrapnelDamage = 15
