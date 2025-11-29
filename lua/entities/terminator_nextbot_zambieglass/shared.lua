@@ -9,6 +9,22 @@ list.Set( "NPC", "terminator_nextbot_zambieglass", {
     Class = "terminator_nextbot_zambieglass",
     Category = "Nextbot Zambies",
 } )
+// TODO: Add spawnicons
+list.Set( "NPC", "terminator_nextbot_zambieglass_mega", {
+    Name = "Zombie Glass Mega",
+    Class = "terminator_nextbot_zambieglass",
+    Category = "Nextbot Zambies",
+	KeyValues = { iShards = 20 }
+} )
+// This one is purely for comedic effect,
+// and has no intention of being, as
+// id Software says, "even remotely fair"
+list.Set( "NPC", "terminator_nextbot_zambieglass_giga", {
+    Name = "Zombie Glass Giga",
+    Class = "terminator_nextbot_zambieglass",
+    Category = "Nextbot Zambies",
+	KeyValues = { iShards = 40 }
+} )
 
 ENT.Author = "regunkyle"
 
@@ -98,25 +114,64 @@ function ENT:Think()
 
 end
 
+// Default shard count
+ENT.iShards = 10
+
+local sound_Add = sound.Add
+sound_Add {
+	name = "nextbotZambies_GlassBreakA",
+	level = 85,
+	sound = {
+		"physics/glass/glass_largesheet_break1.wav",
+		"physics/glass/glass_largesheet_break2.wav",
+		"physics/glass/glass_largesheet_break3.wav"
+	}
+}
+sound_Add {
+	name = "nextbotZambies_GlassBreakB",
+	level = 80,
+	pitch = 110,
+	sound = {
+		"physics/glass/glass_sheet_break1.wav",
+		"physics/glass/glass_sheet_break2.wav",
+		"physics/glass/glass_sheet_break3.wav"
+	}
+}
+
+local SHARD_MODELS = {
+	"models/gibs/glass_shard01.mdl",
+	"models/gibs/glass_shard02.mdl",
+	"models/gibs/glass_shard03.mdl",
+	"models/gibs/glass_shard04.mdl",
+	"models/gibs/glass_shard05.mdl",
+	"models/gibs/glass_shard06.mdl",
+}
+local SHARD_MODELS_LENGTH = 6
+
+function ENT:KeyValue( sKey, sValue )
+	if string.lower( sKey ) == "ishards" then
+		local f = tonumber( sValue )
+		if f then self.iShards = f end
+		return
+	end
+	return BaseClass.KeyValue( self, sKey, sValue )
+end
+
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound( "physics/glass/glass_largesheet_break" .. math.random( 1, 3 ) .. ".wav", 85, 100 )
-    self:EmitSound( "physics/glass/glass_sheet_break" .. math.random( 1, 3 ) .. ".wav", 80, 110 )
+    self:EmitSound "nextbotZambies_GlassBreakA"
+    self:EmitSound "nextbotZambies_GlassBreakB"
 
-    local glassGibs = {
-        "models/gibs/glass_shard01.mdl",
-        "models/gibs/glass_shard02.mdl",
-        "models/gibs/glass_shard03.mdl",
-        "models/gibs/glass_shard04.mdl",
-        "models/gibs/glass_shard05.mdl",
-        "models/gibs/glass_shard06.mdl",
-    }
-
-    for _ = 1, 10 do
+	local iShards = self.iShards
+	if iShards <= 0 then return end
+	local flAngularVelocity = iShards * 50
+	// Replace with 20 and 40 if you want the older version feel
+	local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
+    for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
         if IsValid( gib ) then
-            gib:SetModel( table.Random( glassGibs ) )
+            gib:SetModel( SHARD_MODELS[ math.random( 1, SHARD_MODELS_LENGTH ) ] )
             gib:SetPos( pos + VectorRand() * 20 )
             gib:SetAngles( AngleRand() )
             gib:SetMaterial( "models/props_windows/window_glass" )
@@ -128,8 +183,8 @@ function ENT:GlassZambDie()
             local phys = gib:GetPhysicsObject()
             if IsValid( phys ) then
                 phys:Wake()
-                phys:SetVelocity( VectorRand() * math.Rand( 200, 400 ) )
-                phys:AddAngleVelocity( VectorRand() * 500 )
+                phys:SetVelocity( VectorRand() * math.Rand( flVelocityMin, flVelocityMax ) )
+                phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
 
             end
 
