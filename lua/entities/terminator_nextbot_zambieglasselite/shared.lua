@@ -9,24 +9,14 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
     Class = "terminator_nextbot_zambieglasselite",
     Category = "Nextbot Zambies",
 } )
-// TODO: Add spawnicons
+-- TODO: Add spawnicons
 list.Set( "NPC", "terminator_nextbot_zambieglasselite_mega", {
     Name = "Zombie Glass Elite Mega",
     Class = "terminator_nextbot_zambieglasselite",
     Category = "Nextbot Zambies",
 	KeyValues = { iShards = 50 }
 } )
-// This much particles causes the frame to freeze,
-// and I doubt that even setting it to admin only will help!
-//	// This one is purely for comedic effect,
-//	// and has no intention of being, as
-//	// id Software says, "even remotely fair"
-//	list.Set( "NPC", "terminator_nextbot_zambieglasselite_giga", {
-//	    Name = "Zombie Glass Elite Giga",
-//	    Class = "terminator_nextbot_zambieglasselite",
-//	    Category = "Nextbot Zambies",
-//		KeyValues = { iShards = 100 }
-//	} )
+-- 100 partucles cayses the game to freeze so no giga elite glass zambie
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
