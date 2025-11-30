@@ -9,22 +9,6 @@ list.Set( "NPC", "terminator_nextbot_zambieglass", {
     Class = "terminator_nextbot_zambieglass",
     Category = "Nextbot Zambies",
 } )
--- TODO: Add spawnicons
-list.Set( "NPC", "terminator_nextbot_zambieglass_mega", {
-    Name = "Zombie Glass Mega",
-    Class = "terminator_nextbot_zambieglass",
-    Category = "Nextbot Zambies",
-	KeyValues = { iShards = 20 }
-} )
--- This one is purely for comedic effect,
--- and has no intention of being, as
--- id Software says, "even remotely fair"
-list.Set( "NPC", "terminator_nextbot_zambieglass_giga", {
-    Name = "Zombie Glass Giga",
-    Class = "terminator_nextbot_zambieglass",
-    Category = "Nextbot Zambies",
-	KeyValues = { iShards = 40 }
-} )
 
 ENT.Author = "regunkyle"
 
@@ -117,8 +101,7 @@ end
 
 ENT.iShards = 10
 
-local sound_Add = sound.Add
-sound_Add {
+sound.Add {
 	name = "nextbotZambies_GlassBreakA",
 	level = 85,
 	sound = {
@@ -127,7 +110,7 @@ sound_Add {
 		"physics/glass/glass_largesheet_break3.wav"
 	}
 }
-sound_Add {
+sound.Add {
 	name = "nextbotZambies_GlassBreakB",
 	level = 80,
 	pitch = 110,
@@ -146,13 +129,9 @@ local SHARD_MODELS = {
 	"models/gibs/glass_shard05.mdl",
 	"models/gibs/glass_shard06.mdl",
 }
-local SHARD_MODELS_LENGTH = 6
-
-local string_lower = string.lower
-local tonumber = tonumber
 
 function ENT:KeyValue( sKey, sValue )
-	if string_lower( sKey ) == "ishards" then
+	if string.lower( sKey ) == "ishards" then
 		local f = tonumber( sValue )
 		if f then self.iShards = f end
 		return
@@ -160,22 +139,11 @@ function ENT:KeyValue( sKey, sValue )
 	return BaseClass.KeyValue( self, sKey, sValue )
 end
 
-local EffectData = EffectData
-local util_Effect = util.Effect
-local ents_Create = ents.Create
-local math = math
-local math_random = math.random
-local VectorRand = VectorRand
-local AngleRand = AngleRand
-local COLLISION_GROUP_DEBRIS = COLLISION_GROUP_DEBRIS
-local math_Rand = math.Rand
-local SafeRemoveEntityDelayed = SafeRemoveEntityDelayed
-
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound "nextbotZambies_GlassBreakA"
-    self:EmitSound "nextbotZambies_GlassBreakB"
+    self:EmitSound( "nextbotZambies_GlassBreakA" )
+    self:EmitSound( "nextbotZambies_GlassBreakB" )
 
 	local iShards = self.iShards
 	if iShards <= 0 then return end
@@ -183,9 +151,9 @@ function ENT:GlassZambDie()
 	-- Replace with 20 and 40 for the older version feel
 	local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
     for _ = 1, iShards do
-        local gib = ents_Create "prop_physics"
+        local gib = ents.Create( "prop_physics" )
         if IsValid( gib ) then
-            gib:SetModel( SHARD_MODELS[ math_random( 1, SHARD_MODELS_LENGTH ) ] )
+            gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
             gib:SetPos( pos + VectorRand() * 20 )
             gib:SetAngles( AngleRand() )
             gib:SetMaterial( "models/props_windows/window_glass" )
@@ -197,7 +165,7 @@ function ENT:GlassZambDie()
             local phys = gib:GetPhysicsObject()
             if IsValid( phys ) then
                 phys:Wake()
-                phys:SetVelocity( VectorRand() * math_Rand( flVelocityMin, flVelocityMax ) )
+                phys:SetVelocity( VectorRand() * math.Rand( flVelocityMin, flVelocityMax ) )
                 phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
 
             end
