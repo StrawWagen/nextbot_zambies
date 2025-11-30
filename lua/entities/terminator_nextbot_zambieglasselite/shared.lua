@@ -9,14 +9,6 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
     Class = "terminator_nextbot_zambieglasselite",
     Category = "Nextbot Zambies",
 } )
--- TODO: Add spawnicons
-list.Set( "NPC", "terminator_nextbot_zambieglasselite_mega", {
-    Name = "Zombie Glass Elite Mega",
-    Class = "terminator_nextbot_zambieglasselite",
-    Category = "Nextbot Zambies",
-	KeyValues = { iShards = 50 }
-} )
--- 100 particles causes the game to freeze so no giga elite glass zambie
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
@@ -113,10 +105,6 @@ local SHARD_MODELS = {
 	"models/gibs/glass_shard05.mdl",
 	"models/gibs/glass_shard06.mdl",
 }
-local SHARD_MODELS_LENGTH = 6
-
-local string_lower = string.lower
-local tonumber = tonumber
 
 function ENT:KeyValue( sKey, sValue )
 	if string.lower( sKey ) == "ishards" then
@@ -127,39 +115,27 @@ function ENT:KeyValue( sKey, sValue )
 	return BaseClass.KeyValue( self, sKey, sValue )
 end
 
-local EffectData = EffectData
-local util = util
-local util_Effect = util.Effect
-local ents_Create = ents.Create
-local math = math
-local math_random = math.random
-local VectorRand = VectorRand
-local AngleRand = AngleRand
-local math_Rand = math.Rand
-local util_SpriteTrail = util.SpriteTrail
-local SafeRemoveEntityDelayed = SafeRemoveEntityDelayed
-
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound "nextbotZambies_GlassBreakA"
-    self:EmitSound "nextbotZambies_GlassBreakB"
+    self:EmitSound( "nextbotZambies_GlassBreakA" )
+    self:EmitSound( "nextbotZambies_GlassBreakB" )
 
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
     effectdata:SetScale( 2 )
-    util_Effect( "GlassImpact", effectdata )
+    util.Effect( "GlassImpact", effectdata )
 
 	local iShards = self.iShards
 	if iShards <= 0 then return end
 	local flAngularVelocity = iShards * 40
 	local flVelocityMin, flVelocityMax = iShards * 32, iShards * 48
     for _ = 1, iShards do
-        local gib = ents_Create "prop_physics"
+        local gib = ents.Create( "prop_physics" )
         if IsValid( gib ) then
             pos = pos + VectorRand() * 15
-            pos.z = pos.z + math_random( -5, 5 )
-            gib:SetModel( SHARD_MODELS[ math_random( 1, SHARD_MODELS_LENGTH ) ] )
+            pos.z = pos.z + math.random( -5, 5 )
+            gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
             gib:SetPos( pos )
             gib:SetAngles( AngleRand() )
             gib:SetMaterial( "models/props_windows/window_glass" )
@@ -170,12 +146,12 @@ function ENT:GlassZambDie()
             if IsValid( phys ) then
                 local velDir = VectorRand() + self:GetAimVector() * 0.5 -- bias forward
                 phys:Wake()
-                phys:SetVelocity( velDir * math_Rand( flVelocityMin, flVelocityMax ) )
+                phys:SetVelocity( velDir * math.Rand( flVelocityMin, flVelocityMax ) )
                 phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
 
             end
 
-            util_SpriteTrail( gib, 0, Color( 150, 200, 255, 220 ), false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
+            util.SpriteTrail( gib, 0, Color( 150, 200, 255, 220 ), false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
 
             gib.IsGlassShrapnel = true
             gib.ShrapnelDamage = 15
@@ -215,7 +191,7 @@ function ENT:GlassZambDie()
                     impact:SetOrigin( data.HitPos )
                     impact:SetNormal( data.HitNormal )
                     impact:SetScale( 0.5 )
-                    util_Effect( "GlassImpact", impact )
+                    util.Effect( "GlassImpact", impact )
 
                 end
             end )
