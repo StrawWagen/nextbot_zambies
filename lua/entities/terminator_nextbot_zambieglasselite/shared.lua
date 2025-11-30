@@ -215,7 +215,7 @@ function ENT:GlassZambDie()
                     impact:SetOrigin( data.HitPos )
                     impact:SetNormal( data.HitNormal )
                     impact:SetScale( 0.5 )
-                    util.Effect( "GlassImpact", impact )
+                    util_Effect( "GlassImpact", impact )
 
                 end
             end )
