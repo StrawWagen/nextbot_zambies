@@ -9,16 +9,16 @@ list.Set( "NPC", "terminator_nextbot_zambieglass", {
     Class = "terminator_nextbot_zambieglass",
     Category = "Nextbot Zambies",
 } )
-// TODO: Add spawnicons
+-- TODO: Add spawnicons
 list.Set( "NPC", "terminator_nextbot_zambieglass_mega", {
     Name = "Zombie Glass Mega",
     Class = "terminator_nextbot_zambieglass",
     Category = "Nextbot Zambies",
 	KeyValues = { iShards = 20 }
 } )
-// This one is purely for comedic effect,
-// and has no intention of being, as
-// id Software says, "even remotely fair"
+-- This one is purely for comedic effect,
+-- and has no intention of being, as
+-- id Software says, "even remotely fair"
 list.Set( "NPC", "terminator_nextbot_zambieglass_giga", {
     Name = "Zombie Glass Giga",
     Class = "terminator_nextbot_zambieglass",
@@ -115,7 +115,6 @@ function ENT:Think()
 
 end
 
-// Default shard count
 ENT.iShards = 10
 
 local sound_Add = sound.Add
@@ -181,7 +180,7 @@ function ENT:GlassZambDie()
 	local iShards = self.iShards
 	if iShards <= 0 then return end
 	local flAngularVelocity = iShards * 50
-	// Replace with 20 and 40 for the older version feel
+	-- Replace with 20 and 40 for the older version feel
 	local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
     for _ = 1, iShards do
         local gib = ents_Create "prop_physics"
