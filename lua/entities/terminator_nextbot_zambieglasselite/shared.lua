@@ -16,7 +16,7 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite_mega", {
     Category = "Nextbot Zambies",
 	KeyValues = { iShards = 50 }
 } )
--- 100 partucles cayses the game to freeze so no giga elite glass zambie
+-- 100 particles causes the game to freeze so no giga elite glass zambie
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
