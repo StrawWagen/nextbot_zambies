@@ -311,8 +311,7 @@ local function angeringCallFunc( me, rate )
     local callAnim = me.zamb_CallAnim or ACT_GMOD_GESTURE_TAUNT_ZOMBIE
     me:DoGesture( callAnim, 0.8 * rate, true )
 
-    local filterAllPlayers = RecipientFilter()
-    filterAllPlayers:AddAllPlayers()
+    local filterAllPlayers = terminator_Extras.recipFilterAllTargetablePlayers() -- only play global sound for players who might fight us
     me:EmitSound( me.term_CallingSound, 120 + me.term_SoundLevelShift, math.random( 95, 105 ) + me.term_SoundPitchShift, 0.5, CHAN_STATIC, sndFlags, nil, filterAllPlayers )
     me:EmitSound( me.term_CallingSmallSound, 85 + me.term_SoundLevelShift, math.random( 75, 85 ) + me.term_SoundPitchShift, 1, CHAN_STATIC, sndFlags, nil )
 
