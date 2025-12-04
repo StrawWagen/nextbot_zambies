@@ -25,7 +25,6 @@ if CLIENT then
     local setupMat
     local desiredBaseTexture = "glass/glasswindow007a"
     local mat = "nextbotZambies_GlassMaterial"
-	local CreateMaterial = CreateMaterial
     function ENT:AdditionalClientInitialize()
         if setupMat then return end
         setupMat = true
@@ -184,3 +183,4 @@ ENT.MyClassTask = {
 
     end
 }
+
