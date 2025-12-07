@@ -13,9 +13,8 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
 
-	local render_SetColorModulation = render.SetColorModulation
     function ENT:Draw()
-        render_SetColorModulation( .5, .7, 1.0 )
+        render.SetColorModulation( .5, .7, 1.0 )
         self:DrawModel()
     end
     return
@@ -38,14 +37,16 @@ ENT.HeightToStartTakingDamage = 300
 ENT.FallDamagePerHeight = 0.5
 ENT.DeathDropHeight = 800
 
+ENT.DefaultShards = 25
+
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
     self:SetModelScale( self.TERM_MODELSCALE, 0 )
     self:SetColor( Color( 150, 200, 255, 180 ) )
+    self:SetShards( self.DefaultShards )
 
     self.GlassArmsAppliedElite = false
-
 end
 
 function ENT:Think()
@@ -63,7 +64,6 @@ function ENT:Think()
             local boneID = self:LookupBone( boneName )
             if boneID then
                 self:ManipulateBoneScale( boneID, Vector( 2.25, 2.25, 2.25 ) )
-
             end
         end
 
@@ -71,65 +71,52 @@ function ENT:Think()
     end
 
     BaseClass.Think( self )
-
 end
 
-ENT.iShards = 25
-
-local sound_Add = sound.Add
-sound_Add {
-	name = "nextbotZambies_GlassBreakEliteA",
-	level = 95,
-	pitch = 90,
-	sound = {
-		"physics/glass/glass_largesheet_break1.wav",
-		"physics/glass/glass_largesheet_break2.wav",
-		"physics/glass/glass_largesheet_break3.wav"
-	}
+sound.Add {
+    name = "nextbotZambies_GlassBreakEliteA",
+    level = 95,
+    pitch = 90,
+    sound = {
+        "physics/glass/glass_largesheet_break1.wav",
+        "physics/glass/glass_largesheet_break2.wav",
+        "physics/glass/glass_largesheet_break3.wav"
+    }
 }
-sound_Add {
-	name = "nextbotZambies_GlassBreakEliteB",
-	level = 90,
-	sound = {
-		"physics/glass/glass_sheet_break1.wav",
-		"physics/glass/glass_sheet_break2.wav",
-		"physics/glass/glass_sheet_break3.wav"
-	}
+sound.Add {
+    name = "nextbotZambies_GlassBreakEliteB",
+    level = 90,
+    sound = {
+        "physics/glass/glass_sheet_break1.wav",
+        "physics/glass/glass_sheet_break2.wav",
+        "physics/glass/glass_sheet_break3.wav"
+    }
 }
 
 local SHARD_MODELS = {
-	"models/gibs/glass_shard01.mdl",
-	"models/gibs/glass_shard02.mdl",
-	"models/gibs/glass_shard03.mdl",
-	"models/gibs/glass_shard04.mdl",
-	"models/gibs/glass_shard05.mdl",
-	"models/gibs/glass_shard06.mdl",
+    "models/gibs/glass_shard01.mdl",
+    "models/gibs/glass_shard02.mdl",
+    "models/gibs/glass_shard03.mdl",
+    "models/gibs/glass_shard04.mdl",
+    "models/gibs/glass_shard05.mdl",
+    "models/gibs/glass_shard06.mdl",
 }
-
-function ENT:KeyValue( sKey, sValue )
-	if string.lower( sKey ) == "ishards" then
-		local f = tonumber( sValue )
-		if f then self.iShards = f end
-		return
-	end
-	return BaseClass.KeyValue( self, sKey, sValue )
-end
 
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound( "nextbotZambies_GlassBreakA" )
-    self:EmitSound( "nextbotZambies_GlassBreakB" )
+    self:EmitSound( "nextbotZambies_GlassBreakEliteA" )
+    self:EmitSound( "nextbotZambies_GlassBreakEliteB" )
 
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
     effectdata:SetScale( 2 )
     util.Effect( "GlassImpact", effectdata )
 
-	local iShards = self.iShards
-	if iShards <= 0 then return end
-	local flAngularVelocity = iShards * 40
-	local flVelocityMin, flVelocityMax = iShards * 32, iShards * 48
+    local iShards = self:GetShards()
+    if iShards <= 0 then return end
+    local flAngularVelocity = iShards * 40
+    local flVelocityMin, flVelocityMax = iShards * 32, iShards * 48
     for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
         if IsValid( gib ) then
@@ -144,11 +131,10 @@ function ENT:GlassZambDie()
 
             local phys = gib:GetPhysicsObject()
             if IsValid( phys ) then
-                local velDir = VectorRand() + self:GetAimVector() * 0.5 -- bias forward
+                local velDir = VectorRand() + self:GetAimVector() * 0.5
                 phys:Wake()
                 phys:SetVelocity( velDir * math.Rand( flVelocityMin, flVelocityMax ) )
                 phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
-
             end
 
             util.SpriteTrail( gib, 0, Color( 150, 200, 255, 220 ), false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
@@ -160,15 +146,13 @@ function ENT:GlassZambDie()
 
             gib:AddCallback( "PhysicsCollide", function( ent, data )
                 if not IsValid( ent ) or not ent.IsGlassShrapnel then return end
-                if data.PhysObject:GetVelocity():LengthSqr() < 10^2 then -- cleanup early if not moving
-                    SafeRemoveEntity( self )
+                if data.PhysObject:GetVelocity():LengthSqr() < 100 then
+                    SafeRemoveEntity( ent )
                     return
-
                 end
 
                 local hitEntity = data.HitEntity
                 if IsValid( hitEntity ) and ( hitEntity:IsPlayer() or hitEntity:IsNPC() ) and not ent.DamagedEntities[ hitEntity ] then
-                    -- Don't damage glass zambies
                     local hitClass = hitEntity:GetClass()
                     if hitClass ~= "terminator_nextbot_zambieglass" and hitClass ~= "terminator_nextbot_zambieglasselite" then
                         local dmgInfo = DamageInfo()
@@ -180,7 +164,6 @@ function ENT:GlassZambDie()
 
                         hitEntity:TakeDamageInfo( dmgInfo )
                         ent.DamagedEntities[ hitEntity ] = true
-
                     end
                 end
 
@@ -192,13 +175,10 @@ function ENT:GlassZambDie()
                     impact:SetNormal( data.HitNormal )
                     impact:SetScale( 0.5 )
                     util.Effect( "GlassImpact", impact )
-
                 end
             end )
 
             SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 3 ) )
-
         end
     end
-
 end

@@ -12,6 +12,10 @@ list.Set( "NPC", "terminator_nextbot_zambieglass", {
 
 ENT.Author = "regunkyle"
 
+function ENT:SetupDataTables()
+    self:NetworkVar( "Int", 0, "Shards", { KeyName = "ishards", Edit = { type = "Int", min = 0, max = 100, order = 1 } } )
+end
+
 function ENT:AdditionalRagdollDeathEffects( ragdoll )
     if not IsValid( ragdoll ) then return end
 
@@ -38,14 +42,11 @@ if CLIENT then
 
         if newMat and newMat:GetKeyValues()["$basetexture"] then
             newMat:SetTexture( "$basetexture", desiredBaseTexture )
-
         end
 
         self:SetSubMaterial( 0, "!" .. mat )
-
     end
     return
-
 end
 
 ENT.SpawnHealth = 20
@@ -62,15 +63,17 @@ ENT.HeightToStartTakingDamage = 10
 ENT.FallDamagePerHeight = 1
 ENT.DeathDropHeight = 100
 
+ENT.DefaultShards = 10
+
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
     self:SetSubMaterial( 0, "!nextbotZambies_GlassMaterial" )
     self:SetRenderMode( RENDERMODE_TRANSALPHA )
     self:SetColor( Color( 200, 220, 255, 180 ) )
+    self:SetShards( self.DefaultShards )
 
     self.GlassArmsApplied = false
-
 end
 
 function ENT:Think()
@@ -89,54 +92,41 @@ function ENT:Think()
             if boneID then
                 self:ManipulateBoneScale( boneID, Vector( 1.5, 1.5, 1.5 ) )
                 self.GlassArmsApplied = true
-
             end
         end
     end
 
     BaseClass.Think( self )
-
 end
 
-ENT.iShards = 10
-
 sound.Add {
-	name = "nextbotZambies_GlassBreakA",
-	level = 85,
-	sound = {
-		"physics/glass/glass_largesheet_break1.wav",
-		"physics/glass/glass_largesheet_break2.wav",
-		"physics/glass/glass_largesheet_break3.wav"
-	}
+    name = "nextbotZambies_GlassBreakA",
+    level = 85,
+    sound = {
+        "physics/glass/glass_largesheet_break1.wav",
+        "physics/glass/glass_largesheet_break2.wav",
+        "physics/glass/glass_largesheet_break3.wav"
+    }
 }
 sound.Add {
-	name = "nextbotZambies_GlassBreakB",
-	level = 80,
-	pitch = 110,
-	sound = {
-		"physics/glass/glass_sheet_break1.wav",
-		"physics/glass/glass_sheet_break2.wav",
-		"physics/glass/glass_sheet_break3.wav"
-	}
+    name = "nextbotZambies_GlassBreakB",
+    level = 80,
+    pitch = 110,
+    sound = {
+        "physics/glass/glass_sheet_break1.wav",
+        "physics/glass/glass_sheet_break2.wav",
+        "physics/glass/glass_sheet_break3.wav"
+    }
 }
 
 local SHARD_MODELS = {
-	"models/gibs/glass_shard01.mdl",
-	"models/gibs/glass_shard02.mdl",
-	"models/gibs/glass_shard03.mdl",
-	"models/gibs/glass_shard04.mdl",
-	"models/gibs/glass_shard05.mdl",
-	"models/gibs/glass_shard06.mdl",
+    "models/gibs/glass_shard01.mdl",
+    "models/gibs/glass_shard02.mdl",
+    "models/gibs/glass_shard03.mdl",
+    "models/gibs/glass_shard04.mdl",
+    "models/gibs/glass_shard05.mdl",
+    "models/gibs/glass_shard06.mdl",
 }
-
-function ENT:KeyValue( sKey, sValue )
-	if string.lower( sKey ) == "ishards" then
-		local f = tonumber( sValue )
-		if f then self.iShards = f end
-		return
-	end
-	return BaseClass.KeyValue( self, sKey, sValue )
-end
 
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
@@ -144,11 +134,10 @@ function ENT:GlassZambDie()
     self:EmitSound( "nextbotZambies_GlassBreakA" )
     self:EmitSound( "nextbotZambies_GlassBreakB" )
 
-	local iShards = self.iShards
-	if iShards <= 0 then return end
-	local flAngularVelocity = iShards * 50
-	-- Replace with 20 and 40 for the older version feel
-	local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
+    local iShards = self:GetShards()
+    if iShards <= 0 then return end
+    local flAngularVelocity = iShards * 50
+    local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
     for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
         if IsValid( gib ) then
@@ -166,11 +155,9 @@ function ENT:GlassZambDie()
                 phys:Wake()
                 phys:SetVelocity( VectorRand() * math.Rand( flVelocityMin, flVelocityMax ) )
                 phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
-
             end
 
             SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 1.5 ) )
-
         end
     end
 end
@@ -180,7 +167,5 @@ ENT.MyClassTask = {
         self:GlassZambDie()
         SafeRemoveEntityDelayed( self, 0 )
         return true, true
-
     end
 }
-
