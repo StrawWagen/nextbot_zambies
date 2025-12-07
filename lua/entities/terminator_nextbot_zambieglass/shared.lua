@@ -5,23 +5,44 @@ DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Glass"
 ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambieglass", {
-    Name = "Zombie Glass",
+    Name = "Glass Zombie",
     Class = "terminator_nextbot_zambieglass",
     Category = "Nextbot Zambies",
 } )
 
 ENT.Author = "regunkyle"
+ENT.zamb_isGlassZamb = true
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Int", 0, "Shards", { KeyName = "ishards", Edit = { type = "Int", min = 0, max = 100, order = 1 } } )
+
 end
+
+local ragColor = Color( 255, 255, 255, 255 )
 
 function ENT:AdditionalRagdollDeathEffects( ragdoll )
     if not IsValid( ragdoll ) then return end
 
     ragdoll:SetSubMaterial( 0, "!nextbotZambies_GlassMaterial" )
-    ragdoll:SetColor( Color( 255, 255, 255, 255 ) )
+    ragdoll:SetColor( ragColor )
+
 end
+
+ENT.SpawnHealth = 20
+ENT.AimSpeed = 800
+ENT.WalkSpeed = 200
+ENT.MoveSpeed = 600
+ENT.RunSpeed = 800
+ENT.AccelerationSpeed = 900
+
+ENT.FistDamageMul = 1.25
+ENT.zamb_MeleeAttackSpeed = 1.4
+
+ENT.HeightToStartTakingDamage = 10
+ENT.FallDamagePerHeight = 1
+ENT.DeathDropHeight = 100
+
+ENT.DefaultShards = 10
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambieglass", ENT.PrintName )
@@ -42,42 +63,27 @@ if CLIENT then
 
         if newMat and newMat:GetKeyValues()["$basetexture"] then
             newMat:SetTexture( "$basetexture", desiredBaseTexture )
+
         end
 
-        self:SetSubMaterial( 0, "!" .. mat )
     end
     return
+
 end
 
-ENT.SpawnHealth = 20
-ENT.AimSpeed = 800
-ENT.WalkSpeed = 200
-ENT.MoveSpeed = 600
-ENT.RunSpeed = 800
-ENT.AccelerationSpeed = 900
-
-ENT.FistDamageMul = 1.25
-ENT.zamb_MeleeAttackSpeed = 1.4
-
-ENT.HeightToStartTakingDamage = 10
-ENT.FallDamagePerHeight = 1
-ENT.DeathDropHeight = 100
-
-ENT.DefaultShards = 10
+local scalar = Vector( 1.5, 1.5, 1.5 )
+local glassColor = Color( 200, 220, 255, 180 )
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
     self:SetSubMaterial( 0, "!nextbotZambies_GlassMaterial" )
     self:SetRenderMode( RENDERMODE_TRANSALPHA )
-    self:SetColor( Color( 200, 220, 255, 180 ) )
+    self:SetColor( glassColor )
     self:SetShards( self.DefaultShards )
 
-    self.GlassArmsApplied = false
-end
-
-function ENT:Think()
-    if not self.GlassArmsApplied then
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
         local armBones = {
             "ValveBiped.Bip01_L_UpperArm",
             "ValveBiped.Bip01_L_Forearm",
@@ -89,14 +95,11 @@ function ENT:Think()
 
         for _, boneName in ipairs( armBones ) do
             local boneID = self:LookupBone( boneName )
-            if boneID then
-                self:ManipulateBoneScale( boneID, Vector( 1.5, 1.5, 1.5 ) )
-                self.GlassArmsApplied = true
-            end
-        end
-    end
+            if not boneID then continue end
+            self:ManipulateBoneScale( boneID, scalar )
 
-    BaseClass.Think( self )
+        end
+    end )
 end
 
 sound.Add {
@@ -136,29 +139,31 @@ function ENT:GlassZambDie()
 
     local iShards = self:GetShards()
     if iShards <= 0 then return end
+
     local flAngularVelocity = iShards * 50
     local flVelocityMin, flVelocityMax = iShards * 30, iShards * 60
     for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
-        if IsValid( gib ) then
-            gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
-            gib:SetPos( pos + VectorRand() * 20 )
-            gib:SetAngles( AngleRand() )
-            gib:SetMaterial( "models/props_windows/window_glass" )
-            gib:Spawn()
-            gib:Activate()
+        if not IsValid( gib ) then continue end
 
-            gib:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
+        SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 1.5 ) )
 
-            local phys = gib:GetPhysicsObject()
-            if IsValid( phys ) then
-                phys:Wake()
-                phys:SetVelocity( VectorRand() * math.Rand( flVelocityMin, flVelocityMax ) )
-                phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
-            end
+        gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
+        gib:SetPos( pos + VectorRand() * 20 )
+        gib:SetAngles( AngleRand() )
+        gib:SetMaterial( "models/props_windows/window_glass" )
+        gib:Spawn()
+        gib:Activate()
 
-            SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 1.5 ) )
-        end
+        gib:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
+
+        local phys = gib:GetPhysicsObject()
+        if not IsValid( phys ) then continue end
+
+        phys:Wake()
+        phys:SetVelocity( VectorRand() * math.Rand( flVelocityMin, flVelocityMax ) )
+        phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
+
     end
 end
 
