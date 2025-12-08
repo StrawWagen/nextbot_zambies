@@ -171,8 +171,8 @@ end
 
 function ENT:AdditionalFootstep( pos )
     if math.random( 0, 100 ) < 25 then
-        snd = "ambient/levels/canals/toxic_slime_gurgle" .. math.random( 2, 8 ) .. ".wav"
-        pit = math.random( 120, 140 )
+        local snd = "ambient/levels/canals/toxic_slime_gurgle" .. math.random( 2, 8 ) .. ".wav"
+        local pit = math.random( 120, 140 )
         self:EmitSound( snd, 75, pit )
         local groundEnt = self:GetGroundEntity()
         if IsValid( groundEnt ) then

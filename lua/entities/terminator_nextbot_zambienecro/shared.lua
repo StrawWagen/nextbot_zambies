@@ -65,7 +65,7 @@ ENT.TERM_FISTS = "weapon_term_zombieclaws"
 ENT.Models = { NECRO_ZAMBIE_MODEL }
 ENT.Term_BaseMsBetweenSteps = 500
 
-IdleActivity = ACT_IDLE
+local IdleActivity = ACT_IDLE
 ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
     [ACT_MP_STAND_IDLE]                 = IdleActivity,

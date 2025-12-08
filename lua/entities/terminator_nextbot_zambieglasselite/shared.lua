@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambieglass"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Zombie Glass Elite"
+ENT.PrintName = "Elite Zombie Glass"
 ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
     Name = "Zombie Glass Elite",
@@ -10,45 +10,57 @@ list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
     Category = "Nextbot Zambies",
 } )
 
-if CLIENT then
-    language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
-
-    function ENT:Draw()
-        render.SetColorModulation( 0.5, 0.7, 1.0 )
-        self:DrawModel()
-    end
-    return
-end
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 20
 
 ENT.TERM_MODELSCALE = 1.25
+ENT.CollisionBounds = { Vector( -10, -10, 0 ), Vector( 10, 10, 45 ) }
+ENT.CrouchCollisionBounds = { Vector( -8, -8, 0 ), Vector( 8, 8, 35 ) }
 
 ENT.SpawnHealth = 60
 ENT.JumpHeight = 600
 ENT.AimSpeed = 900
+ENT.CrouchSpeed = 220
 ENT.WalkSpeed = 220
 ENT.MoveSpeed = 650
 ENT.RunSpeed = 850
 ENT.AccelerationSpeed = 1000
 
 ENT.FistDamageMul = 1.5
+ENT.FistRangeMul = 1.2 -- bigger zombs need bigger range, cause they cant get as close to enemy
 ENT.zamb_MeleeAttackSpeed = 1.6
 
 ENT.HeightToStartTakingDamage = 300
 ENT.FallDamagePerHeight = 0.5
 ENT.DeathDropHeight = 800
 
-function ENT:AdditionalInitialize()
-    BaseClass.AdditionalInitialize( self )
+ENT.DefaultShards = 25
 
-    self:SetModelScale( self.TERM_MODELSCALE, 0 )
-    self:SetColor( Color( 150, 200, 255, 180 ) )
+if CLIENT then
+    language.Add( "terminator_nextbot_zambieglasselite", ENT.PrintName )
 
-    self.GlassArmsAppliedElite = false
+    local render_SetColorModulation = render.SetColorModulation
+
+    function ENT:Draw()
+        render_SetColorModulation( .5, .7, 1.0 )
+        self:DrawModel()
+
+    end
+    return
 
 end
 
-function ENT:Think()
-    if not self.GlassArmsAppliedElite then
+local scalar = Vector( 2.25, 2.25, 2.25 )
+local glassColor = Color( 150, 200, 255, 180 )
+
+function ENT:AdditionalInitialize()
+    BaseClass.AdditionalInitialize( self )
+
+    self:SetColor( glassColor )
+    self:SetShards( self.DefaultShards )
+
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
+
         local armBones = {
             "ValveBiped.Bip01_L_UpperArm",
             "ValveBiped.Bip01_L_Forearm",
@@ -60,107 +72,131 @@ function ENT:Think()
 
         for _, boneName in ipairs( armBones ) do
             local boneID = self:LookupBone( boneName )
-            if boneID then
-                self:ManipulateBoneScale( boneID, Vector( 2.25, 2.25, 2.25 ) )
+            if not boneID then continue end
 
-            end
+            self:ManipulateBoneScale( boneID, scalar )
+
+        end
+    end )
+end
+
+sound.Add {
+    name = "nextbotZambies_GlassBreakEliteA",
+    level = 95,
+    pitch = 90,
+    sound = {
+        "physics/glass/glass_largesheet_break1.wav",
+        "physics/glass/glass_largesheet_break2.wav",
+        "physics/glass/glass_largesheet_break3.wav"
+    }
+}
+sound.Add {
+    name = "nextbotZambies_GlassBreakEliteB",
+    level = 90,
+    sound = {
+        "physics/glass/glass_sheet_break1.wav",
+        "physics/glass/glass_sheet_break2.wav",
+        "physics/glass/glass_sheet_break3.wav"
+    }
+}
+
+local SHARD_MODELS = {
+    "models/gibs/glass_shard01.mdl",
+    "models/gibs/glass_shard02.mdl",
+    "models/gibs/glass_shard03.mdl",
+    "models/gibs/glass_shard04.mdl",
+    "models/gibs/glass_shard05.mdl",
+    "models/gibs/glass_shard06.mdl",
+}
+
+function ENT:CreateShrapnelCallback( ent, damage )
+    ent:SetOwner( self )
+    ent.shrapnelDamage = damage
+    ent.shrapnelNextDamage = 0
+
+    ent:AddCallback( "PhysicsCollide", function( gib, data )
+        if data.PhysObject:GetVelocity():LengthSqr() < 100 then
+            SafeRemoveEntity( gib )
+            return
+
         end
 
-        self.GlassArmsAppliedElite = true
-    end
+        if gib.shrapnelNextDamage > CurTime() then return end
+        gib.shrapnelNextDamage = CurTime() + 0.05
 
-    BaseClass.Think( self )
+        local hitEntity = data.HitEntity
+        local goodHitEntity = IsValid( hitEntity ) and ( hitEntity:IsPlayer() or hitEntity:IsNPC() )
 
+        if goodHitEntity and not hitEntity.zamb_isGlassZamb then
+            local dmgInfo = DamageInfo()
+            dmgInfo:SetDamage( gib.shrapnelDamage )
+            dmgInfo:SetDamageType( DMG_SLASH )
+            dmgInfo:SetAttacker( IsValid( gib:GetOwner() ) and gib:GetOwner() or gib )
+            dmgInfo:SetInflictor( gib )
+            dmgInfo:SetDamageForce( data.OurOldVelocity:GetNormalized() * 500 )
+
+            hitEntity:TakeDamageInfo( dmgInfo )
+
+        end
+
+        if data.Speed > 100 then
+            gib:EmitSound( "physics/glass/glass_impact_bullet" .. math.random( 1, 4 ) .. ".wav", 70, math.random( 90, 110 ) )
+
+            local impact = EffectData()
+            impact:SetOrigin( data.HitPos )
+            impact:SetNormal( data.HitNormal )
+            impact:SetScale( 0.5 )
+            util.Effect( "GlassImpact", impact )
+
+        end
+    end )
 end
+
+local trailColor = Color( 150, 200, 255, 220 )
 
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound( "physics/glass/glass_largesheet_break" .. math.random( 1, 3 ) .. ".wav", 95, 90 )
-    self:EmitSound( "physics/glass/glass_sheet_break" .. math.random( 1, 3 ) .. ".wav", 90, 100 )
+    self:EmitSound( "nextbotZambies_GlassBreakEliteA" )
+    self:EmitSound( "nextbotZambies_GlassBreakEliteB" )
 
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
     effectdata:SetScale( 2 )
     util.Effect( "GlassImpact", effectdata )
 
-    local glassGibs = {
-        "models/gibs/glass_shard01.mdl",
-        "models/gibs/glass_shard02.mdl",
-        "models/gibs/glass_shard03.mdl",
-        "models/gibs/glass_shard04.mdl",
-        "models/gibs/glass_shard05.mdl",
-        "models/gibs/glass_shard06.mdl",
-    }
+    local iShards = self:GetShards()
+    if iShards <= 0 then return end
 
-    for _ = 1, 25 do
+    local flAngularVelocity = iShards * 40
+    local flVelocityMin, flVelocityMax = iShards * 32, iShards * 48
+
+    for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
-        if IsValid( gib ) then
-            pos = pos + VectorRand() * 15
-            pos.z = pos.z + math.random( -5, 5 )
-            gib:SetModel( table.Random( glassGibs ) )
-            gib:SetPos( pos )
-            gib:SetAngles( AngleRand() )
-            gib:SetMaterial( "models/props_windows/window_glass" )
-            gib:Spawn()
-            gib:Activate()
+        if not IsValid( gib ) then continue end
 
-            local phys = gib:GetPhysicsObject()
-            if IsValid( phys ) then
-                local velDir = VectorRand() + self:GetAimVector() * 0.5 -- bias forward
-                phys:Wake()
-                phys:SetVelocity( velDir * math.Rand( 800, 1200 ) )
-                phys:AddAngleVelocity( VectorRand() * 1000 )
+        SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 3 ) )
 
-            end
+        pos = pos + VectorRand() * 15
+        pos.z = pos.z + math.random( -5, 5 )
+        gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
+        gib:SetPos( pos )
+        gib:SetAngles( AngleRand() )
+        gib:SetMaterial( "models/props_windows/window_glass" )
+        gib:Spawn()
+        gib:Activate()
 
-            util.SpriteTrail( gib, 0, Color( 150, 200, 255, 220 ), false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
-
-            gib.IsGlassShrapnel = true
-            gib.ShrapnelDamage = 15
-            gib.ShrapnelOwner = self
-            gib.DamagedEntities = {}
-
-            gib:AddCallback( "PhysicsCollide", function( ent, data )
-                if not IsValid( ent ) or not ent.IsGlassShrapnel then return end
-                if data.PhysObject:GetVelocity():LengthSqr() < 10^2 then -- cleanup early if not moving
-                    SafeRemoveEntity( self )
-                    return
-
-                end
-
-                local hitEntity = data.HitEntity
-                if IsValid( hitEntity ) and ( hitEntity:IsPlayer() or hitEntity:IsNPC() ) and not ent.DamagedEntities[ hitEntity ] then
-                    -- Don't damage glass zambies
-                    local hitClass = hitEntity:GetClass()
-                    if hitClass ~= "terminator_nextbot_zambieglass" and hitClass ~= "terminator_nextbot_zambieglasselite" then
-                        local dmgInfo = DamageInfo()
-                        dmgInfo:SetDamage( ent.ShrapnelDamage )
-                        dmgInfo:SetDamageType( DMG_SLASH )
-                        dmgInfo:SetAttacker( IsValid( ent.ShrapnelOwner ) and ent.ShrapnelOwner or ent )
-                        dmgInfo:SetInflictor( ent )
-                        dmgInfo:SetDamageForce( data.OurOldVelocity:GetNormalized() * 500 )
-
-                        hitEntity:TakeDamageInfo( dmgInfo )
-                        ent.DamagedEntities[ hitEntity ] = true
-
-                    end
-                end
-
-                if data.Speed > 100 then
-                    ent:EmitSound( "physics/glass/glass_impact_bullet" .. math.random( 1, 4 ) .. ".wav", 70, math.random( 90, 110 ) )
-
-                    local impact = EffectData()
-                    impact:SetOrigin( data.HitPos )
-                    impact:SetNormal( data.HitNormal )
-                    impact:SetScale( 0.5 )
-                    util.Effect( "GlassImpact", impact )
-
-                end
-            end )
-
-            SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 3 ) )
-
+        local phys = gib:GetPhysicsObject()
+        if IsValid( phys ) then
+            local velDir = VectorRand() + self:GetAimVector() * 0.5
+            phys:Wake()
+            phys:SetVelocity( velDir * math.Rand( flVelocityMin, flVelocityMax ) )
+            phys:AddAngleVelocity( VectorRand() * flAngularVelocity )
         end
+
+        util.SpriteTrail( gib, 0, trailColor, false, 10, 0, 0.4, 0.08, "trails/laser.vmt" )
+
+        self:CreateShrapnelCallback( gib, 10 )
+
     end
 end

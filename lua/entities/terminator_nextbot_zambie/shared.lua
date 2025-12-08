@@ -304,7 +304,7 @@ local function angeringCallFunc( me, rate )
 
     me:StopMoving()
     me:InvalidatePath( "angeringcall" )
-    me.nextNewPath = CurTime() + 2 * rate
+    me.nextNewPath = CurTime() + ( 2 / rate )
 
     me.term_NextIdleTaunt = CurTime() + 8
 
@@ -590,8 +590,8 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     local footDistToShoot = self:GetShootPos() - myPos
                     local torsoSpawnPos = myPos + footDistToShoot / 1.75
-                    toroSpawnPos = torsoSpawnPos + self:GetForward() * footDistToShoot:Length() / 3
-                    torso:SetPos( toroSpawnPos )
+                    torsoSpawnPos = torsoSpawnPos + self:GetForward() * footDistToShoot:Length() / 3
+                    torso:SetPos( torsoSpawnPos )
 
                     torso:SetAngles( self:GetAngles() )
                     torso:Spawn()
