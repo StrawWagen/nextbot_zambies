@@ -5,7 +5,7 @@ DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Glass"
 ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambieglass", {
-    Name = "Glass Zombie",
+    Name = "Zombie Glass",
     Class = "terminator_nextbot_zambieglass",
     Category = "Nextbot Zambies",
 } )
@@ -27,7 +27,6 @@ function ENT:AdditionalRagdollDeathEffects( ragdoll )
     ragdoll:SetColor( ragColor )
 
 end
-
 ENT.SpawnHealth = 20
 ENT.AimSpeed = 800
 ENT.WalkSpeed = 200

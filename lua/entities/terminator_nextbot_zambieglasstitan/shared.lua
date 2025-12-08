@@ -2,42 +2,52 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambieglasselite"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Glass Zombie Mega"
+ENT.PrintName = "Zombie Glass Titan"
 ENT.Spawnable = false
-list.Set( "NPC", "terminator_nextbot_zambieglassmega", {
-    Name = "Glass Zombie Mega",
-    Class = "terminator_nextbot_zambieglassmega",
+list.Set( "NPC", "terminator_nextbot_zambieglasstitan", {
+    Name = "Zombie Glass Titan",
+    Class = "terminator_nextbot_zambieglasstitan",
     Category = "Nextbot Zambies",
 } )
 
-ENT.TERM_MODELSCALE = 1.5
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 15
 
-ENT.SpawnHealth = 120
-ENT.JumpHeight = 700
-ENT.AimSpeed = 1000
-ENT.WalkSpeed = 250
-ENT.MoveSpeed = 700
-ENT.RunSpeed = 950
-ENT.AccelerationSpeed = 1200
+ENT.TERM_MODELSCALE = 1.75
+ENT.CollisionBounds = { Vector( -9, -9, 0 ), Vector( 9, 9, 30 ) }
+ENT.CrouchCollisionBounds = { Vector( -7, -7, 0 ), Vector( 7, 7, 25 ) }
+ENT.MyPhysicsMass = 2500
 
-ENT.FistDamageMul = 2.0
-ENT.FistRangeMul = 1.5 -- bigger zombs need bigger range, cause they cant get as close to enemy
-ENT.zamb_MeleeAttackSpeed = 1.8
+ENT.SpawnHealth = 2000
+ENT.ExtraSpawnHealthPerPlayer = 500
+ENT.JumpHeight = 1000
+ENT.AimSpeed = 500
+ENT.CrouchSpeed = 300
+ENT.WalkSpeed = 300
+ENT.MoveSpeed = 1000
+ENT.RunSpeed = 2500
+ENT.AccelerationSpeed = 750
 
-ENT.HeightToStartTakingDamage = 400
+ENT.FistDamageMul = 4.0
+ENT.FistRangeMul = 2.5 -- bigger zombs need bigger range, cause they cant get as close to enemy
+ENT.zamb_MeleeAttackSpeed = 3
+
+ENT.HeightToStartTakingDamage = 4000
 ENT.FallDamagePerHeight = 0.3
 ENT.DeathDropHeight = 1000
 
-ENT.DefaultShards = 35
+ENT.DefaultShards = 55
+
+ENT.term_SoundLevelShift = 20
+ENT.term_SoundPitchShift = -20
 
 ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
         drawHint = true,
         name = "Shoot Shards", -- diff name
-        ratelimit = 2, -- seconds between uses
+        ratelimit = 3, -- seconds between uses
         svAction = function( _drive, _driver, bot )
-            bot:ZAMB_AngeringCall( true, 2, true )
+            bot:ZAMB_AngeringCall( true, 4, true )
             timer.Simple( 0.3, function()
                 if not IsValid( bot ) then return end
                 bot:ShootGlassShards()
@@ -48,7 +58,7 @@ ENT.MySpecialActions = {
 }
 
 if CLIENT then
-    language.Add( "terminator_nextbot_zambieglassmega", ENT.PrintName )
+    language.Add( "terminator_nextbot_zambieglasstitan", ENT.PrintName )
 
     function ENT:Draw()
         render.SetColorModulation( 0.3, 0.5, 1.0 )
@@ -62,13 +72,25 @@ end
 ENT.MyClassTask = {
     OnDamaged = function( self, data, dmginfo )
         if dmginfo:GetDamage() > self:Health() then return end
+        if not self:CanTakeAction( "call" ) then return end
+        if self.DistToEnemy > self.DuelEnemyDist and math.random( 0, 100 ) < 90 then return end
+        self:TakeAction( "call" )
+
+    end,
+    OnLandOnGround = function( self, data )
+        if not self:CanTakeAction( "call" ) then return end
+        if self.DistToEnemy > self.DuelEnemyDist and math.random( 0, 100 ) < 50 then return end
         self:TakeAction( "call" )
 
     end,
 }
 
+-- does not flinch
+function ENT:HandleFlinching()
+end
+
 sound.Add {
-    name = "nextbotZambies_GlassBreakMegaA",
+    name = "nextbotZambies_GlassBreakTitanA",
     level = 100,
     pitch = 80,
     sound = {
@@ -78,7 +100,7 @@ sound.Add {
     }
 }
 sound.Add {
-    name = "nextbotZambies_GlassBreakMegaB",
+    name = "nextbotZambies_GlassBreakTitanB",
     level = 95,
     pitch = 90,
     sound = {
@@ -107,13 +129,12 @@ local SHARD_MODELS = {
     "models/gibs/glass_shard06.mdl",
 }
 
-local scalar = Vector( 2.25, 2.25, 2.25 )
+local scalar = Vector( 1.5, 1.5, 1.5 )
 local glassColor = Color( 120, 180, 255, 180 )
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
-    self:SetModelScale( self.TERM_MODELSCALE, 0 )
     self:SetColor( glassColor )
     self:SetShards( self.DefaultShards )
 
@@ -155,7 +176,7 @@ function ENT:ShootGlassShards()
 
         SafeRemoveEntityDelayed( gib, math.Rand( 1, 3 ) )
 
-        local shootPos = pos + VectorRand() * 10
+        local shootPos = pos + VectorRand() * 25
         gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
         gib:SetPos( shootPos )
         gib:SetAngles( AngleRand() )
@@ -166,10 +187,10 @@ function ENT:ShootGlassShards()
         local phys = gib:GetPhysicsObject()
         if IsValid( phys ) then
             local shootDir = VectorRand()
-            shootDir.z = math.max( -0.5, shootDir.z ) -- never shoot straight down
+            shootDir.z = math.Clamp( shootDir.z, -0.5, 0.5 )
             shootDir:Normalize()
             phys:Wake()
-            phys:SetVelocity( shootDir * math.Rand( 2500, 3500 ) )
+            phys:SetVelocity( shootDir * math.Rand( 5500, 8500 ) )
             phys:AddAngleVelocity( VectorRand() * 800 )
 
         end
@@ -184,8 +205,8 @@ end
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound( "nextbotZambies_GlassBreakMegaA" )
-    self:EmitSound( "nextbotZambies_GlassBreakMegaB" )
+    self:EmitSound( "nextbotZambies_GlassBreakTitanA" )
+    self:EmitSound( "nextbotZambies_GlassBreakTitanB" )
 
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )
@@ -196,7 +217,7 @@ function ENT:GlassZambDie()
     if iShards <= 0 then return end
 
     local flAngularVelocity = 1200
-    local flVelocityMin, flVelocityMax = 1000, 1500
+    local flVelocityMin, flVelocityMax = 10000, 12000
 
     for _ = 1, iShards do
         local gib = ents.Create( "prop_physics" )
@@ -204,8 +225,8 @@ function ENT:GlassZambDie()
 
         SafeRemoveEntityDelayed( gib, math.Rand( 0.5, 4 ) )
 
-        local gibPos = pos + VectorRand() * 20
-        gibPos.z = gibPos.z + math.random( -10, 10 )
+        local gibPos = pos + VectorRand() * 35
+        gibPos.z = gibPos.z + math.random( -40, 10 )
         gib:SetModel( SHARD_MODELS[ math.random( 1, #SHARD_MODELS ) ] )
         gib:SetPos( gibPos )
         gib:SetAngles( AngleRand() )

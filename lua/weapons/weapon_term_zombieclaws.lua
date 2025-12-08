@@ -280,7 +280,7 @@ function SWEP:PrimaryAttack()
         seq = owner:SelectWeightedSequence( act )
 
     end
-    seqSpeed = owner.zamb_MeleeAttackSpeed
+    local seqSpeed = owner.zamb_MeleeAttackSpeed
 
     local additionalDelay = owner.zamb_MeleeAttackAdditionalDelay or 0
     local meleeTime = owner:SequenceDuration( seq ) / seqSpeed
@@ -374,7 +374,7 @@ function SWEP:DealDamage()
     if #hitEnts <= 0 then return end
 
     if #hitEnts > 1 then
-        centers = {}
+        local centers = {}
         for _, ent in ipairs( hitEnts ) do
             centers[ent] = entMeta.WorldSpaceCenter( ent )
 

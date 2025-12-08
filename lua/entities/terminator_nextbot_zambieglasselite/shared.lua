@@ -2,19 +2,24 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambieglass"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Elite Glass Zombie"
+ENT.PrintName = "Elite Zombie Glass"
 ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambieglasselite", {
-    Name = "Glass Zombie Elite",
+    Name = "Zombie Glass Elite",
     Class = "terminator_nextbot_zambieglasselite",
     Category = "Nextbot Zambies",
 } )
 
+ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 20
+
 ENT.TERM_MODELSCALE = 1.25
+ENT.CollisionBounds = { Vector( -10, -10, 0 ), Vector( 10, 10, 45 ) }
+ENT.CrouchCollisionBounds = { Vector( -8, -8, 0 ), Vector( 8, 8, 35 ) }
 
 ENT.SpawnHealth = 60
 ENT.JumpHeight = 600
 ENT.AimSpeed = 900
+ENT.CrouchSpeed = 220
 ENT.WalkSpeed = 220
 ENT.MoveSpeed = 650
 ENT.RunSpeed = 850
@@ -50,7 +55,6 @@ local glassColor = Color( 150, 200, 255, 180 )
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
-    self:SetModelScale( self.TERM_MODELSCALE, 0 )
     self:SetColor( glassColor )
     self:SetShards( self.DefaultShards )
 

@@ -126,8 +126,8 @@ local scorchDownOffs = Vector( 0, 0, -20 )
 
 function ENT:AdditionalFootstep( pos )
     if math.random( 0, 100 ) < 25 then
-        snd = "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav"
-        pit = math.random( 120, 140 )
+        local snd = "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav"
+        local pit = math.random( 120, 140 )
         self:EmitSound( snd, 75, pit )
         local groundEnt = self:GetGroundEntity()
         if IsValid( groundEnt ) then

@@ -552,10 +552,6 @@ function terminator_Extras.zamb_SetupManager()
     gettingHandsDirty = CurTime() + 15
     targetDifficulty = 0
 
-    curveStartTime = 0
-    currentCurveStep = 0
-    oldCurveStep = 0
-
     sameCurveChainLength = 0
     segmentStack = {}
     highestSegTime = CurTime()
