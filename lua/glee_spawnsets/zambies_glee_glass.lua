@@ -20,20 +20,20 @@ local function alwaysScreamAfterSpawning( _, spawned )
 end
 
 local zambieSpawnSet = {
-    name = "zambies_glee_glass", -- unique name
+    name = "zambies_glee_glass",
     prettyName = "Fragile Nightmares.",
     description = "Glass zombies only. Shatter them before they shatter you.",
-    difficultyPerMin = "default", -- difficulty per minute
-    waveInterval = "default", -- time between spawn waves
-    diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
-    startingBudget = "default*2", -- so budget isnt 0
-    spawnCountPerDifficulty = "default*3", -- more spawns since they're fragile
+    difficultyPerMin = "default",
+    waveInterval = "default",
+    diffBumpWhenWaveKilled = "default",
+    startingBudget = "default*2",
+    spawnCountPerDifficulty = "default*3",
     startingSpawnCount = 8,
     maxSpawnCount = 60,
     maxSpawnDist = "default",
     roundEndSound = "music/hl2_song6.mp3",
     roundStartSound = "music/stingers/industrial_suspense1.wav",
-    chanceToBeVotable = 1,
+    chanceToBeVotable = 10,
     spawns = {
         {
             hardRandomChance = nil,
@@ -41,9 +41,10 @@ local zambieSpawnSet = {
             prettyName = "A Glass Zombie",
             class = "terminator_nextbot_zambieglass",
             spawnType = "hunter",
-            difficultyCost = { 5, 12 }, -- cheap due to 20 health
+            difficultyCost = { 10, 20 },
             countClass = "terminator_nextbot_zambieglass",
-            minCount = { 8 },
+            minCount = { 5 },
+            maxCount = { 15 },
             postSpawnedFuncs = { screamAfterSpawning },
         },
         {
@@ -52,7 +53,7 @@ local zambieSpawnSet = {
             prettyName = "An Elite Glass Zombie",
             class = "terminator_nextbot_zambieglasselite",
             spawnType = "hunter",
-            difficultyCost = { 25, 50 }, -- moderate cost, 60 health
+            difficultyCost = { 30, 50 },
             countClass = "terminator_nextbot_zambieglasselite",
             minCount = { 0 },
             maxCount = { 12 },
@@ -64,7 +65,7 @@ local zambieSpawnSet = {
             prettyName = "A Glass Titan",
             class = "terminator_nextbot_zambieglasstitan",
             spawnType = "hunter",
-            difficultyCost = { 200, 350 }, -- expensive boss, 2000 health
+            difficultyCost = { 150, 250 },
             countClass = "terminator_nextbot_zambieglasstitan",
             minCount = { 0 },
             maxCount = { 3 },
