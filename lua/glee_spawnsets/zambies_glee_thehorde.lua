@@ -234,6 +234,18 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
+            hardRandomChance = { 10, 20 },
+            name = "zambie_berserk_late",
+            prettyName = "A Berserker Zombie",
+            class = "terminator_nextbot_zambieberserk",
+            spawnType = "hunter",
+            difficultyCost = { 300, 600 },
+            difficultyNeeded = { 500, 700 },
+            countClass = "terminator_nextbot_zambieberserk",
+            maxCount = { 0, 2 },
+            postSpawnedFuncs = nil,
+        },
+        {
             hardRandomChance = { 0, 2 },
             name = "zambie_demigodcrab",
             prettyName = "The Demigod Crab",
