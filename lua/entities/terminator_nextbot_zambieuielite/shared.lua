@@ -5,7 +5,7 @@ DEFINE_BASECLASS( ENT.Base )
 
 ENT.PrintName = "Zombie Ultra Instinct Elite"
 ENT.Spawnable = false
-ENT.Author = "your name"
+ENT.Author = "regunkyle"
 
 list.Set( "NPC", "terminator_nextbot_zambieuielite", {
     Name = "Zombie Ultra Instinct Elite",
@@ -261,4 +261,5 @@ function ENT:DodgeEffect( hitPos )
     
     -- Create afterimage on dodge
     self:CreateAfterimageServer()
+
 end
