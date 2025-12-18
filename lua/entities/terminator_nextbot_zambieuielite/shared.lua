@@ -13,7 +13,6 @@ list.Set( "NPC", "terminator_nextbot_zambieuielite", {
     Category = "Nextbot Zambies",
 } )
 
--- Network string setup
 if SERVER then
     util.AddNetworkString( "zambieui_createafterimage" )
 end
@@ -21,11 +20,9 @@ end
 if CLIENT then
     language.Add( "terminator_nextbot_zambieuielite", ENT.PrintName )
     
-    -- Store all afterimages globally for this entity type
     local allAfterimages = {}
     local matWhite = Material( "models/debug/debugwhite" )
     
-    -- Receive network message to create afterimage
     net.Receive( "zambieui_createafterimage", function()
         local ent = net.ReadEntity()
         local pos = net.ReadVector()
@@ -36,7 +33,6 @@ if CLIENT then
         
         if not IsValid( ent ) then return end
         
-        -- Create the afterimage
         local model = ClientsideModel( ent:GetModel(), RENDERGROUP_BOTH )
         if not IsValid( model ) then return end
         
@@ -47,12 +43,11 @@ if CLIENT then
         model:SetCycle( cycle )
         model:SetNoDraw( true )
         
-        -- Copy bodygroups
         for i = 0, ent:GetNumBodyGroups() - 1 do
             model:SetBodygroup( i, ent:GetBodygroup( i ) )
         end
         
-        local duration = 0.35 -- 0.35 seconds as requested
+        local duration = 0.35
         local data = {
             model = model,
             startTime = CurTime(),
@@ -64,7 +59,6 @@ if CLIENT then
         table.insert( allAfterimages, data )
     end )
     
-    -- Draw and cleanup afterimages
     hook.Add( "PostDrawTranslucentRenderables", "ZambieUIElite_Afterimages", function()
         local curTime = CurTime()
         
@@ -73,28 +67,23 @@ if CLIENT then
         for i = #allAfterimages, 1, -1 do
             local data = allAfterimages[i]
             
-            -- Remove expired afterimages
             if curTime > data.dieTime or not IsValid( data.entity ) then
                 if IsValid( data.model ) then
                     data.model:Remove()
                 end
                 table.remove( allAfterimages, i )
             else
-                -- Draw the afterimage with smooth fading alpha
                 if IsValid( data.model ) then
                     local frac = ( curTime - data.startTime ) / data.duration
                     
-                    -- Smooth exponential fade
-                    local alpha = math.Clamp( ( 1 - frac ) * 0.5, 0, 0.5 ) -- Start at 50% opacity
+                    local alpha = math.Clamp( ( 1 - frac ) * 0.5, 0, 0.5 )
                     
-                    -- Render with white material and alpha
                     render.SetBlend( alpha )
                     render.MaterialOverride( matWhite )
                     render.SetColorModulation( 1, 1, 1 )
                     
                     data.model:DrawModel()
                     
-                    -- Reset render state
                     render.MaterialOverride( nil )
                     render.SetBlend( 1 )
                     render.SetColorModulation( 1, 1, 1 )
@@ -110,7 +99,6 @@ if CLIENT then
             BaseClass.AdditionalClientInitialize( self )
         end
         
-        -- Particle emitter setup
         self._particleEmitter = ParticleEmitter( self:GetPos() )
         self._nextParticle = 0
     end
@@ -120,7 +108,6 @@ if CLIENT then
             BaseClass.Think( self )
         end
         
-        -- Spawn white particles around the zombie
         if self._particleEmitter and CurTime() >= self._nextParticle then
             self._nextParticle = CurTime() + 0.015
             
@@ -147,7 +134,6 @@ if CLIENT then
     function ENT:Draw()
         self:DrawModel()
         
-        -- Enhanced white glow
         local dlight = DynamicLight( self:EntIndex() )
         if dlight then
             dlight.pos = self:WorldSpaceCenter()
@@ -170,9 +156,6 @@ if CLIENT then
     return
 end
 
--- SERVER SIDE CODE BELOW
-
--- Enhanced stats
 ENT.SpawnHealth = 15000
 ENT.HealthRegen = 10
 ENT.HealthRegenInterval = 1.5
@@ -188,31 +171,26 @@ ENT.zamb_MeleeAttackSpeed = 2.5
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.15, 1.20 ) end
 ENT.MyPhysicsMass = 95
 
--- Enhanced dodge
-ENT.UI_DODGE_CHANCE = 90 -- 90% chance to dodge
+ENT.UI_DODGE_CHANCE = 90
 ENT.UI_DODGE_COOLDOWN = 0.3
-ENT.UI_DODGE_DISTANCE = 700 -- Bigger dodge distance for elite
+ENT.UI_DODGE_DISTANCE = 700
 
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
     
-    -- Brighter white
     self:SetColor( Color( 255, 255, 255, 255 ) )
     
-    -- Always has brains
     self.HasBrains = true
     self.CanHearStuff = true
     
-    -- Afterimage tracking
     self._lastAfterimagePos = self:GetPos()
     self._lastAfterimageTime = 0
-    self._afterimageInterval = 0.1 -- Create afterimage every 0.1 seconds when moving
+    self._afterimageInterval = 0.1
     
     self.term_SoundPitchShift = 20
 end
 
 function ENT:CreateAfterimageServer()
-    -- Send network message to create afterimage on clients
     net.Start( "zambieui_createafterimage" )
         net.WriteEntity( self )
         net.WriteVector( self:GetPos() )
@@ -228,20 +206,16 @@ function ENT:AdditionalThink()
     
     local curTime = CurTime()
     
-    -- Create afterimages when moving
     local vel = self.loco:GetVelocity()
     local speed = vel:Length()
     
-    -- Lower threshold for easier testing - triggers at walking speed
     if speed > 100 and curTime >= self._lastAfterimageTime + self._afterimageInterval then
         local moved = self:GetPos():Distance( self._lastAfterimagePos )
         
-        -- Lower distance requirement
         if moved > 20 then
             self._lastAfterimageTime = curTime
             self._lastAfterimagePos = self:GetPos()
             
-            -- Create afterimage
             self:CreateAfterimageServer()
         end
     end
@@ -250,7 +224,6 @@ end
 function ENT:DodgeEffect( hitPos )
     BaseClass.DodgeEffect( self, hitPos )
     
-    -- Enhanced dodge effect for elite
     local effectdata = EffectData()
     effectdata:SetOrigin( hitPos or self:WorldSpaceCenter() )
     effectdata:SetNormal( Vector( 0, 0, 1 ) )
@@ -259,7 +232,5 @@ function ENT:DodgeEffect( hitPos )
     effectdata:SetRadius( 5 )
     util.Effect( "ManhackSparks", effectdata )
     
-    -- Create afterimage on dodge
     self:CreateAfterimageServer()
-
 end
