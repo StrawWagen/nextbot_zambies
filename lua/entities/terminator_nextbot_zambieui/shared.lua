@@ -5,7 +5,7 @@ DEFINE_BASECLASS( ENT.Base )
 
 ENT.PrintName = "Zombie Ultra Instinct"
 ENT.Spawnable = false
-ENT.Author = "your name"
+ENT.Author = "regunkyle"
 
 list.Set( "NPC", "terminator_nextbot_zambieui", {
     Name = "Zombie Ultra Instinct",
@@ -186,4 +186,5 @@ function ENT:DodgeEffect( hitPos )
         -- Bigger dash
         self.loco:SetVelocity( self.loco:GetVelocity() + dodgeDir * self.UI_DODGE_DISTANCE )
     end
+
 end
