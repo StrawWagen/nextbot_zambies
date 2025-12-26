@@ -65,6 +65,8 @@ if CLIENT then
 
         end
 
+        self:SetSubMaterial( 0, "!nextbotZambies_GlassMaterial" )
+
     end
     return
 
@@ -77,11 +79,6 @@ function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
     self:SetSubMaterial( 0, "!nextbotZambies_GlassMaterial" )
-    timer.Simple( 0, function()
-        if not IsValid( self ) then return end
-        self:SetSubMaterial( 0, "!nextbotZambies_GlassMaterial" )
-
-    end )
     self:SetRenderMode( RENDERMODE_TRANSALPHA )
     self:SetColor( glassColor )
     self:SetShards( self.DefaultShards )
