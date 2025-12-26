@@ -726,7 +726,7 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_followenemy"] = {
             OnStart = function( self, data )
                 if not self.isUnstucking then
-                    self:InvalidatePath( "followenemy" )
+                    self:InvalidatePath( "followenemy_OnStart" )
 
                 end
             end,
@@ -745,6 +745,10 @@ function ENT:DoCustomTasks( defaultTasks )
                 end
 
                 local distToExit = myTbl.DuelEnemyDist
+                if myTbl.term_ExpensivePath then
+                    distToExit = distToExit * 0.5
+
+                end
 
                 if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
                     myTbl.TaskComplete( self, "movement_followenemy" )
@@ -756,7 +760,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local nextPathAttempt = myTbl.zamb_NextPathAttempt
 
                 if nextPathAttempt < CurTime() and toPos and not data.Unreachable and myTbl.primaryPathInvalidOrOutdated( self, toPos ) then
-                    self:InvalidatePath( "zamb_followenemy" )
+                    self:InvalidatePath( "followenemy_NewPath" )
                     coroutine_yield()
                     myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
                     if myTbl.term_ExpensivePath then
@@ -868,7 +872,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         myTbl.StartTask( self, "movement_wander", nil, "i cant get to them" )
 
                     end
-                elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 300 ) then
+                elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 150 ) then
                     data.overridePos = nil
                     if not myTbl.IsSeeEnemy then
                         myTbl.TaskFail( self, "movement_followenemy" )
@@ -1164,7 +1168,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
                 else
                     if not myTbl.primaryPathIsValid( self ) and myTbl.zamb_NextPathAttempt > CurTime() then
-                        coroutine_yield( "wait" )
+                        coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
 
                     else
                         data.validBeatup = myTbl.beatUpEnt( self, myTbl, focus )
@@ -1181,7 +1185,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local lastInterceptTry = myTbl.nextInterceptTry or 0
                 myTbl.nextInterceptTry = math.max( CurTime() + 1, lastInterceptTry + 1 )
                 if not myTbl.isUnstucking then
-                    myTbl.InvalidatePath( self, "followenemy" )
+                    myTbl.InvalidatePath( self, "wander_OnStart" )
                 end
                 data.nextDuelQuit = CurTime() + math.Rand( 4, 12 )
             end,
@@ -1346,13 +1350,13 @@ function ENT:DoCustomTasks( defaultTasks )
                 end
                 coroutine_yield()
                 if data.toPos and myTbl.primaryPathInvalidOrOutdated( self, data.toPos ) then
-                    self:InvalidatePath( "zamb_wander" )
+                    self:InvalidatePath( "wander_NewPath" )
                     local result = terminator_Extras.getNearestPosOnNav( data.toPos )
                     local reachable = myTbl.areaIsReachable( self, result.area )
                     if not reachable then
                         myTbl.zamb_NextPathAttempt = CurTime() + math.random( 1, 5 )
                         data.toPos = nil
-                        coroutine_yield( "wait" )
+                        coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
                         return
 
                     end
@@ -1387,7 +1391,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     if not myTbl.primaryPathIsValid( self ) then
                         myTbl.zamb_NextPathAttempt = CurTime() + 5
                         data.toPos = nil
-                        coroutine_yield( "wait" )
+                        coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
                         return
 
                     end
@@ -1444,10 +1448,12 @@ function ENT:DoCustomTasks( defaultTasks )
                 elseif goodEnemy and enemyIsReachable then
                     myTbl.TaskFail( self, "movement_wander" )
                     myTbl.StartTask( self, "movement_followenemy", nil, "new enemy!" )
+
                 elseif result then
                     data.toPos = nil
                     myTbl.zamb_NextPathAttempt = CurTime() + 1
-                    coroutine_yield( "wait" )
+                    coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
+
                 end
             end,
         },
