@@ -94,7 +94,7 @@ ENT.zamb_MeleeAttackSpeed = 2
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.00, 1.05 ) end
 ENT.MyPhysicsMass = 85
 
-ENT.UI_DODGE_CHANCE = 75
+ENT.UI_DODGE_CHANCE = 40
 ENT.UI_DODGE_COOLDOWN = 0.5
 ENT.UI_DODGE_DISTANCE = 500
 ENT.UI_COLOR = Color( 255, 255, 255 )
@@ -169,3 +169,4 @@ function ENT:DodgeEffect( hitPos )
         self.loco:SetVelocity( self.loco:GetVelocity() + dodgeDir * self.UI_DODGE_DISTANCE )
     end
 end
+
