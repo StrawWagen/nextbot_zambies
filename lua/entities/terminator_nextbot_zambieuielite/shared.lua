@@ -171,7 +171,7 @@ ENT.zamb_MeleeAttackSpeed = 2.5
 ENT.TERM_MODELSCALE = function() return math.Rand( 1.15, 1.20 ) end
 ENT.MyPhysicsMass = 95
 
-ENT.UI_DODGE_CHANCE = 90
+ENT.UI_DODGE_CHANCE = 65
 ENT.UI_DODGE_COOLDOWN = 0.3
 ENT.UI_DODGE_DISTANCE = 700
 
@@ -234,3 +234,4 @@ function ENT:DodgeEffect( hitPos )
     
     self:CreateAfterimageServer()
 end
+
