@@ -22,8 +22,6 @@ if CLIENT then
 
 end
 
-ENT.MaxPathingIterations = 25000
-
 ENT.JumpHeight = 550
 ENT.SpawnHealth = 175
 ENT.AimSpeed = 400

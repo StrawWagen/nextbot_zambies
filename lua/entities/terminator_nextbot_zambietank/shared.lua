@@ -81,6 +81,8 @@ ENT.IdleActivityTranslations = {
     [ACT_LAND]                          = ACT_LAND,
 }
 
+ENT.CanHearStuff = true
+
 -- tanks dont care about body smell
 function ENT:AdditionalAvoidAreas()
 end

@@ -729,6 +729,22 @@ function ENT:DoCustomTasks( defaultTasks )
                     self:InvalidatePath( "followenemy_OnStart" )
 
                 end
+                data.startingHealth = entMeta.Health( self )
+            end,
+            BehaveUpdatePriority = function( self, data )
+                local myTbl = data.myTbl
+                local enemy = myTbl.GetEnemy( self )
+                if not IsValid( enemy ) then return end
+                if not myTbl.IsSeeEnemy then return end
+
+                if myTbl.primaryPathIsValid( self ) then return end -- we're moving just fine
+
+                local lostHealth = data.startingHealth - entMeta.Health( self )
+                if lostHealth < 5 then return end
+
+                myTbl.TaskFail( self, "movement_followenemy" )
+                myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy }, "i gotta wake up from my trance!" )
+
             end,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = data.myTbl
