@@ -201,7 +201,7 @@ function ENT:BreakArmor()
     local timerName = "zamb_crackedarmor" .. self:GetCreationID()
     local done = 0
     timer.Create( timerName, 0.01, 30, function()
-        if not IsValid( self ) then return end
+        if not IsValid( self ) then timer.Remove( timerName ) return end
         if math.random( 0, 100 ) < done then return end
         done = done + 1
         self:EmitSound( "npc/antlion_guard/antlion_guard_shellcrack" .. math.random( 1, 2 ) .. ".wav", math.random( 75, 79 ) + done, math.random( 80, 90 ) - done )
