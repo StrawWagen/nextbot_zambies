@@ -463,6 +463,241 @@ local MEMORY_VOLATILE = 8
 --local MEMORY_WEAPONIZEDNPC = 32
 --local MEMORY_DAMAGING = 64
 
+ENT.MyClassTask = {
+    StartsOnInitialize = true,
+    ZambOnGrumpy = function( self, data )
+        if not self.loco:IsOnGround() then return end
+
+        local cur = CurTime()
+        if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
+            self:Term_SpeakSound( self.term_FindEnemySound )
+            return
+
+        elseif nextZombieCall < cur and self.DistToEnemy > 750 and #self:GetNearbyAllies() >= 8 then
+            nextZombieCall = cur + 40
+            nextLoneZombieCall = cur + 120
+            self:ZAMB_AngeringCall()
+
+        elseif nextLoneZombieCall < CurTime() and self.DistToEnemy > 1000 then
+            nextZombieCall = cur + 40
+            nextLoneZombieCall = cur + 120
+            self:ZAMB_AngeringCall()
+
+        elseif self.DistToEnemy > 750 then
+            self:ZAMB_NormalCall()
+
+        end
+    end,
+    OnBlockingAlly = function( self, data, theAlly, sinceStarted )
+        local myOffset = self:GetCreationID() % 4
+        myOffset = myOffset
+        if self:IsCrouching() and sinceStarted >= myOffset then
+            self:Anger( math.random( 5, 10 ) )
+
+        elseif self.IsSeeEnemy then
+            if self.DistToEnemy < 500 and sinceStarted >= myOffset then
+                self:RunTask( "ZambOnGrumpy" )
+
+            elseif sinceStarted >= myOffset then
+                self:Anger( math.random( 5, 10 ) )
+
+            end
+        elseif sinceStarted >= myOffset then
+            self:Anger( math.random( 1, 5 ) )
+
+        end
+    end,
+    EnemyLost = function( self, data )
+        self:Term_SpeakSound( self.term_LoseEnemySound )
+
+    end,
+    EnemyFound = function( self, data )
+        self:RunTask( "ZambOnGrumpy" )
+
+    end,
+    OnAttack = function( self, data )
+        self:Term_SpeakSound( self.term_AttackSound )
+
+    end,
+    OnJumpToPos = function( self, data, pos, height )
+        self:ReallyAnger( 10 )
+        self:Term_SpeakSoundNow( self.term_AttackSound )
+
+    end,
+    OnLandOnGround = function( self, data, landedOn, height )
+        if not self.Term_Leaps then return end
+        local add = ( height / 500 )
+        if add <= 0 then return end
+        self.Zamb_NextLeap = CurTime() + add
+
+    end,
+    OnAnger = function( self, data )
+        if self.term_lastAngerSound and math.random( CurTime() - 10, CurTime() ) < self.term_lastAngerSound then return end
+        self.term_lastAngerSound = CurTime()
+        self:Term_SpeakSound( self.term_AngerSound )
+
+    end,
+    OnJump = function( self, data )
+        self:EmitSound( self.term_JumpSound, 75 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+
+    end,
+    OnDamaged = function( self, data, damage )
+        self:Term_ClearStuffToSay()
+        self:Term_SpeakSoundNow( self.term_DamagedSound )
+
+    end,
+    PreventBecomeRagdollOnKilled = function( self, data, damage ) -- handle becoming zombie torso
+        local torsoData = terminator_Extras.zamb_TorsoZombieClasses[self:GetClass()]
+        if not torsoData then return end
+
+        local cur = CurTime()
+        local oldDensity = terminator_Extras.zamb_TorsoDensityNum
+        if oldDensity > math.random( cur, cur + 60 ) then return end
+
+        local becomeTorso
+        local sliced
+        local ratio = math.random( 25, 75 )
+        if damage:IsExplosionDamage() and damage:GetDamage() < math.min( self:Health() + ratio, ratio ) then
+            becomeTorso = true
+
+        end
+        if not becomeTorso then
+            local inflictor = damage:GetInflictor()
+            local dmgPos = damage:GetDamagePosition()
+            local hitDistToHead = dmgPos and self:NearestPoint( dmgPos ):Distance( self:GetShootPos() )
+            if IsValid( inflictor ) and IsValid( inflictor:GetPhysicsObject() ) and inflictor:GetModel() and CUTTING_MDLS[string.lower( inflictor:GetModel() )] and hitDistToHead > 25 then
+                becomeTorso = true
+                sliced = true
+
+            elseif damage:IsBulletDamage() and hitDistToHead > 40 then
+                becomeTorso = true
+
+            end
+        end
+
+        if becomeTorso then
+            local torso = ents.Create( torsoData.class )
+            if not IsValid( torso ) then return end
+            local myPos = self:GetPos()
+
+            local footDistToShoot = self:GetShootPos() - myPos
+            local torsoSpawnPos = myPos + footDistToShoot / 1.75
+            torsoSpawnPos = torsoSpawnPos + self:GetForward() * footDistToShoot:Length() / 3
+            torso:SetPos( torsoSpawnPos )
+
+            torso:SetAngles( self:GetAngles() )
+            torso:Spawn()
+
+            hook.Run( "zamb_OnBecomeTorso", self, torso )
+            undo.ReplaceEntity( self, torso )
+            terminator_Extras.copyMatsOver( self, torso )
+
+            terminator_Extras.zamb_TorsoDensityNum = math.max( oldDensity + torso:Health() / 2, cur + torso:Health() / 2 )
+
+            if sliced then
+                torso:EmitSound( "ambient/machines/slicer" .. math.random( 1, 4 ) .. ".wav", 75, math.random( 95, 105 ) )
+
+            end
+
+            local pos = damage:GetDamagePosition()
+            local color = self:GetBloodColor()
+            if pos then
+                timer.Simple( 0, function()
+                    local normal = VectorRand()
+                    normal.z = math.abs( normal.z )
+
+                    local Data = EffectData()
+                    Data:SetOrigin( pos )
+                    Data:SetColor( color )
+                    Data:SetScale( math.random( 8, 12 ) )
+                    Data:SetFlags( 1 )
+                    Data:SetNormal( normal )
+                    util.Effect( "bloodspray", Data )
+                    local toPlay = self
+                    if not IsValid( toPlay ) then
+                        toPlay = torso
+
+                    end
+                    if IsValid( toPlay ) then
+                        toPlay:EmitSound( "npc/antlion_grub/squashed.wav", 72, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
+
+                    end
+                end )
+            end
+
+            if torsoData.legs then
+                if self:GetShouldServerRagdoll() then
+                    local legs = ents.Create( "prop_ragdoll" )
+                    if IsValid( legs ) then
+                        SafeRemoveEntityDelayed( legs, 15 )
+                        torso:DeleteOnRemove( legs )
+                        legs:SetModel( torsoData.legs )
+                        legs:SetPos( self:GetPos() )
+                        legs:SetAngles( self:GetAngles() )
+                        legs:Spawn()
+                        terminator_Extras.copyMatsOver( self, legs )
+                        legs:SetVelocity( damage:GetDamageForce() )
+
+                    end
+                    SafeRemoveEntity( self )
+                    return true
+
+                else
+                    self:SetModel( torsoData.legs ) -- this little hack is much better than networking this ragdoll creation imo
+                    return
+
+                end
+            else
+                SafeRemoveEntity( self )
+                SafeRemoveEntityDelayed( self, 5 )
+                return true
+
+            end
+        end
+    end,
+    OnKilled = function( self, data, damage, rag )
+        self:EmitSound( "common/null.wav", 80 + self.term_SoundLevelShift, 100, 1, CHAN_VOICE )
+        self:EmitSound( self.term_DieSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+        local b1, b2 = self:GetCollisionBounds()
+        b1 = b1 * 2
+        b2 = b2 * 2
+        local deadlyAreas = navmesh.FindInBox( self:LocalToWorld( b1 ), self:LocalToWorld( b2 ) )
+        if #deadlyAreas > 0 then
+            local rotPunishment = self:GetMaxHealth() / #deadlyAreas
+            rotPunishment = rotPunishment / 100
+            for _, area in ipairs( deadlyAreas ) do
+                local old = terminator_Extras.zamb_RottingAreas[ area ] or 0
+                terminator_Extras.zamb_RottingAreas[ area ] = old + rotPunishment
+                terminator_Extras.zamb_AreasLastRot[ area ] = CurTime()
+
+            end
+        end
+    end,
+    OnPathFail = function( self )
+        self:ReallyAnger( 20 )
+        self:RunTask( "ZambOnGrumpy" )
+
+    end,
+    ShouldRun = function( self, data )
+        local goodToRun = self:IsAngry() and self:canDoRun()
+        if not goodToRun then return false end
+
+        local enem = self:GetEnemy()
+        if not IsValid( enem ) then
+            local creationId = self:GetCreationID()
+            local fraction = creationId % 5
+            local offsettedCur = CurTime() + creationId
+            local timing = 20 + ( creationId % 20 )
+            return ( offsettedCur % timing ) < ( timing / fraction )
+        end
+        return goodToRun
+    end,
+    ShouldWalk = function( self, data )
+        return ( not self.HasBrains and not self:IsAngry() ) or self:shouldDoWalk()
+
+    end,
+}
+
 function ENT:DoCustomTasks( defaultTasks )
     self.TaskList = {
         ["shooting_handler"] = defaultTasks["shooting_handler"],
@@ -471,253 +706,18 @@ function ENT:DoCustomTasks( defaultTasks )
         ["inform_handler"] = defaultTasks["inform_handler"],
         ["reallystuck_handler"] = defaultTasks["reallystuck_handler"],
         ["movement_wait"] = defaultTasks["movement_wait"],
-        ["zambstuff_handler"] = {
-            StartsOnInitialize = true,
-            ZambOnGrumpy = function( self, data )
-                if not self.loco:IsOnGround() then return end
-
-                local cur = CurTime()
-                if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
-                    self:Term_SpeakSound( self.term_FindEnemySound )
-                    return
-
-                elseif nextZombieCall < cur and self.DistToEnemy > 750 and #self:GetNearbyAllies() >= 8 then
-                    nextZombieCall = cur + 40
-                    nextLoneZombieCall = cur + 120
-                    self:ZAMB_AngeringCall()
-
-                elseif nextLoneZombieCall < CurTime() and self.DistToEnemy > 1000 then
-                    nextZombieCall = cur + 40
-                    nextLoneZombieCall = cur + 120
-                    self:ZAMB_AngeringCall()
-
-                elseif self.DistToEnemy > 750 then
-                    self:ZAMB_NormalCall()
-
-                end
-            end,
-            OnBlockingAlly = function( self, data, theAlly, sinceStarted )
-                local myOffset = self:GetCreationID() % 4
-                myOffset = myOffset
-                if self:IsCrouching() and sinceStarted >= myOffset then
-                    self:Anger( math.random( 5, 10 ) )
-
-                elseif self.IsSeeEnemy then
-                    if self.DistToEnemy < 500 and sinceStarted >= myOffset then
-                        self:RunTask( "ZambOnGrumpy" )
-
-                    elseif sinceStarted >= myOffset then
-                        self:Anger( math.random( 5, 10 ) )
-
-                    end
-                elseif sinceStarted >= myOffset then
-                    self:Anger( math.random( 1, 5 ) )
-
-                end
-            end,
-            EnemyLost = function( self, data )
-                self:Term_SpeakSound( self.term_LoseEnemySound )
-
-            end,
-            EnemyFound = function( self, data )
-                self:RunTask( "ZambOnGrumpy" )
-
-            end,
-            OnAttack = function( self, data )
-                self:Term_SpeakSound( self.term_AttackSound )
-
-            end,
-            OnJumpToPos = function( self, data, pos, height )
-                self:ReallyAnger( 10 )
-                self:Term_SpeakSoundNow( self.term_AttackSound )
-
-            end,
-            OnLandOnGround = function( self, data, landedOn, height )
-                if not self.Term_Leaps then return end
-                local add = ( height / 500 )
-                if add <= 0 then return end
-                self.Zamb_NextLeap = CurTime() + add
-
-            end,
-            OnAnger = function( self, data )
-                if self.term_lastAngerSound and math.random( CurTime() - 10, CurTime() ) < self.term_lastAngerSound then return end
-                self.term_lastAngerSound = CurTime()
-                self:Term_SpeakSound( self.term_AngerSound )
-
-            end,
-            OnJump = function( self, data )
-                self:EmitSound( self.term_JumpSound, 75 + self.term_SoundLevelShift, math.random( 95, 105 ) + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
-
-            end,
-            OnDamaged = function( self, data, damage )
-                self:Term_ClearStuffToSay()
-                self:Term_SpeakSoundNow( self.term_DamagedSound )
-
-            end,
-            PreventBecomeRagdollOnKilled = function( self, data, damage ) -- handle becoming zombie torso
-                local torsoData = terminator_Extras.zamb_TorsoZombieClasses[self:GetClass()]
-                if not torsoData then return end
-
-                local cur = CurTime()
-                local oldDensity = terminator_Extras.zamb_TorsoDensityNum
-                if oldDensity > math.random( cur, cur + 60 ) then return end
-
-                local becomeTorso
-                local sliced
-                local ratio = math.random( 25, 75 )
-                if damage:IsExplosionDamage() and damage:GetDamage() < math.min( self:Health() + ratio, ratio ) then
-                    becomeTorso = true
-
-                end
-                if not becomeTorso then
-                    local inflictor = damage:GetInflictor()
-                    local dmgPos = damage:GetDamagePosition()
-                    local hitDistToHead = dmgPos and self:NearestPoint( dmgPos ):Distance( self:GetShootPos() )
-                    if IsValid( inflictor ) and IsValid( inflictor:GetPhysicsObject() ) and inflictor:GetModel() and CUTTING_MDLS[string.lower( inflictor:GetModel() )] and hitDistToHead > 25 then
-                        becomeTorso = true
-                        sliced = true
-
-                    elseif damage:IsBulletDamage() and hitDistToHead > 40 then
-                        becomeTorso = true
-
-                    end
-                end
-
-                if becomeTorso then
-                    local torso = ents.Create( torsoData.class )
-                    if not IsValid( torso ) then return end
-                    local myPos = self:GetPos()
-
-                    local footDistToShoot = self:GetShootPos() - myPos
-                    local torsoSpawnPos = myPos + footDistToShoot / 1.75
-                    torsoSpawnPos = torsoSpawnPos + self:GetForward() * footDistToShoot:Length() / 3
-                    torso:SetPos( torsoSpawnPos )
-
-                    torso:SetAngles( self:GetAngles() )
-                    torso:Spawn()
-
-                    hook.Run( "zamb_OnBecomeTorso", self, torso )
-                    undo.ReplaceEntity( self, torso )
-                    terminator_Extras.copyMatsOver( self, torso )
-
-                    terminator_Extras.zamb_TorsoDensityNum = math.max( oldDensity + torso:Health() / 2, cur + torso:Health() / 2 )
-
-                    if sliced then
-                        torso:EmitSound( "ambient/machines/slicer" .. math.random( 1, 4 ) .. ".wav", 75, math.random( 95, 105 ) )
-
-                    end
-
-                    local pos = damage:GetDamagePosition()
-                    local color = self:GetBloodColor()
-                    if pos then
-                        timer.Simple( 0, function()
-                            local normal = VectorRand()
-                            normal.z = math.abs( normal.z )
-
-                            local Data = EffectData()
-                            Data:SetOrigin( pos )
-                            Data:SetColor( color )
-                            Data:SetScale( math.random( 8, 12 ) )
-                            Data:SetFlags( 1 )
-                            Data:SetNormal( normal )
-                            util.Effect( "bloodspray", Data )
-                            local toPlay = self
-                            if not IsValid( toPlay ) then
-                                toPlay = torso
-
-                            end
-                            if IsValid( toPlay ) then
-                                toPlay:EmitSound( "npc/antlion_grub/squashed.wav", 72, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
-
-                            end
-                        end )
-                    end
-
-                    if torsoData.legs then
-                        if self:GetShouldServerRagdoll() then
-                            local legs = ents.Create( "prop_ragdoll" )
-                            if IsValid( legs ) then
-                                SafeRemoveEntityDelayed( legs, 15 )
-                                torso:DeleteOnRemove( legs )
-                                legs:SetModel( torsoData.legs )
-                                legs:SetPos( self:GetPos() )
-                                legs:SetAngles( self:GetAngles() )
-                                legs:Spawn()
-                                terminator_Extras.copyMatsOver( self, legs )
-                                legs:SetVelocity( damage:GetDamageForce() )
-
-                            end
-                            SafeRemoveEntity( self )
-                            return true
-
-                        else
-                            self:SetModel( torsoData.legs ) -- this little hack is much better than networking this ragdoll creation imo
-                            return
-
-                        end
-                    else
-                        SafeRemoveEntity( self )
-                        SafeRemoveEntityDelayed( self, 5 )
-                        return true
-
-                    end
-                end
-            end,
-            OnKilled = function( self, data, damage, rag )
-                self:EmitSound( "common/null.wav", 80 + self.term_SoundLevelShift, 100, 1, CHAN_VOICE )
-                self:EmitSound( self.term_DieSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
-                local b1, b2 = self:GetCollisionBounds()
-                b1 = b1 * 2
-                b2 = b2 * 2
-                local deadlyAreas = navmesh.FindInBox( self:LocalToWorld( b1 ), self:LocalToWorld( b2 ) )
-                if #deadlyAreas > 0 then
-                    local rotPunishment = self:GetMaxHealth() / #deadlyAreas
-                    rotPunishment = rotPunishment / 100
-                    for _, area in ipairs( deadlyAreas ) do
-                        local old = terminator_Extras.zamb_RottingAreas[ area ] or 0
-                        terminator_Extras.zamb_RottingAreas[ area ] = old + rotPunishment
-                        terminator_Extras.zamb_AreasLastRot[ area ] = CurTime()
-
-                    end
-                end
-            end,
-            OnPathFail = function( self )
-                self:ReallyAnger( 20 )
-                self:RunTask( "ZambOnGrumpy" )
-
-            end,
-            ShouldRun = function( self, data )
-                local goodToRun = self:IsAngry() and self:canDoRun()
-                if not goodToRun then return false end
-
-                local enem = self:GetEnemy()
-                if not IsValid( enem ) then
-                    local creationId = self:GetCreationID()
-                    local fraction = creationId % 5
-                    local offsettedCur = CurTime() + creationId
-                    local timing = 20 + ( creationId % 20 )
-                    return ( offsettedCur % timing ) < ( timing / fraction )
-                end
-                return goodToRun
-            end,
-            ShouldWalk = function( self, data )
-                return ( not self.HasBrains and not self:IsAngry() ) or self:shouldDoWalk()
-
-            end,
-        },
         ["movement_handler"] = {
             StartsOnInitialize = true,
-            StopsWhenPlayerControlled = true,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = data.myTbl
                 if myTbl.IsSeeEnemy then
                     myTbl.TaskComplete( self, "movement_handler" )
-                    myTbl.StartTask( self, "movement_followenemy", nil, "i see an enemy!" )
+                    myTbl.StartTask( self, "movement_followenemy", "i see an enemy!" )
                     return
 
                 else
                     myTbl.TaskComplete( self, "movement_handler" )
-                    myTbl.StartTask( self, "movement_wander", nil, "i need to wander!" )
+                    myTbl.StartTask( self, "movement_wander", "i need to wander!" )
                     return
 
                 end
@@ -744,6 +744,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 myTbl.TaskFail( self, "movement_followenemy" )
                 myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy }, "i gotta wake up from my trance!" )
+                self:RestartMotionCoroutine()
 
             end,
             BehaveUpdateMotion = function( self, data )
@@ -768,7 +769,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
                     myTbl.TaskComplete( self, "movement_followenemy" )
-                    myTbl.StartTask( self, "movement_duelenemy_near", nil, "i gotta slash em" )
+                    myTbl.StartTask( self, "movement_duelenemy_near", "i gotta slash em" )
                     return
 
                 end
@@ -856,11 +857,11 @@ function ENT:DoCustomTasks( defaultTasks )
                     --self:BashLockedDoor( "movement_followenemy" )
                 elseif not goodEnemy and not myTbl.primaryPathIsValid( self ) and data.triedToPath then
                     myTbl.TaskFail( self, "movement_followenemy" )
-                    myTbl.StartTask( self, "movement_wander", nil, "i cant get to them/no enemy" )
+                    myTbl.StartTask( self, "movement_wander", "i cant get to them/no enemy" )
                     data.overridePos = nil
                 elseif IsValid( enemy ) and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
                     myTbl.TaskComplete( self, "movement_followenemy" )
-                    myTbl.StartTask( self, "movement_duelenemy_near", nil, "they're swimming and im in the water!" )
+                    myTbl.StartTask( self, "movement_duelenemy_near", "they're swimming and im in the water!" )
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
                     coroutine_yield()
                     data.overridePos = nil
@@ -874,25 +875,25 @@ function ENT:DoCustomTasks( defaultTasks )
                         else
                             myTbl.Anger( self, 25 )
                             myTbl.TaskFail( self, "movement_followenemy" )
-                            myTbl.StartTask( self, "movement_wander", nil, "i cant get to them and i tried frenzying" )
+                            myTbl.StartTask( self, "movement_wander", "i cant get to them and i tried frenzying" )
 
                         end
                     elseif math.random( 1, 100 ) < 50 or myTbl.IsReallyAngry( self ) then
                         myTbl.TaskFail( self, "movement_followenemy" )
-                        myTbl.StartTask( self, "movement_frenzy", nil, "i cant get to them" )
+                        myTbl.StartTask( self, "movement_frenzy", "i cant get to them" )
                         myTbl.zamb_JustTryDuelingUnreachable = CurTime() + math.random( 1, 15 )
 
                     else
                         myTbl.Anger( self, 5 )
                         myTbl.TaskFail( self, "movement_followenemy" )
-                        myTbl.StartTask( self, "movement_wander", nil, "i cant get to them" )
+                        myTbl.StartTask( self, "movement_wander", "i cant get to them" )
 
                     end
                 elseif result or ( not goodEnemy and self:GetRangeTo( self:GetPath():GetEnd() ) < 150 ) then
                     data.overridePos = nil
                     if not myTbl.IsSeeEnemy then
                         myTbl.TaskFail( self, "movement_followenemy" )
-                        myTbl.StartTask( self, "movement_wander", nil, "got there, but no enemy" )
+                        myTbl.StartTask( self, "movement_wander", "got there, but no enemy" )
 
                     end
                 end
@@ -953,11 +954,11 @@ function ENT:DoCustomTasks( defaultTasks )
 
                         end
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
-                        myTbl.StartTask( self, "movement_frenzy", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_frenzy", "got bored" )
 
                     else
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
-                        myTbl.StartTask( self, "movement_followenemy", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_followenemy", "got bored" )
 
                     end
                 elseif validEnemy then -- the dueling in question
@@ -1056,7 +1057,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 if myTbl.primaryPathIsValid( self ) then return end -- path is good, dont need to end early
 
                 myTbl.TaskComplete( self, "movement_frenzy" )
-                myTbl.StartTask( self, "movement_duelenemy_near", nil, "i see an enemy!" )
+                myTbl.StartTask( self, "movement_duelenemy_near", "i see an enemy!" )
                 self:RestartMotionCoroutine()
 
             end,
@@ -1175,11 +1176,11 @@ function ENT:DoCustomTasks( defaultTasks )
                 if data.quitCount > 100 then
                     if myTbl.IsSeeEnemy then
                         myTbl.TaskComplete( self, "movement_frenzy" )
-                        myTbl.StartTask( self, "movement_followenemy", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_followenemy", "got bored" )
 
                     else
                         myTbl.TaskComplete( self, "movement_frenzy" )
-                        myTbl.StartTask( self, "movement_wander", nil, "got bored" )
+                        myTbl.StartTask( self, "movement_wander", "got bored" )
 
                     end
                 else
@@ -1224,7 +1225,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 if myTbl.primaryPathIsValid( self ) then return end -- path is good, dont need to end early
 
                 myTbl.TaskComplete( self, "movement_wander" )
-                myTbl.StartTask( self, "movement_duelenemy_near", nil, "i see an enemy!" )
+                myTbl.StartTask( self, "movement_duelenemy_near", "i see an enemy!" )
                 self:RestartMotionCoroutine()
 
             end,
@@ -1434,7 +1435,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.zamb_nextRandomFrenzy = CurTime() + add
 
                     myTbl.TaskComplete( self, "movement_wander" )
-                    myTbl.StartTask( self, "movement_frenzy", nil, "i want to attack random stuff" )
+                    myTbl.StartTask( self, "movement_frenzy", "i want to attack random stuff" )
 
                 elseif myTbl.nextInterceptTry < CurTime() and myTbl.interceptIfWeCan( self, nil, data ) then
                     coroutine_yield()
@@ -1463,7 +1464,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
                 elseif goodEnemy and enemyIsReachable then
                     myTbl.TaskFail( self, "movement_wander" )
-                    myTbl.StartTask( self, "movement_followenemy", nil, "new enemy!" )
+                    myTbl.StartTask( self, "movement_followenemy", "new enemy!" )
 
                 elseif result then
                     data.toPos = nil
