@@ -413,8 +413,10 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     local attacker = damage:GetAttacker()
     if not IsValid( attacker ) then return end
 
+    local targMaxHP = target:GetMaxHealth()
     local damageDealt = damage:GetDamage()
-    damageDealt = math.Clamp( damageDealt, 0, target:GetMaxHealth() ) -- this was blowing up using ent:Health(), since we're in post took damage
+    damageDealt = math.Clamp( damageDealt, 0, targMaxHP ) -- this was blowing up using ent:Health(), since we're in post took damage
+    local damageAsPercentOfHealth = ( damageDealt / targMaxHP ) * 100
 
     local clampedParticipating = math.Clamp( participatingCount, 1, maxDifficulty )
     local cur = CurTime()
@@ -428,10 +430,10 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     local attackerIsPlayer = attacker:IsPlayer()
 
     if participatorGotAttacked then
-        difficultyFelt = damageDealt * 0.75
+        difficultyFelt = damageAsPercentOfHealth
 
         if not attackerIsZamb then
-            difficultyFelt = difficultyFelt * 0.25
+            difficultyFelt = damageAsPercentOfHealth * 0.005
 
         else
             local nearbyStuff = ents.FindInSphere( attacker:GetPos(), 175 )
@@ -445,16 +447,24 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
             local healthAfterDamage = ( target:Health() - damageDealt )
             local maxHp = target:GetMaxHealth()
 
-            if healthAfterDamage <= 15 then
-                difficultyFelt = difficultyFelt * 8
+            if damageAsPercentOfHealth > 1 then -- they did at least 1% damage
+                debugPrint( "atleast1percent" )
+                if healthAfterDamage <= 15 then
+                    difficultyFelt = difficultyFelt
 
-            elseif healthAfterDamage <= maxHp * 0.5 then -- this brought us below 50% health!
-                difficultyFelt = difficultyFelt * 4
+                elseif healthAfterDamage <= maxHp * 0.5 then -- this brought us below 50% health!
+                    difficultyFelt = difficultyFelt * 0.25
+
+                elseif healthAfterDamage >= maxHp * 0.9 then -- they barely damaged them!
+                    difficultyFelt = difficultyFelt * 0.01
+
+                end
+                local dirtyHandsStartedAfterAWhile = cur + ( damageAsPercentOfHealth * 0.5 / clampedParticipating )
+                local dirtyHandsContinued = gettingHandsDirty + ( damageAsPercentOfHealth * 0.05 / clampedParticipating )
+                gettingHandsDirty = math.max( dirtyHandsStartedAfterAWhile, dirtyHandsContinued )
+                debugPrint( "dirtyhands1", gettingHandsDirty - cur )
 
             end
-            gettingHandsDirty = math.max( cur + ( damageDealt * 0.15 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.5 / clampedParticipating ) )
-            debugPrint( "dirtyhands1", gettingHandsDirty - cur )
-
         end
     elseif zambGotAttacked then
         difficultyFelt = damageDealt * 0.05
@@ -465,7 +475,10 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
                 difficultyFelt = difficultyFelt + 1
                 difficultyFelt = difficultyFelt * 2
 
-                gettingHandsDirty = math.max( cur + ( damageDealt * 0.075 / clampedParticipating ), gettingHandsDirty + ( damageDealt * 0.05 / clampedParticipating ) )
+                local gettingHandsDirtyStartedAfterAWhile = cur + ( damageDealt * 0.075 / clampedParticipating )
+                local dirtyHandsContinued = gettingHandsDirty + ( damageDealt * 0.05 / clampedParticipating )
+
+                gettingHandsDirty = math.max( gettingHandsDirtyStartedAfterAWhile, dirtyHandsContinued )
                 debugPrint( "dirtyhands2", gettingHandsDirty - cur )
 
             else -- they were NOT damaged up close earlier, this guy is good!

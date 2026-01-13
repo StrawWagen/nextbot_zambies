@@ -830,6 +830,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     elseif myTbl.GetPath( self ):GetEnd():Distance( toPos ) > myTbl.DuelEnemyDist then -- path won't get us close, they're unreachable!
                         self:TaskFail( "movement_followenemy" )
                         myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + myTbl.DuelEnemyDist }, "i cant get to them" )
+                        return
 
                     end
                 end
@@ -955,10 +956,12 @@ function ENT:DoCustomTasks( defaultTasks )
                         end
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
                         myTbl.StartTask( self, "movement_frenzy", "got bored" )
+                        return
 
                     else
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
                         myTbl.StartTask( self, "movement_followenemy", "got bored" )
+                        return
 
                     end
                 elseif validEnemy then -- the dueling in question
@@ -1177,10 +1180,12 @@ function ENT:DoCustomTasks( defaultTasks )
                     if myTbl.IsSeeEnemy then
                         myTbl.TaskComplete( self, "movement_frenzy" )
                         myTbl.StartTask( self, "movement_followenemy", "got bored" )
+                        return
 
                     else
                         myTbl.TaskComplete( self, "movement_frenzy" )
                         myTbl.StartTask( self, "movement_wander", "got bored" )
+                        return
 
                     end
                 else
