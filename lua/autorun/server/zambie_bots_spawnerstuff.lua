@@ -430,12 +430,12 @@ function terminator_Extras.zamb_HandleOnDamaged( target, damage )
     local attackerIsPlayer = attacker:IsPlayer()
 
     if participatorGotAttacked then
-        difficultyFelt = damageAsPercentOfHealth
-
         if not attackerIsZamb then
             difficultyFelt = damageAsPercentOfHealth * 0.005
 
         else
+            difficultyFelt = damageAsPercentOfHealth
+
             local nearbyStuff = ents.FindInSphere( attacker:GetPos(), 175 )
             for _, thing in ipairs( nearbyStuff ) do
                 if thing ~= attacker and thing.IsTerminatorZambie and thing.IsSeeEnemy then
