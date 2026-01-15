@@ -220,9 +220,9 @@ local zambieSpawnSet = {
             prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
-            difficultyCost = { 200, 275 },
+            difficultyCost = { 400, 700 },
             countClass = "terminator_nextbot_zambiebigheadcrab",
-            maxCount = { 8 },
+            maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
         {
@@ -231,9 +231,9 @@ local zambieSpawnSet = {
             prettyName = "The God Crab",
             class = "terminator_nextbot_zambiebiggerheadcrab",
             spawnType = "hunter",
-            difficultyCost = { 500, 700 },
+            difficultyCost = { 700, 1500 },
             countClass = "terminator_nextbot_zambiebiggerheadcrab",
-            maxCount = { 4 },
+            maxCount = { 2 },
             postSpawnedFuncs = { screamAfterSpawning },
         },
     }
