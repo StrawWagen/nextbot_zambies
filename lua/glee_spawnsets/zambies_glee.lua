@@ -6,7 +6,7 @@ local zambieSpawnSet = {
     name = "zambies_glee", -- unique name
     prettyName = "Zambie's Glee",
     description = "Braaains...",
-    difficultyPerMin = "default", -- difficulty per minute
+    difficultyPerMin = "default*2", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = { 1, 5 }, -- so budget isnt 0
