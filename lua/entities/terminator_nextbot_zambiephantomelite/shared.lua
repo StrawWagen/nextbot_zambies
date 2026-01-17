@@ -187,10 +187,12 @@ function ENT:PerformTeleport( data, dmg )
         local directions = {
             rightVec,
             -rightVec,
-            -toAttacker,
             ( -toAttacker + rightVec ):GetNormalized(),
             ( -toAttacker - rightVec ):GetNormalized(),
+            ( toAttacker + rightVec ):GetNormalized(),
+            ( toAttacker - rightVec ):GetNormalized(),
         }
+
 
         for i = #directions, 2, -1 do
             local j = math.random( i )
