@@ -4,13 +4,13 @@ local zambieSpawnSet = {
     name = "zambies_glee_harder", -- unique name
     prettyName = "Specially Infected Hell",
     description = "Zombies, everywhere!",
-    difficultyPerMin = "default*10", -- difficulty per minute
+    difficultyPerMin = "default*5", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = { 4 }, -- go up to 20 fast pls
     startingSpawnCount = { 8, 12 },
-    maxSpawnCount = 50,
+    maxSpawnCount = 45,
     maxSpawnDist = "default",
     chanceToBeVotable = 40,
     roundEndSound = "music/ravenholm_1.mp3",
@@ -220,9 +220,9 @@ local zambieSpawnSet = {
             prettyName = "A Demigod Crab",
             class = "terminator_nextbot_zambiebigheadcrab",
             spawnType = "hunter",
-            difficultyCost = { 200, 275 },
+            difficultyCost = { 400, 700 },
             countClass = "terminator_nextbot_zambiebigheadcrab",
-            maxCount = { 8 },
+            maxCount = { 4 },
             postSpawnedFuncs = nil,
         },
         {
@@ -231,9 +231,9 @@ local zambieSpawnSet = {
             prettyName = "The God Crab",
             class = "terminator_nextbot_zambiebiggerheadcrab",
             spawnType = "hunter",
-            difficultyCost = { 500, 700 },
+            difficultyCost = { 700, 1500 },
             countClass = "terminator_nextbot_zambiebiggerheadcrab",
-            maxCount = { 4 },
+            maxCount = { 2 },
             postSpawnedFuncs = { screamAfterSpawning },
         },
     }
