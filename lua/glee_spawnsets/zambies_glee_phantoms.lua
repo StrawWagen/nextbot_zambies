@@ -14,7 +14,7 @@ local zambieSpawnSet = {
     maxSpawnDist = "default",
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "ambient/levels/citadel/portal_beam_shoot5.wav",
-    chanceToBeVotable = 1,
+    chanceToBeVotable = 10,
     spawns = {
         {
             hardRandomChance = nil,

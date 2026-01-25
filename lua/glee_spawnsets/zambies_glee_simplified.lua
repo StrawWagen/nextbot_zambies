@@ -139,6 +139,18 @@ local zambieSpawnSet = {
             maxCount = { 1 },
             postSpawnedFuncs = nil,
         },
+        {
+            hardRandomChance = { 0, 1 },
+            name = "zambie_phantom_rare",
+            prettyName = "A Phantom",
+            class = "terminator_nextbot_zambiephantom",
+            spawnType = "hunter",
+            difficultyCost = { 10, 20 },
+            difficultyNeeded = { 10, 75 },
+            countClass = "terminator_nextbot_zambiephantom",
+            maxCount = { 1 },
+            postSpawnedFuncs = nil,
+        },
     }
 }
 

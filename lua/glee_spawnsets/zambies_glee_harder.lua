@@ -9,7 +9,7 @@ local zambieSpawnSet = {
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
     spawnCountPerDifficulty = { 4 }, -- go up to 20 fast pls
-    startingSpawnCount = { 8, 12 },
+    startingSpawnCount = { 12, 24 },
     maxSpawnCount = 45,
     maxSpawnDist = "default",
     chanceToBeVotable = 40,
@@ -128,6 +128,17 @@ local zambieSpawnSet = {
         },
         {
             hardRandomChance = nil,
+            name = "zambie_phantom",
+            prettyName = "A Phantom",
+            class = "terminator_nextbot_zambiephantom",
+            spawnType = "hunter",
+            difficultyCost = { 30, 60 },
+            countClass = "terminator_nextbot_zambiephantom",
+            maxCount = { 6 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = nil,
             name = "zambie_fast_elite",
             prettyName = "An Elite Fast Zombie",
             class = "terminator_nextbot_zambiefastgrunt",
@@ -173,7 +184,7 @@ local zambieSpawnSet = {
         {
             hardRandomChance = nil,
             name = "zambie_tankelite",
-            prettyName = "A Elite Tank Zombie",
+            prettyName = "An Elite Tank Zombie",
             class = "terminator_nextbot_zambietankelite",
             spawnType = "hunter",
             difficultyCost = { 130, 165 },
@@ -194,17 +205,6 @@ local zambieSpawnSet = {
         },
         {
             hardRandomChance = nil,
-            name = "zambie_necromancerelite",
-            prettyName = "A Elite Necromancer Zombie",
-            class = "terminator_nextbot_zambienecroelite",
-            spawnType = "hunter",
-            difficultyCost = { 150, 200 },
-            countClass = "terminator_nextbot_zambienecroelite",
-            maxCount = { 1 },
-            postSpawnedFuncs = nil,
-        },
-        {
-            hardRandomChance = nil,
             name = "zambie_necromancer",
             prettyName = "A Necromancer Zombie",
             class = "terminator_nextbot_zambienecro",
@@ -212,6 +212,28 @@ local zambieSpawnSet = {
             difficultyCost = { 100, 120 },
             countClass = "terminator_nextbot_zambienecro",
             maxCount = { 2 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_phantomelite",
+            prettyName = "An Elite Phantom Zombie",
+            class = "terminator_nextbot_zambiephantomelite",
+            spawnType = "hunter",
+            difficultyCost = { 100, 120 },
+            countClass = "terminator_nextbot_zambiephantomelite",
+            maxCount = { 3 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_necromancerelite",
+            prettyName = "An Elite Necromancer Zombie",
+            class = "terminator_nextbot_zambienecroelite",
+            spawnType = "hunter",
+            difficultyCost = { 150, 200 },
+            countClass = "terminator_nextbot_zambienecroelite",
+            maxCount = { 1 },
             postSpawnedFuncs = nil,
         },
         {
