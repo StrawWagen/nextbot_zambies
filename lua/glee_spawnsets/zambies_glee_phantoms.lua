@@ -2,8 +2,8 @@
 
 local zambieSpawnSet = {
     name = "zambies_glee_phantoms", -- unique name
-    prettyName = "Phantom's Glee",
-    description = "Hide yo props! Hide yo sanity!",
+    prettyName = "Phantom... Glee?",
+    description = "If you suffer from Phantom Glee, please see a doctor immediately.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount

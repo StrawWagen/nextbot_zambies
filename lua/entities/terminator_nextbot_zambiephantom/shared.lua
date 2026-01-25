@@ -60,8 +60,8 @@ end
 
 ENT.SpawnHealth = 180
 ENT.WalkSpeed = 160
-ENT.MoveSpeed = 500
-ENT.RunSpeed = 700
+ENT.MoveSpeed = 450
+ENT.RunSpeed = 600
 ENT.AccelerationSpeed = 700
 
 ENT.FistDamageMul = 0.55

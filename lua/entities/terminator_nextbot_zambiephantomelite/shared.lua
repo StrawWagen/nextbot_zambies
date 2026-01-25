@@ -61,8 +61,10 @@ if CLIENT then
             end
 
             self:SetColor( ColorAlpha( self.EnragedColor, self.EnragedAlpha ) )
+
         else
             self:SetColor( ColorAlpha( self.PhantomColor, self.PhantomAlpha ) )
+
         end
 
         if curTime < self.NextAmbientParticle then return end
@@ -73,16 +75,18 @@ if CLIENT then
         effectData:SetStart( isEnraged and self.EnragedParticleColor or self.PhantomParticleColor )
         effectData:SetScale( 1.1 )
         util.Effect( "terminator_phantomambient", effectData )
+
     end
 
     return
+
 end
 
 ENT.SpawnHealth = 2000
 ENT.SpawnHealthPerPlayer = 500
 ENT.WalkSpeed = 130
 ENT.MoveSpeed = 500
-ENT.RunSpeed = 800
+ENT.RunSpeed = 750
 ENT.AccelerationSpeed = 600
 
 ENT.EnragedSpeedMult = 2
