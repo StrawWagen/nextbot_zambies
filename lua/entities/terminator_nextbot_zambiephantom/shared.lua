@@ -39,6 +39,7 @@ if CLIENT then
         self:DrawShadow( false )
 
         self.NextAmbientParticle = 0
+
     end
 
     function ENT:Think()
@@ -51,6 +52,7 @@ if CLIENT then
         effectData:SetStart( self.PhantomParticleColor )
         effectData:SetScale( 0.9 )
         util.Effect( "terminator_phantomambient", effectData )
+
     end
 
     return
@@ -86,10 +88,12 @@ ENT.MyClassTask = {
         self:SetSubMaterial( 0, "!nextbotZambies_PhantomFlesh" )
         self:SetSubMaterial( 1, "!nextbotZambies_PhantomFlesh" )
         self:PhantomOnCreated( data )
+
     end,
 
     Think = function( self, data )
         self:PhantomThink( data )
+
     end,
 
     OnDamaged = function( self, data, dmg )
@@ -98,12 +102,14 @@ ENT.MyClassTask = {
 
         end
         return self:PhantomOnDamaged( data, dmg )
+
     end,
 
     PreventBecomeRagdollOnKilled = function( self, data )
         self:PhantomDie()
         SafeRemoveEntityDelayed( self, 0 )
         return true, true
+
     end,
 
     ZambAngeringCall = function( self, data )
@@ -142,6 +148,7 @@ function ENT:PhantomOnCreated( data )
 
     data.nextParticle = 0
     data.nextTeleport = 0
+
 end
 
 function ENT:PhantomThink( data )
@@ -344,6 +351,7 @@ function ENT:PhantomDie()
     self:EmitSound( "ambient/levels/citadel/portal_beam_shoot5.wav", 70, 130, 0.8 )
 
     self:CreatePhantomExplosion( pos, self.DeathExplosionMagnitude )
+
 end
 
 function ENT:CreatePhantomExplosion( pos, magnitude )
@@ -356,6 +364,7 @@ function ENT:CreatePhantomExplosion( pos, magnitude )
     explosion:Spawn()
     explosion:Fire( "Explode", "", 0 )
     explosion:Fire( "Kill", "", 0.1 )
+
 end
 
 function ENT:PerformTeleport( data, dmg )
@@ -410,6 +419,7 @@ function ENT:PerformTeleport( data, dmg )
             teleportDir = dir
             teleportTrace = trace
             break
+
         end
     end
 

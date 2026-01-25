@@ -153,6 +153,7 @@ function ENT:PhantomOnCreated( data )
     self.term_JumpSound = "npc/zombie/foot1.wav"
 
     self.AlwaysPlayLooping = true
+
 end
 
 function ENT:PhantomThink( data )
@@ -160,10 +161,12 @@ function ENT:PhantomThink( data )
 
     if not self.isEnraged and self:Health() / self:GetMaxHealth() <= self.EnrageThreshold then
         self:BecomeEnraged()
+
     end
 
     if self.isEnraged then
         self:DoTouchDamage( data, curTime )
+
     end
 
     if curTime < data.nextParticle then
@@ -206,19 +209,23 @@ function ENT:PhantomOnDamaged( data, dmg )
         data.nextTeleport = curTime + self.TeleportCooldown
         self:PerformTeleport( data, dmg )
         return true
+
     end
 end
 
 function ENT:GetPhantomParticleColor()
     return self.isEnraged and self.EnragedParticleColor or self.PhantomParticleColor
+
 end
 
 function ENT:GetPhantomColor()
     return self.isEnraged and self.EnragedColor or self.PhantomColor
+
 end
 
 function ENT:GetPhantomAlpha()
     return self.isEnraged and self.EnragedAlpha or self.PhantomAlpha
+
 end
 
 function ENT:PhantomDie()
@@ -250,6 +257,7 @@ function ENT:PhantomDie()
         ringEffect:SetScale( 1.6 )
         ringEffect:SetMagnitude( 5 )
         util.Effect( "terminator_phantomdust", ringEffect )
+
     end
 
     self:CreatePhantomExplosion( pos, self.DeathExplosionMagnitude )
@@ -267,7 +275,6 @@ function ENT:PhantomDie()
 
         if ent:IsPlayer() then
             ent:SetVelocity( force )
-            ent:ScreenFade( SCREENFADE.IN, Color( particleColor.x, particleColor.y, particleColor.z, 120 ), 0.4, 0.2 )
 
             local dmgInfo = DamageInfo()
             dmgInfo:SetDamage( self.DeathBlastDamage * forceMult )
@@ -275,9 +282,11 @@ function ENT:PhantomDie()
             dmgInfo:SetAttacker( self )
             dmgInfo:SetInflictor( self )
             ent:TakeDamageInfo( dmgInfo )
+
         elseif ent:IsNPC() or ent:IsNextBot() then
             if ent.SetVelocity then
                 ent:SetVelocity( force )
+
             end
 
             local disp = self:Disposition( ent )
@@ -288,11 +297,13 @@ function ENT:PhantomDie()
                 dmgInfo:SetAttacker( self )
                 dmgInfo:SetInflictor( self )
                 ent:TakeDamageInfo( dmgInfo )
+
             end
         else
             local phys = ent:GetPhysicsObject()
             if IsValid( phys ) then
                 phys:ApplyForceCenter( force * phys:GetMass() * 0.4 )
+
             end
         end
     end
@@ -328,6 +339,7 @@ function ENT:BecomeEnraged()
     util.Effect( "terminator_phantomsmoke", smokeData )
 
     self:CreatePhantomExplosion( pos, 120 )
+
 end
 
 function ENT:DoTouchDamage( data, curTime )
@@ -360,6 +372,6 @@ function ENT:DoTouchDamage( data, curTime )
         util.Effect( "terminator_phantomdust", effectData )
 
         self:EmitSound( "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav", 60, math.random( 75, 95 ), 0.5 )
-    end
 
+    end
 end
