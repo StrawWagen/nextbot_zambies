@@ -11,12 +11,12 @@ list.Set( "NPC", "terminator_nextbot_zambiephantomelite", {
     Category = "Nextbot Zambies",
 } )
 
-ENT.PhantomColor = Color( 55, 60, 70 )
-ENT.PhantomParticleColor = Vector( 55, 60, 70 )
+ENT.PhantomColor = Color( 25, 30, 35 )
+ENT.PhantomParticleColor = Vector( 25, 30, 35 )
 ENT.PhantomAlpha = 110
 
-ENT.EnragedColor = Color( 110, 35, 35 )
-ENT.EnragedParticleColor = Vector( 110, 35, 35 )
+ENT.EnragedColor = Color( 115, 40, 40 )
+ENT.EnragedParticleColor = Vector( 115, 40, 40 )
 ENT.EnragedAlpha = 140
 
 if CLIENT then
@@ -360,4 +360,5 @@ function ENT:DoTouchDamage( data, curTime )
 
         self:EmitSound( "ambient/energy/spark" .. math.random( 1, 6 ) .. ".wav", 60, math.random( 75, 95 ), 0.5 )
     end
+
 end
