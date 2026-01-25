@@ -167,6 +167,9 @@ function ENT:PhantomThink( data )
 
     self:PushingThink()
 
+    local wantPush = self.NothingOrBreakableBetweenEnemy or ( self:IsReallyAngry() and math.random() < 0.05 )
+    if not wantPush then return end
+
     local disrespector = self:GetCachedDisrespector()
     if not IsValid( disrespector ) then return end
 
@@ -225,7 +228,6 @@ function ENT:PhantomCatapultDisrespectorAt( at )
     local levitateTimerName = "ZAMB_Phantom_LevitateDisrespector_" .. disrespector:GetCreationID()
 
     disrespector.zamb_beingThrown = true
-
     disrespector:EmitSound( "npc/advisor/advisor_blast1.wav", 75, math.random( 130, 140 ), 1, CHAN_STATIC )
 
     self:CreatePhantomExplosion( self:WorldSpaceCenter(), 150 )
