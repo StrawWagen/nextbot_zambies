@@ -48,6 +48,8 @@ if CLIENT then
     end
 
     function ENT:Think()
+        if self:IsDormant() then return end
+
         local curTime = CurTime()
         local isEnraged = self:GetNWBool( "PhantomEnraged", false )
 

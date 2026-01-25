@@ -43,6 +43,8 @@ if CLIENT then
     end
 
     function ENT:Think()
+        if self:IsDormant() then return end
+
         local curTime = CurTime()
         if curTime < self.NextAmbientParticle then return end
         self.NextAmbientParticle = curTime + 0.08
@@ -58,7 +60,7 @@ if CLIENT then
     return
 end
 
-ENT.SpawnHealth = 180
+ENT.SpawnHealth = 150
 ENT.WalkSpeed = 160
 ENT.MoveSpeed = 450
 ENT.RunSpeed = 600
