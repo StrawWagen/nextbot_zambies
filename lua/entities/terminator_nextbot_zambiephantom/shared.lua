@@ -65,7 +65,7 @@ ENT.AccelerationSpeed = 700
 ENT.FistDamageMul = 0.55
 ENT.MyPhysicsMass = 50
 
-ENT.TERM_MODELSCALE = 1.15
+ENT.TERM_MODELSCALE = 1.05
 ENT.CollisionBounds = { Vector( -12, -12, 0 ), Vector( 12, 12, 55 ) } -- this is then scaled by modelscale
 ENT.FistRangeMul = 1.15
 
