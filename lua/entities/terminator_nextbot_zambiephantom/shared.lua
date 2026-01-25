@@ -173,6 +173,11 @@ function ENT:PhantomThink( data )
     local disrespector = self:GetCachedDisrespector()
     if not IsValid( disrespector ) then return end
 
+    -- dont get stuck trying to push unpushable props
+    local nextPush = disrespector.zamb_NextPushTime or 0
+    if CurTime() < nextPush then return end
+    disrespector.zamb_NextPushTime = CurTime() + math.Rand( 4, 12 )
+
     if self:CanTakeAction( "ThrowNearbyProp" ) then
         self:TakeAction( "ThrowNearbyProp" )
 
