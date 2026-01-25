@@ -11,8 +11,8 @@ list.Set( "NPC", "terminator_nextbot_zambiephantom", {
     Category = "Nextbot Zambies",
 } )
 
-ENT.PhantomColor = Color( 55, 60, 70 )
-ENT.PhantomParticleColor = Vector( 55, 60, 70 )
+ENT.PhantomColor = Color( 65, 70, 80 )
+ENT.PhantomParticleColor = Vector( 65, 70, 80 )
 ENT.PhantomAlpha = 130
 
 if CLIENT then
@@ -395,3 +395,4 @@ function ENT:PerformTeleport( data, dmg )
     self:CreatePhantomExplosion( startPos, 40 )
 
 end
+
