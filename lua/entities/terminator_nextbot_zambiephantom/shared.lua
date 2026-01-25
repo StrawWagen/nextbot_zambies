@@ -173,6 +173,12 @@ function ENT:PhantomThink( data )
     local disrespector = self:GetCachedDisrespector()
     if not IsValid( disrespector ) then return end
 
+    if disrespector.Disposition then
+        local myDispToThem = self:Disposition( disrespector )
+        if myDispToThem == D_LI or myDispToThem == D_NU then return end
+
+    end
+
     -- dont get stuck trying to push unpushable props
     local nextPush = disrespector.zamb_NextPushTime or 0
     if CurTime() < nextPush then return end
