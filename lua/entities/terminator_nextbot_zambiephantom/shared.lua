@@ -58,30 +58,27 @@ end
 
 ENT.SpawnHealth = 180
 ENT.WalkSpeed = 160
-ENT.MoveSpeed = 400
-ENT.RunSpeed = 520
+ENT.MoveSpeed = 500
+ENT.RunSpeed = 700
 ENT.AccelerationSpeed = 700
 
 ENT.FistDamageMul = 0.55
 ENT.MyPhysicsMass = 50
 
 ENT.TERM_MODELSCALE = 1.15
+ENT.CollisionBounds = { Vector( -12, -12, 0 ), Vector( 12, 12, 55 ) } -- this is then scaled by modelscale
 ENT.FistRangeMul = 1.15
 
-ENT.PhaseChance = 0.50
-ENT.PhaseCooldown = 0.45
-ENT.PhaseInvulnTime = 0.25
-ENT.ConsecutivePhasePenalty = 0.08
-
-ENT.TeleportDistance = 200
-ENT.TeleportCooldown = 3
-ENT.TeleportChance = 0.30
-ENT.TeleportInvulnTime = 0.35
+ENT.MaxTeleportDistance = 400
+ENT.MinTeleportDistance = 100
+ENT.TeleportCooldown = 1
+ENT.TeleportChance = 0.5
 
 ENT.ParticleInterval = 0.07
-ENT.PhaseSound = "ambient/levels/citadel/weapon_disintegrate2.wav"
 
 ENT.DeathExplosionMagnitude = 100
+
+ENT.term_SoundPitchShift = -10
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
@@ -93,6 +90,10 @@ ENT.MyClassTask = {
     end,
 
     OnDamaged = function( self, data, dmg )
+        if not self:IsReallyAngry() then
+            self:TakeAction( "AngeringCall" )
+
+        end
         return self:PhantomOnDamaged( data, dmg )
     end,
 
@@ -101,6 +102,34 @@ ENT.MyClassTask = {
         SafeRemoveEntityDelayed( self, 0 )
         return true, true
     end,
+
+    ZambAngeringCall = function( self, data )
+        self:TakeAction( "ThrowNearbyProp" )
+
+    end,
+}
+
+ENT.MySpecialActions = {
+    ["ThrowNearbyProp"] = {
+        inBind = IN_RELOAD,
+        drawHint = true,
+        name = "Throw Prop",
+        desc = "Catapult a nearby prop at your enemy.",
+        ratelimit = 3, -- seconds between uses
+        svAction = function( _drive, _driver, bot )
+            local enemy = bot:GetEnemy()
+            local pos
+            if IsValid( enemy ) then
+                pos = enemy:WorldSpaceCenter()
+
+            else
+                pos = bot:GetEyeTrace().HitPos
+
+            end
+            bot:PhantomCatapultDisrespectorAtPos( pos )
+
+        end,
+    },
 }
 
 function ENT:PhantomOnCreated( data )
@@ -109,66 +138,95 @@ function ENT:PhantomOnCreated( data )
     self:DrawShadow( false )
 
     data.nextParticle = 0
-    data.nextPhase = 0
-    data.consecutivePhases = 0
-    data.lastPhaseReset = 0
-    data.invulnUntil = 0
     data.nextTeleport = 0
 end
 
 function ENT:PhantomThink( data )
     local curTime = CurTime()
 
-    if curTime - data.lastPhaseReset > 2 then
-        data.consecutivePhases = math.max( 0, data.consecutivePhases - 1 )
-        data.lastPhaseReset = curTime
+    if curTime < data.nextParticle then
+        data.nextParticle = curTime + self.ParticleInterval
+        local effectData = EffectData()
+        effectData:SetOrigin( self:GetPos() + Vector( math.Rand( -18, 18 ), math.Rand( -18, 18 ), math.Rand( 10, 55 ) ) )
+        effectData:SetStart( self:GetPhantomParticleColor() )
+        effectData:SetScale( 0.9 )
+        effectData:SetMagnitude( 3 )
+        util.Effect( "terminator_phantomdust", effectData )
+
     end
 
-    if curTime < data.nextParticle then return end
-    data.nextParticle = curTime + self.ParticleInterval
+    self:PushingThink()
 
-    local effectData = EffectData()
-    effectData:SetOrigin( self:GetPos() + Vector( math.Rand( -18, 18 ), math.Rand( -18, 18 ), math.Rand( 10, 55 ) ) )
-    effectData:SetStart( self:GetPhantomParticleColor() )
-    effectData:SetScale( 0.9 )
-    effectData:SetMagnitude( 3 )
-    util.Effect( "terminator_phantomdust", effectData )
+    local disrespector = self:GetCachedDisrespector()
+    if not IsValid( disrespector ) then return end
+
+    if self:CanTakeAction( "ThrowNearbyProp" ) then
+        self:TakeAction( "ThrowNearbyProp" )
+
+    end
+end
+
+function ENT:PushingThink()
+    local disrespector = self:GetCachedDisrespector()
+    if not IsValid( disrespector ) then return end
+
+    local disrespectorsPhys = disrespector:GetPhysicsObject()
+    if not IsValid( disrespectorsPhys ) then return end
+
+    local nearestToMe = disrespector:NearestPoint( self:WorldSpaceCenter() )
+    if nearestToMe:Distance( self:WorldSpaceCenter() ) > 100 then return end
+
+    local toDisrespector = terminator_Extras.dirToPos( self:GetShootPos(), disrespector:WorldSpaceCenter() )
+    local force = toDisrespector * 10000
+    disrespectorsPhys:ApplyForceOffset( force, self:GetShootPos() )
+
+end
+
+function ENT:PhantomCatapultDisrespectorAtPos( pos )
+    local disrespector = self:GetCachedDisrespector()
+    if not IsValid( disrespector ) then return end
+    if disrespector:IsPlayer() or disrespector:IsNPC() or disrespector:IsNextBot() then return end
+
+    if disrespector:IsPlayerHolding() then
+        disrespector:ForcePlayerDrop()
+
+    end
+
+    local disrespectorsPhys = disrespector:GetPhysicsObject()
+    if not IsValid( disrespectorsPhys ) then return end
+    if not disrespectorsPhys:IsMotionEnabled() then return end
+    if not disrespectorsPhys:IsMoveable() then return end
+
+    local toEnemy = terminator_Extras.dirToPos( disrespector:WorldSpaceCenter(), pos )
+    local force = toEnemy * 350000
+    if self.isEnraged then
+        force = force * 2
+
+    end
+    disrespectorsPhys:ApplyForceOffset( force, disrespector:WorldSpaceCenter() )
+
+    disrespector:EmitSound( "npc/advisor/advisor_blast6.wav", 75, math.random( 120, 110 ), 1, CHAN_STATIC )
+
 end
 
 function ENT:PhantomOnDamaged( data, dmg )
     local curTime = CurTime()
 
-    if curTime < data.invulnUntil then
-        return true
+    local teleport = curTime > data.nextTeleport and math.random() < self.TeleportChance
+
+    if dmg:GetDamage() >= self:GetMaxHealth() * 0.5 and not data.oneFreebie then
+        data.oneFreebie = true
+        teleport = true
+        dmg:ScaleDamage( 0.1 )
+
     end
 
-    if curTime > data.nextTeleport and math.random() < self.TeleportChance then
+    if teleport then
         data.nextTeleport = curTime + self.TeleportCooldown
         self:PerformTeleport( data, dmg )
         return true
+
     end
-
-    if curTime < data.nextPhase then return end
-
-    local damageType = dmg:GetDamageType()
-    local phaseChance = self.PhaseChance - ( data.consecutivePhases * self.ConsecutivePhasePenalty )
-
-    if bit.band( damageType, DMG_BULLET ) ~= 0 then
-        phaseChance = phaseChance + 0.15
-    elseif bit.band( damageType, DMG_BLAST ) ~= 0 then
-        phaseChance = phaseChance - 0.1
-    elseif bit.band( damageType, DMG_CLUB + DMG_SLASH ) ~= 0 then
-        phaseChance = phaseChance + 0.1
-    end
-
-    if self:Health() < self:GetMaxHealth() * 0.4 then
-        phaseChance = phaseChance + 0.15
-    end
-
-    if math.random() >= math.Clamp( phaseChance, 0.15, 0.75 ) then return end
-
-    self:PerformPhase( data )
-    return true
 end
 
 function ENT:GetPhantomParticleColor()
@@ -218,94 +276,68 @@ function ENT:CreatePhantomExplosion( pos, magnitude )
     end
 end
 
-function ENT:PerformPhase( data )
-    local curTime = CurTime()
-
-    data.nextPhase = curTime + self.PhaseCooldown
-    data.consecutivePhases = data.consecutivePhases + 1
-    data.lastPhaseReset = curTime
-    data.invulnUntil = curTime + self.PhaseInvulnTime
-
-    local effectData = EffectData()
-    effectData:SetOrigin( self:WorldSpaceCenter() )
-    effectData:SetStart( self:GetPhantomParticleColor() )
-    effectData:SetScale( 1.5 )
-    effectData:SetMagnitude( 12 )
-    util.Effect( "terminator_phantomdust", effectData )
-
-    self:SetColor( ColorAlpha( self:GetPhantomColor(), 30 ) )
-
-    local restoreAlpha = self:GetPhantomAlpha()
-    local restoreColor = self:GetPhantomColor()
-
-    timer.Simple( self.PhaseInvulnTime, function()
-        if IsValid( self ) then
-            self:SetColor( ColorAlpha( restoreColor, restoreAlpha ) )
-        end
-    end )
-
-    self:EmitSound( self.PhaseSound, 60, math.random( 150, 170 ), 0.6 )
-end
-
 function ENT:PerformTeleport( data, dmg )
     local startPos = self:GetPos()
     local attacker = dmg:GetAttacker()
+    local attackersPos
     local teleportDir
+    local tpDirections
+    local teleportTrace
 
     if IsValid( attacker ) then
-        local toAttacker = ( attacker:GetPos() - startPos )
+        attackersPos = attacker:GetPos()
+        local toAttacker = ( attackersPos - startPos )
         toAttacker.z = 0
         toAttacker:Normalize()
 
         local rightVec = toAttacker:Cross( Vector( 0, 0, 1 ) )
 
-        local directions = {
+        tpDirections = {
             rightVec,
             -rightVec,
-            -toAttacker,
-            ( -toAttacker + rightVec ):GetNormalized(),
-            ( -toAttacker - rightVec ):GetNormalized(),
+            toAttacker,
+            ( toAttacker + rightVec ):GetNormalized(),
+            ( toAttacker - rightVec ):GetNormalized(),
         }
 
-        for i = #directions, 2, -1 do
+        -- shuffle dirs
+        for i = #tpDirections, 2, -1 do
             local j = math.random( i )
-            directions[i], directions[j] = directions[j], directions[i]
+            tpDirections[i], tpDirections[j] = tpDirections[j], tpDirections[i]
         end
 
-        for _, dir in ipairs( directions ) do
-            local trace = util.TraceHull( {
-                start = startPos,
-                endpos = startPos + dir * self.TeleportDistance,
-                filter = self,
-                mins = self:OBBMins(),
-                maxs = self:OBBMaxs(),
-                mask = MASK_NPCSOLID,
-            } )
-            if not trace.StartSolid and trace.Fraction > 0.5 then
-                teleportDir = dir
-                break
-            end
-        end
-
-        teleportDir = teleportDir or -toAttacker
     else
-        teleportDir = VectorRand()
-        teleportDir.z = 0
-        teleportDir:Normalize()
+        local randDir = VectorRand()
+        randDir.z = 0
+        randDir:Normalize()
+        tpDirections = { randDir }
+
     end
 
-    local trace = util.TraceHull( {
-        start = startPos,
-        endpos = startPos + teleportDir * self.TeleportDistance,
-        filter = self,
-        mins = self:OBBMins(),
-        maxs = self:OBBMaxs(),
-        mask = MASK_NPCSOLID,
-    } )
+    for _, dir in ipairs( tpDirections ) do
+        local dist = math.random( self.MinTeleportDistance, self.MaxTeleportDistance )
+        local trace = util.TraceHull( {
+            start = startPos,
+            endpos = startPos + dir * dist,
+            filter = self,
+            mins = self:OBBMins(),
+            maxs = self:OBBMaxs(),
+            mask = MASK_NPCSOLID,
+        } )
+        if not trace.StartSolid and trace.Fraction > 0.5 then
+            teleportDir = dir
+            teleportTrace = trace
+            break
+        end
+    end
 
-    if trace.StartSolid then return end
+    if not teleportDir then
+        self:TakeAction( "AngeringCall" )
+        return
 
-    local teleportPos = trace.HitPos
+    end
+
+    local teleportPos = teleportTrace.HitPos
     local particleColor = self:GetPhantomParticleColor()
     local effectHeight = self:OBBMaxs().z * 0.6
 
@@ -315,19 +347,50 @@ function ENT:PerformTeleport( data, dmg )
     effectData:SetScale( 1.2 )
     util.Effect( "terminator_phantomsmoke", effectData )
 
-    self:EmitSound( "ambient/machines/teleport3.wav", 70, 130, 0.8 )
-
-    data.invulnUntil = CurTime() + self.TeleportInvulnTime
-
-    self:SetPosNoTeleport( teleportPos )
-
     local effectDataEnd = EffectData()
     effectDataEnd:SetOrigin( teleportPos + Vector( 0, 0, effectHeight ) )
     effectDataEnd:SetStart( particleColor )
     effectDataEnd:SetScale( 1.2 )
     util.Effect( "terminator_phantomsmoke", effectDataEnd )
 
-    self:EmitSound( "ambient/machines/teleport4.wav", 70, 130, 0.8 )
+    local pitch = math.random( 80, 90 )
+    self:EmitSound( "ambient/levels/citadel/stalk_stalkertrainxtrabump02.wav", 90, pitch, 1, CHAN_STATIC )
+
+    pitch = math.random( 90, 110 )
+    self:EmitSound( "ambient/levels/citadel/weapon_disintegrate" .. math.random( 3, 4 ) .. ".wav", 90, pitch, 0.8, CHAN_STATIC )
+
+    self:SetNoDraw( true )
+    timer.Simple( 0.1, function()
+        if not IsValid( self ) then return end
+        self:SetNoDraw( false )
+
+    end )
+
+    timer.Simple( 0, function()
+        self:SetPosNoTeleport( teleportPos )
+
+    end )
+
+    local myHealth = self:Health()
+    local myMaxHp = self:GetMaxHealth()
+    if myHealth > myMaxHp * 0.95 then
+        if not data.angeringCalledAfterTeleport then
+            data.angeringCalledAfterTeleport = true
+            self:ZAMB_AngeringCall()
+
+        else
+            self:ZAMB_NormalCall()
+
+        end
+        self:StopMoving()
+
+    elseif attackersPos and myHealth < myMaxHp * 0.5 then
+        timer.Simple( 0.2, function()
+            if not IsValid( self ) then return end
+            self:JumpToPos( attackersPos )
+
+        end )
+    end
 
     self:CreatePhantomExplosion( startPos, 40 )
 end

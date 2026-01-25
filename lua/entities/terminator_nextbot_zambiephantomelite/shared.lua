@@ -53,7 +53,7 @@ if CLIENT then
 
         if isEnraged then
             if curTime >= self.NextBoneJitter then
-                self.NextBoneJitter = curTime + 0.05
+                self.NextBoneJitter = curTime + math.Rand( 0.05, 0.1 )
 
                 for i = 0, self.BoneCount - 1 do
                     self:ManipulateBoneAngles( i, Angle( math.Rand( -6, 6 ), math.Rand( -6, 6 ), math.Rand( -6, 6 ) ) )
@@ -78,32 +78,32 @@ if CLIENT then
     return
 end
 
-ENT.SpawnHealth = 1000
+ENT.SpawnHealth = 2000
+ENT.SpawnHealthPerPlayer = 500
 ENT.WalkSpeed = 130
-ENT.MoveSpeed = 340
-ENT.RunSpeed = 450
+ENT.MoveSpeed = 500
+ENT.RunSpeed = 800
 ENT.AccelerationSpeed = 600
 
 ENT.EnragedSpeedMult = 2
 
 ENT.FistDamageMul = 0.85
+ENT.FistForceMul = 100
 ENT.MyPhysicsMass = 120
 
 ENT.TERM_MODELSCALE = 1.35
+ENT.CollisionBounds = { Vector( -11, -11, 0 ), Vector( 11, 11, 48 ) } -- this is then scaled by modelscale
 ENT.FistRangeMul = 1.4
 
-ENT.PhaseChance = 0.55
-ENT.PhaseCooldown = 0.4
-ENT.PhaseInvulnTime = 0.3
-ENT.ConsecutivePhasePenalty = 0.06
 ENT.ParticleInterval = 0.06
 
-ENT.TeleportDistance = 250
+ENT.MaxTeleportDistance = 500
+ENT.MinTeleportDistance = 200
 ENT.TeleportCooldown = 2
-ENT.TeleportChance = 0.35
-ENT.TeleportInvulnTime = 0.4
+ENT.TeleportChance = 0.5
+ENT.TeleportChanceEnraged = 0.9
 
-ENT.EnrageThreshold = 0.3
+ENT.EnrageThreshold = 0.45
 ENT.TouchDamage = 20
 ENT.TouchDamageCooldown = 0.5
 ENT.TouchDamageRadius = 70
@@ -112,6 +112,8 @@ ENT.DeathBlastRadius = 400
 ENT.DeathBlastForce = 600
 ENT.DeathBlastDamage = 30
 ENT.DeathExplosionMagnitude = 200
+
+ENT.term_SoundPitchShift = 10
 
 function ENT:PhantomOnCreated( data )
     BaseClass.PhantomOnCreated( self, data )
@@ -124,15 +126,36 @@ function ENT:PhantomOnCreated( data )
     self.baseRunSpeed = self.RunSpeed
 
     data.touchDamageCooldowns = {}
+
+    self.IdleLoopingSounds = {
+        "npc/advisor/advisor_speak01.wav",
+    }
+    self.AngryLoopingSounds = {
+        "ambient/levels/advisor_barn/ol07_advisor_00_28_15.wav",
+        "ambient/levels/advisor_barn/ol07_advisor_00_50_11.wav",
+        "ambient/levels/advisor_barn/ol07_advisor_00_30_22.wav",
+        "ambient/levels/advisor_barn/ol07_advisor_00_36_25.wav",
+    }
+
+    self.term_LoseEnemySound = "npc/advisor/advisor_speak01.wav"
+    self.term_CallingSound = "npc/advisor/advisor_scream.wav"
+    self.term_CallingSmallSound = "npc/stalker/stalker_scream2.wav"
+    self.term_FindEnemySound = "ambient/outro/advisorattack03.wav"
+    self.term_AttackSound = "ambient/levels/advisor_barn/ol07_advisor_00_50_11.wav"
+    self.term_AngerSound = "ambient/levels/advisor_barn/ol07_advisor_00_48_16.wav"
+    self.term_DamagedSound = {
+        "npc/stalker/stalker_pain1.wav",
+        "npc/stalker/stalker_pain2.wav",
+        "npc/stalker/stalker_pain3.wav",
+    }
+    self.term_DieSound = ""
+    self.term_JumpSound = "npc/zombie/foot1.wav"
+
+    self.AlwaysPlayLooping = true
 end
 
 function ENT:PhantomThink( data )
     local curTime = CurTime()
-
-    if curTime - data.lastPhaseReset > 2 then
-        data.consecutivePhases = math.max( 0, data.consecutivePhases - 1 )
-        data.lastPhaseReset = curTime
-    end
 
     if not self.isEnraged and self:Health() / self:GetMaxHealth() <= self.EnrageThreshold then
         self:BecomeEnraged()
@@ -142,53 +165,47 @@ function ENT:PhantomThink( data )
         self:DoTouchDamage( data, curTime )
     end
 
-    if curTime < data.nextParticle then return end
-    data.nextParticle = curTime + self.ParticleInterval
+    if curTime < data.nextParticle then
+        data.nextParticle = curTime + self.ParticleInterval
 
-    local effectData = EffectData()
-    effectData:SetOrigin( self:GetPos() + Vector( math.Rand( -22, 22 ), math.Rand( -22, 22 ), math.Rand( 10, 65 ) ) )
-    effectData:SetStart( self:GetPhantomParticleColor() )
-    effectData:SetScale( 1.1 )
-    effectData:SetMagnitude( 3 )
-    util.Effect( "terminator_phantomdust", effectData )
+        local effectData = EffectData()
+        effectData:SetOrigin( self:GetPos() + Vector( math.Rand( -22, 22 ), math.Rand( -22, 22 ), math.Rand( 10, 65 ) ) )
+        effectData:SetStart( self:GetPhantomParticleColor() )
+        effectData:SetScale( 1.1 )
+        effectData:SetMagnitude( 3 )
+        util.Effect( "terminator_phantomdust", effectData )
+
+    end
+
+    self:PushingThink()
+
+    local disrespector = self:GetCachedDisrespector()
+    if not IsValid( disrespector ) then return end
+
+    if self:CanTakeAction( "ThrowNearbyProp" ) then
+        self:TakeAction( "ThrowNearbyProp" )
+
+    end
 end
 
 function ENT:PhantomOnDamaged( data, dmg )
     local curTime = CurTime()
 
-    if curTime < data.invulnUntil then
-        return true
+    local chance = self.isEnraged and self.TeleportChanceEnraged or self.TeleportChance
+    local teleport = curTime > data.nextTeleport and math.random() < chance
+
+    if dmg:GetDamage() >= self:GetMaxHealth() * 0.5 and not data.oneFreebie then
+        data.oneFreebie = true
+        teleport = true
+        dmg:ScaleDamage( 0.1 )
+
     end
 
-    if curTime > data.nextTeleport and math.random() < self.TeleportChance then
+    if teleport then
         data.nextTeleport = curTime + self.TeleportCooldown
         self:PerformTeleport( data, dmg )
         return true
     end
-
-    if curTime < data.nextPhase then return end
-
-    local damageType = dmg:GetDamageType()
-    local phaseChance = self.PhaseChance - ( data.consecutivePhases * self.ConsecutivePhasePenalty )
-
-    if bit.band( damageType, DMG_BULLET ) ~= 0 then
-        phaseChance = phaseChance + 0.15
-    elseif bit.band( damageType, DMG_BLAST ) ~= 0 then
-        phaseChance = phaseChance - 0.1
-    elseif bit.band( damageType, DMG_CLUB + DMG_SLASH ) ~= 0 then
-        phaseChance = phaseChance + 0.1
-    end
-
-    if self.isEnraged then
-        phaseChance = phaseChance + 0.1
-    elseif self:Health() < self:GetMaxHealth() * 0.5 then
-        phaseChance = phaseChance + 0.1
-    end
-
-    if math.random() >= math.Clamp( phaseChance, 0.2, 0.8 ) then return end
-
-    self:PerformPhase( data )
-    return true
 end
 
 function ENT:GetPhantomParticleColor()
@@ -207,9 +224,9 @@ function ENT:PhantomDie()
     local pos = self:WorldSpaceCenter()
     local particleColor = self:GetPhantomParticleColor()
 
-    self:EmitSound( "ambient/explosions/explode_4.wav", 95, 75, 1 )
-    self:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 90, 55, 1 )
-    self:EmitSound( "ambient/levels/citadel/strange_talk" .. math.random( 3, 11 ) .. ".wav", 85, 65, 1 )
+    self:EmitSound( "npc/advisor/advisor_scream.wav", 95, math.random( 80, 90 ), 1, CHAN_STATIC )
+    self:EmitSound( "ambient/levels/labs/electric_explosion5.wav", 90, 55, 1, CHAN_STATIC )
+    self:EmitSound( "ambient/levels/citadel/strange_talk" .. math.random( 3, 11 ) .. ".wav", 95, 50, 1, CHAN_STATIC )
 
     local effectData = EffectData()
     effectData:SetOrigin( pos )
@@ -280,39 +297,10 @@ function ENT:PhantomDie()
     end
 end
 
-function ENT:PerformPhase( data )
-    local curTime = CurTime()
-
-    data.nextPhase = curTime + self.PhaseCooldown
-    data.consecutivePhases = data.consecutivePhases + 1
-    data.lastPhaseReset = curTime
-    data.invulnUntil = curTime + self.PhaseInvulnTime
-
-    local particleColor = self:GetPhantomParticleColor()
-    local restoreColor = self:GetPhantomColor()
-    local restoreAlpha = self:GetPhantomAlpha()
-
-    local effectData = EffectData()
-    effectData:SetOrigin( self:WorldSpaceCenter() )
-    effectData:SetStart( particleColor )
-    effectData:SetScale( 2 )
-    effectData:SetMagnitude( 15 )
-    util.Effect( "terminator_phantomdust", effectData )
-
-    self:SetColor( ColorAlpha( restoreColor, 20 ) )
-
-    timer.Simple( self.PhaseInvulnTime, function()
-        if IsValid( self ) then
-            self:SetColor( ColorAlpha( restoreColor, restoreAlpha ) )
-        end
-    end )
-
-    self:EmitSound( self.PhaseSound, 70, math.random( 130, 150 ), 0.7 )
-end
-
 function ENT:BecomeEnraged()
     self.isEnraged = true
     self:SetNWBool( "PhantomEnraged", true )
+    self:ZAMB_AngeringCall( true, 2 )
 
     self.WalkSpeed = self.baseWalkSpeed * self.EnragedSpeedMult
     self.MoveSpeed = self.baseMoveSpeed * self.EnragedSpeedMult
@@ -320,8 +308,8 @@ function ENT:BecomeEnraged()
 
     self:SetColor( ColorAlpha( self.EnragedColor, self.EnragedAlpha ) )
 
-    self:EmitSound( "ambient/levels/citadel/strange_talk" .. math.random( 3, 11 ) .. ".wav", 90, 45, 1 )
-    self:EmitSound( "ambient/machines/teleport1.wav", 85, 65, 1 )
+    self:EmitSound( "ambient/levels/citadel/strange_talk" .. math.random( 3, 11 ) .. ".wav", 90, 45, 1, CHAN_STATIC )
+    self:EmitSound( "ambient/levels/advisor_barn/ol07_advisor_00_50_11.wav", 90, 65, 1, CHAN_STATIC )
 
     local pos = self:WorldSpaceCenter()
 
