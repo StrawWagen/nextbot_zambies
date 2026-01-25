@@ -6,7 +6,7 @@ function EFFECT:Init( data )
     local emitter = ParticleEmitter( pos, false )
     if not emitter then return end
 
-    for i = 1, 25 do
+    for _ = 1, 25 do
         local particle = emitter:Add( "particle/particle_smokegrenade", pos + VectorRand() * 25 * scale )
         if particle then
             local outward = VectorRand()
@@ -24,10 +24,11 @@ function EFFECT:Init( data )
             particle:SetAirResistance( 120 )
             particle:SetCollide( false )
             particle:SetLighting( false )
+
         end
     end
 
-    for i = 1, 15 do
+    for _ = 1, 15 do
         local spark = emitter:Add( "effects/spark", pos + VectorRand() * 15 * scale )
         if spark then
             local outward = VectorRand()
@@ -44,14 +45,17 @@ function EFFECT:Init( data )
             spark:SetAirResistance( 50 )
             spark:SetCollide( false )
             spark:SetLighting( false )
+
         end
     end
 
     emitter:Finish()
+
 end
 
 function EFFECT:Think()
     return false
+
 end
 
 function EFFECT:Render()

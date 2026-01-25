@@ -6,7 +6,7 @@ function EFFECT:Init( data )
     local emitter = ParticleEmitter( pos, false )
     if not emitter then return end
 
-    for i = 1, 3 do
+    for _ = 1, 3 do
         local particle = emitter:Add( "particle/particle_smokegrenade", pos )
         if particle then
             local vel = Vector( math.Rand( -8, 8 ), math.Rand( -8, 8 ), math.Rand( 15, 45 ) )
@@ -23,6 +23,7 @@ function EFFECT:Init( data )
             particle:SetAirResistance( 100 )
             particle:SetCollide( false )
             particle:SetLighting( false )
+
         end
     end
 
@@ -42,13 +43,16 @@ function EFFECT:Init( data )
         wisp:SetAirResistance( 80 )
         wisp:SetCollide( false )
         wisp:SetLighting( false )
+
     end
 
     emitter:Finish()
+
 end
 
 function EFFECT:Think()
     return false
+
 end
 
 function EFFECT:Render()

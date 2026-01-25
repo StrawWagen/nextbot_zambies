@@ -7,7 +7,7 @@ function EFFECT:Init( data )
     local emitter = ParticleEmitter( pos, false )
     if not emitter then return end
 
-    for i = 1, count do
+    for _ = 1, count do
         local particle = emitter:Add( "particle/particle_smokegrenade", pos + VectorRand() * 10 * scale )
         if particle then
             local vel = Vector( math.Rand( -20, 20 ), math.Rand( -20, 20 ), math.Rand( 30, 80 ) ) * scale
@@ -24,6 +24,7 @@ function EFFECT:Init( data )
             particle:SetAirResistance( 80 )
             particle:SetCollide( false )
             particle:SetLighting( false )
+
         end
 
         local wisp = emitter:Add( "effects/splash2", pos + VectorRand() * 6 * scale )
@@ -42,14 +43,17 @@ function EFFECT:Init( data )
             wisp:SetAirResistance( 60 )
             wisp:SetCollide( false )
             wisp:SetLighting( false )
+
         end
     end
 
     emitter:Finish()
+
 end
 
 function EFFECT:Think()
     return false
+
 end
 
 function EFFECT:Render()
