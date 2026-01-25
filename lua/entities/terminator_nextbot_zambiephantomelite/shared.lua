@@ -111,7 +111,8 @@ ENT.TouchDamageRadius = 70
 ENT.DeathBlastRadius = 400
 ENT.DeathBlastForce = 600
 ENT.DeathBlastDamage = 30
-ENT.DeathExplosionMagnitude = 200
+ENT.DeathExplosionMagnitude = 600
+ENT.PhatntomThrowMul = 4
 
 ENT.term_SoundPitchShift = 10
 

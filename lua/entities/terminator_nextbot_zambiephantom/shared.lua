@@ -76,12 +76,15 @@ ENT.TeleportChance = 0.5
 
 ENT.ParticleInterval = 0.07
 
-ENT.DeathExplosionMagnitude = 100
+ENT.DeathExplosionMagnitude = 300
+ENT.PhatntomThrowMul = 1
 
 ENT.term_SoundPitchShift = -10
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
+        self:SetSubMaterial( 0, "!nextbotZambies_PhantomFlesh" )
+        self:SetSubMaterial( 1, "!nextbotZambies_PhantomFlesh" )
         self:PhantomOnCreated( data )
     end,
 
@@ -115,18 +118,18 @@ ENT.MySpecialActions = {
         drawHint = true,
         name = "Throw Prop",
         desc = "Catapult a nearby prop at your enemy.",
-        ratelimit = 3, -- seconds between uses
+        ratelimit = 2, -- seconds between uses
         svAction = function( _drive, _driver, bot )
             local enemy = bot:GetEnemy()
-            local pos
+            local at
             if IsValid( enemy ) then
-                pos = enemy:WorldSpaceCenter()
+                at = enemy
 
             else
-                pos = bot:GetEyeTrace().HitPos
+                at = bot:GetEyeTrace().HitPos
 
             end
-            bot:PhantomCatapultDisrespectorAtPos( pos )
+            bot:PhantomCatapultDisrespectorAt( at )
 
         end,
     },
@@ -167,46 +170,126 @@ function ENT:PhantomThink( data )
 end
 
 function ENT:PushingThink()
+    local nextPush = self.zamb_nextAmbientPush or 0
+    if CurTime() < nextPush then return end
+    self.zamb_nextAmbientPush = CurTime() + math.Rand( 0.05, 0.1 )
+
     local disrespector = self:GetCachedDisrespector()
     if not IsValid( disrespector ) then return end
 
     local disrespectorsPhys = disrespector:GetPhysicsObject()
     if not IsValid( disrespectorsPhys ) then return end
 
-    local nearestToMe = disrespector:NearestPoint( self:WorldSpaceCenter() )
-    if nearestToMe:Distance( self:WorldSpaceCenter() ) > 100 then return end
+    local myPos = self:WorldSpaceCenter()
+
+    local nearestToMe = disrespector:NearestPoint( myPos )
+    if nearestToMe:Distance( myPos ) > 100 then return end
 
     local toDisrespector = terminator_Extras.dirToPos( self:GetShootPos(), disrespector:WorldSpaceCenter() )
-    local force = toDisrespector * 10000
+    local force = toDisrespector * 10000 * self.PhatntomThrowMul
     disrespectorsPhys:ApplyForceOffset( force, self:GetShootPos() )
+
+    local effectData = EffectData()
+    effectData:SetOrigin( disrespector:NearestPoint( myPos ) )
+    effectData:SetStart( self.PhantomParticleColor )
+    effectData:SetScale( 0.9 )
+    util.Effect( "terminator_phantomambient", effectData )
 
 end
 
-function ENT:PhantomCatapultDisrespectorAtPos( pos )
+function ENT:PhantomCatapultDisrespectorAt( at )
     local disrespector = self:GetCachedDisrespector()
     if not IsValid( disrespector ) then return end
     if disrespector:IsPlayer() or disrespector:IsNPC() or disrespector:IsNextBot() then return end
 
-    if disrespector:IsPlayerHolding() then
-        disrespector:ForcePlayerDrop()
+    local atFallback
+    if IsValid( at ) then
+        atFallback = at:WorldSpaceCenter()
+
+    else
+        atFallback = at
 
     end
 
-    local disrespectorsPhys = disrespector:GetPhysicsObject()
-    if not IsValid( disrespectorsPhys ) then return end
-    if not disrespectorsPhys:IsMotionEnabled() then return end
-    if not disrespectorsPhys:IsMoveable() then return end
+    self:StopMoving()
+    self:ZAMB_NormalCall()
 
-    local toEnemy = terminator_Extras.dirToPos( disrespector:WorldSpaceCenter(), pos )
-    local force = toEnemy * 350000
-    if self.isEnraged then
-        force = force * 2
+    local levitatePos = disrespector:WorldSpaceCenter() + Vector( 0, 0, 45 )
+    local levitateTimerName = "ZAMB_Phantom_LevitateDisrespector_" .. disrespector:GetCreationID()
 
-    end
-    disrespectorsPhys:ApplyForceOffset( force, disrespector:WorldSpaceCenter() )
+    disrespector.zamb_beingThrown = true
 
-    disrespector:EmitSound( "npc/advisor/advisor_blast6.wav", 75, math.random( 120, 110 ), 1, CHAN_STATIC )
+    disrespector:EmitSound( "npc/advisor/advisor_blast1.wav", 75, math.random( 130, 140 ), 1, CHAN_STATIC )
 
+    self:CreatePhantomExplosion( self:WorldSpaceCenter(), 150 )
+
+    timer.Create( levitateTimerName, 0.05, 0, function()
+        if not IsValid( self ) then timer.Remove( levitateTimerName ) return end
+        if not IsValid( disrespector ) then timer.Remove( levitateTimerName ) return end
+        if not disrespector.zamb_beingThrown then timer.Remove( levitateTimerName ) return end
+
+        local disrespectorsPhys = disrespector:GetPhysicsObject()
+        if not IsValid( disrespectorsPhys ) then timer.Remove( levitateTimerName ) return end
+
+        local toLevitateDir = levitatePos - disrespectorsPhys:GetMassCenter()
+        toLevitateDir:Normalize()
+
+        local force = toLevitateDir * disrespectorsPhys:GetMass()
+        disrespectorsPhys:ApplyForceCenter( force )
+
+    end )
+
+    timer.Simple( 0.75, function()
+        if not IsValid( disrespector ) then return end
+        disrespector.zamb_beingThrown = false
+
+        if not IsValid( self ) then return end
+
+        if disrespector:IsPlayerHolding() then
+            disrespector:ForcePlayerDrop()
+
+        end
+
+        local disrespectorsPhys = disrespector:GetPhysicsObject()
+        if not IsValid( disrespectorsPhys ) then return end
+        if not disrespectorsPhys:IsMotionEnabled() then return end
+        if not disrespectorsPhys:IsMoveable() then return end
+
+        local pos
+        if IsValid( at ) then
+            pos = at:WorldSpaceCenter()
+
+        elseif isvector( at ) then
+            pos = at
+
+        else
+            pos = atFallback
+
+        end
+
+        local toEnemy = terminator_Extras.dirToPos( disrespector:WorldSpaceCenter(), pos )
+        local force = toEnemy * 350000
+        if self.isEnraged then
+            force = force * 2
+
+        end
+
+        force = force * self.PhatntomThrowMul
+
+        disrespectorsPhys:ApplyForceCenter( force )
+        disrespector:EmitSound( "npc/advisor/advisor_blast6.wav", 75, math.random( 120, 110 ), 1, CHAN_STATIC )
+
+        for _ = 1, 5 do
+            local effectData = EffectData()
+            local offset = VectorRand() * 5000
+            local randomPosOnDisrespector = disrespector:NearestPoint( disrespector:LocalToWorld( offset ) )
+            effectData:SetOrigin( randomPosOnDisrespector )
+            effectData:SetStart( self.PhantomParticleColor )
+            effectData:SetScale( 1.5 )
+            util.Effect( "terminator_phantomambient", effectData )
+
+        end
+    end )
 end
 
 function ENT:PhantomOnDamaged( data, dmg )
@@ -265,15 +348,14 @@ end
 
 function ENT:CreatePhantomExplosion( pos, magnitude )
     local explosion = ents.Create( "env_physexplosion" )
-    if IsValid( explosion ) then
-        explosion:SetPos( pos )
-        explosion:SetKeyValue( "magnitude", magnitude )
-        explosion:SetKeyValue( "radius", magnitude * 2 )
-        explosion:SetKeyValue( "spawnflags", "1" )
-        explosion:Spawn()
-        explosion:Fire( "Explode", "", 0 )
-        explosion:Fire( "Kill", "", 0.1 )
-    end
+    if not IsValid( explosion ) then return end
+    explosion:SetPos( pos )
+    explosion:SetKeyValue( "magnitude", magnitude )
+    explosion:SetKeyValue( "radius", magnitude * 2 )
+    explosion:SetKeyValue( "spawnflags", "1" )
+    explosion:Spawn()
+    explosion:Fire( "Explode", "", 0 )
+    explosion:Fire( "Kill", "", 0.1 )
 end
 
 function ENT:PerformTeleport( data, dmg )
