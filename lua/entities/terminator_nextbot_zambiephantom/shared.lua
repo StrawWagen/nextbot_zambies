@@ -13,6 +13,7 @@ list.Set( "NPC", "terminator_nextbot_zambiephantom", {
 
 ENT.PhantomColor = Color( 65, 70, 80 )
 ENT.PhantomParticleColor = Vector( 65, 70, 80 )
+ENT.PhantomMaterialName = "nextbotZambies_PhantomFlesh"
 ENT.PhantomAlpha = 130
 
 if CLIENT then
@@ -23,7 +24,7 @@ if CLIENT then
     function ENT:AdditionalClientInitialize()
         if not materialCreated then
             materialCreated = true
-            CreateMaterial( "nextbotZambies_PhantomFlesh", "VertexLitGeneric", {
+            CreateMaterial( self.PhantomMaterialName, "VertexLitGeneric", {
                 ["$basetexture"] = "models/magnusson_teleporter/magnusson_teleporter_fxglow1",
                 ["$model"] = 1,
                 ["$translucent"] = 1,
@@ -34,8 +35,7 @@ if CLIENT then
 
         self:SetRenderMode( RENDERMODE_TRANSCOLOR )
         self:SetColor( ColorAlpha( self.PhantomColor, self.PhantomAlpha ) )
-        self:SetSubMaterial( 0, "!nextbotZambies_PhantomFlesh" )
-        self:SetSubMaterial( 1, "!nextbotZambies_PhantomFlesh" )
+        self:SetMaterial( "!" .. self.PhantomMaterialName )
         self:DrawShadow( false )
 
         self.NextAmbientParticle = 0
@@ -51,7 +51,7 @@ if CLIENT then
 
         local effectData = EffectData()
         effectData:SetOrigin( self:GetPos() + Vector( math.Rand( -18, 18 ), math.Rand( -18, 18 ), math.Rand( 5, 55 ) ) )
-        effectData:SetStart( self.PhantomParticleColor )
+        effectData:SetStart( self:GetPhantomParticleColor() )
         effectData:SetScale( 0.9 )
         util.Effect( "terminator_phantomambient", effectData )
 
@@ -87,8 +87,6 @@ ENT.term_SoundPitchShift = -10
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
-        self:SetSubMaterial( 0, "!nextbotZambies_PhantomFlesh" )
-        self:SetSubMaterial( 1, "!nextbotZambies_PhantomFlesh" )
         self:PhantomOnCreated( data )
 
     end,
@@ -144,6 +142,7 @@ ENT.MySpecialActions = {
 }
 
 function ENT:PhantomOnCreated( data )
+    self:SetMaterial( "!" .. self.PhantomMaterialName )
     self:SetRenderMode( RENDERMODE_TRANSCOLOR )
     self:SetColor( ColorAlpha( self.PhantomColor, self.PhantomAlpha ) )
     self:DrawShadow( false )
@@ -214,7 +213,7 @@ function ENT:PushingThink()
 
     local effectData = EffectData()
     effectData:SetOrigin( disrespector:NearestPoint( myPos ) )
-    effectData:SetStart( self.PhantomParticleColor )
+    effectData:SetStart( self:GetPhantomParticleColor() )
     effectData:SetScale( 0.9 )
     util.Effect( "terminator_phantomambient", effectData )
 
@@ -306,7 +305,7 @@ function ENT:PhantomCatapultDisrespectorAt( at )
             local offset = VectorRand() * 5000
             local randomPosOnDisrespector = disrespector:NearestPoint( disrespector:LocalToWorld( offset ) )
             effectData:SetOrigin( randomPosOnDisrespector )
-            effectData:SetStart( self.PhantomParticleColor )
+            effectData:SetStart( self:GetPhantomParticleColor() )
             effectData:SetScale( 1.5 )
             util.Effect( "terminator_phantomambient", effectData )
 

@@ -13,6 +13,7 @@ list.Set( "NPC", "terminator_nextbot_zambiephantomelite", {
 
 ENT.PhantomColor = Color( 25, 30, 35 )
 ENT.PhantomParticleColor = Vector( 25, 30, 35 )
+ENT.PhantomMaterialName = "nextbotZambies_PhantomEliteFlesh"
 ENT.PhantomAlpha = 110
 
 ENT.EnragedColor = Color( 115, 40, 40 )
@@ -27,7 +28,7 @@ if CLIENT then
     function ENT:AdditionalClientInitialize()
         if not materialCreated then
             materialCreated = true
-            CreateMaterial( "nextbotZambies_PhantomEliteFlesh", "VertexLitGeneric", {
+            CreateMaterial( self.PhantomMaterialName, "VertexLitGeneric", {
                 ["$basetexture"] = "models/magnusson_teleporter/magnusson_teleporter_fxglow1",
                 ["$model"] = 1,
                 ["$translucent"] = 1,
@@ -38,8 +39,7 @@ if CLIENT then
 
         self:SetRenderMode( RENDERMODE_TRANSCOLOR )
         self:SetColor( ColorAlpha( self.PhantomColor, self.PhantomAlpha ) )
-        self:SetSubMaterial( 0, "!nextbotZambies_PhantomEliteFlesh" )
-        self:SetSubMaterial( 1, "!nextbotZambies_PhantomEliteFlesh" )
+        self:SetMaterial( "!" .. self.PhantomMaterialName )
         self:DrawShadow( false )
 
         self.NextAmbientParticle = 0
