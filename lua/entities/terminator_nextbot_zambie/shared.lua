@@ -709,7 +709,7 @@ function ENT:DoCustomTasks( defaultTasks )
         ["movement_handler"] = {
             StartsOnInitialize = true,
             BehaveUpdateMotion = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 if myTbl.IsSeeEnemy then
                     myTbl.TaskComplete( self, "movement_handler" )
                     myTbl.StartTask( self, "movement_followenemy", "i see an enemy!" )
@@ -732,7 +732,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.startingHealth = entMeta.Health( self )
             end,
             BehaveUpdatePriority = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 local enemy = myTbl.GetEnemy( self )
                 if not IsValid( enemy ) then return end
                 if not myTbl.IsSeeEnemy then return end
@@ -748,7 +748,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
             end,
             BehaveUpdateMotion = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
                 local enemyPos = myTbl.EnemyLastPos
@@ -905,7 +905,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.badCount = 0
             end,
             BehaveUpdateMotion = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
                 local enemyPos = myTbl.EnemyLastPos
@@ -1041,7 +1041,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.nextDuelQuit = CurTime() + math.Rand( 4, 12 )
             end,
             EnemyFound = function( self, data ) -- break our trance
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 if data.startedWithEnemy then return end
                 if not myTbl.IsSeeEnemy then return end
                 if myTbl.DistToEnemy > myTbl.DuelEnemyDist * 2 then return end
@@ -1053,7 +1053,7 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
             BehaveUpdatePriority = function( self, data )
                 if data.nextDuelQuit > CurTime() then return end
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
 
                 if not myTbl.IsSeeEnemy then return end
                 if myTbl.DistToEnemy > myTbl.DuelEnemyDist then return end
@@ -1065,7 +1065,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
             end,
             BehaveUpdateMotion = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 local focus = data.currentFrenzyFocus
                 local validFocus = IsValid( focus )
                 local maxDist = data.maxDist
@@ -1203,7 +1203,7 @@ function ENT:DoCustomTasks( defaultTasks )
         -- complex wander, preserves areas already explored, makes bot cross entire map pretty much
         ["movement_wander"] = {
             OnStart = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 local lastInterceptTry = myTbl.nextInterceptTry or 0
                 myTbl.nextInterceptTry = math.max( CurTime() + 1, lastInterceptTry + 1 )
                 if not myTbl.isUnstucking then
@@ -1212,7 +1212,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 data.nextDuelQuit = CurTime() + math.Rand( 4, 12 )
             end,
             EnemyFound = function( self, data ) -- break our trance
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 if not myTbl.IsSeeEnemy then return end
                 if myTbl.DistToEnemy > myTbl.DuelEnemyDist * 4 then return end
 
@@ -1223,7 +1223,7 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
             BehaveUpdatePriority = function( self, data )
                 if data.nextDuelQuit > CurTime() then return end
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
 
                 if not myTbl.IsSeeEnemy then return end
                 if myTbl.DistToEnemy > myTbl.DuelEnemyDist then return end
@@ -1235,7 +1235,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
             end,
             BehaveUpdateMotion = function( self, data )
-                local myTbl = data.myTbl
+                local myTbl = entMeta.GetTable( self )
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
                 local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
