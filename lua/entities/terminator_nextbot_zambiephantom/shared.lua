@@ -16,6 +16,18 @@ ENT.PhantomParticleColor = Vector( 65, 70, 80 )
 ENT.PhantomMaterialName = "nextbotZambies_PhantomFlesh"
 ENT.PhantomAlpha = 130
 
+function ENT:GetPhantomParticleColor()
+    return self.PhantomParticleColor
+end
+
+function ENT:GetPhantomColor()
+    return self.PhantomColor
+end
+
+function ENT:GetPhantomAlpha()
+    return self.PhantomAlpha
+end
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiephantom", ENT.PrintName )
 
@@ -331,18 +343,6 @@ function ENT:PhantomOnDamaged( data, dmg )
         return true
 
     end
-end
-
-function ENT:GetPhantomParticleColor()
-    return self.PhantomParticleColor
-end
-
-function ENT:GetPhantomColor()
-    return self.PhantomColor
-end
-
-function ENT:GetPhantomAlpha()
-    return self.PhantomAlpha
 end
 
 function ENT:PhantomDie()
