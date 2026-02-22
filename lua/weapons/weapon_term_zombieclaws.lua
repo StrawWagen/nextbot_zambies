@@ -181,7 +181,7 @@ function SWEP:HandleDoor( tr, strength )
 
                 if ( HitCount % 3 ) == 4 then
                     if owner.Use2 then
-                        self:Use2( door )
+                        owner:Use2( door )
 
                     else
                         door:Use( self, self )
@@ -522,6 +522,10 @@ function SWEP:DealDamage()
                 hitEnt:EmitSound( "npc/antlion_guard/shove1.wav", lvl, pitch, 1, CHAN_STATIC )
                 util.ScreenShake( self:GetPos(), damageThisTime * 0.005, 2, 3, math.Clamp( damageThisTime * 5, 0, 2000 ) )
 
+                if math.random( 1, 100 ) < 5 then -- really heavy zambies will eventually open USE doors
+                    owner:Use2( hitEnt )
+
+                end
             end
 
             if not isSignificant then

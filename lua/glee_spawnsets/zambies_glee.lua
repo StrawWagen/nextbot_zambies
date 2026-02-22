@@ -235,7 +235,7 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 5, 10 },
+            hardRandomChance = { 2, 5 },
             name = "zambie_wraith_elite", -- these are 1 hit kills at 100 hp, really strong
             prettyName = "An Elite Wraith",
             class = "terminator_nextbot_zambiewraithelite",
