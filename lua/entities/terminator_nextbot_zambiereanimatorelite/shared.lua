@@ -57,7 +57,7 @@ function ENT:AdditionalInitialize()
 	BaseClass.AdditionalInitialize( self )
 	
 	self.term_SoundPitchShift = -50
-	self.reanim_ReviveDebuff = 10
+	self.reanim_ReviveDebuff = -10
 	self.reanim_ShriekSoundLevelShift = 40 -- Make it heard from farther
 	self.reanim_PulseColor = 144
 
