@@ -172,7 +172,7 @@ function ENT:AdditionalInitialize()
 	self.reanim_PulseSpeed = 60 -- How fast the pulse grows
 	self.reanim_PulseColor = 196 -- The red toning of the pulse
 	
-	self.reanim_ReviveDebuff = 25 -- This is how much percent less should revived zambies have their stats decrease by.
+	self.reanim_ReviveDebuff = -25 -- This is how much percent less should revived zambies have their stats decrease by.
 	self.reanim_ShriekSoundLevelShift = 30 -- How much to change our sound level by when we start to revive stuff
 	
 	self.reanim_PuppetFormationSounds = { -- The sounds that puppets will make when they are forming
@@ -277,8 +277,8 @@ end
 function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
 	local newZamb = ents.Create( class )
 
-	local calculatedDebuff = ( 100 - self.reanim_ReviveDebuff ) / 100
-	local otherwayAround = ( 100 + self.reanim_ReviveDebuff ) / 100
+	local calculatedDebuff = ( 100 + self.reanim_ReviveDebuff ) / 100
+	local otherwayAround = ( 100 - self.reanim_ReviveDebuff ) / 100
 
 	local zambHealth = newZamb.SpawnHealth
 	local zambXtraHealth = newZamb.ExtraSpawnHealthPerPlayer or 0
