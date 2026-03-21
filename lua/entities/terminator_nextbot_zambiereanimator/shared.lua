@@ -39,7 +39,7 @@ ENT.AccelerationSpeed = 500
 ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.FistDamageMul = 2.5
-ENT.FistForceMul = 4
+ENT.FistForceMul = 1
 ENT.FistRangeMul = 2
 ENT.PrefersVehicleEnemies = false
 
