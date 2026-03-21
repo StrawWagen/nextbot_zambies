@@ -34,9 +34,9 @@ ENT.AimSpeed = 500
 ENT.WalkSpeed = 150
 ENT.MoveSpeed = 450
 ENT.RunSpeed = 650
-ENT.AccelerationSpeed = 600
+ENT.AccelerationSpeed = 500
 
-ENT.zamb_MeleeAttackSpeed = 1.25
+ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.FistDamageMul = 2.5
 ENT.FistForceMul = 4
