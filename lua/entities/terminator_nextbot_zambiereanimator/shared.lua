@@ -80,27 +80,27 @@ if SERVER then
 
 elseif CLIENT then
     language.Add( "terminator_nextbot_zambiereanimator", ENT.PrintName )
+    -- This is here so that the effect is created regardless if there is a ton of effects on the server, that way there
+    -- is still an indicator to where the reanimator is if there is a lot of effects
+    -- Otherwise you'd be playing where's waldo with it
+    net.Receive( "REANIM_SpawnPulseOnClients", function()
+        local position = net.ReadVector()
+        local magnitude = net.ReadFloat()
+        local scale = net.ReadFloat()
+        local color = net.ReadUInt( 8 )
+
+        local effectData = EffectData()
+
+        effectData:SetOrigin( position )
+        effectData:SetMagnitude( magnitude )
+        effectData:SetScale( scale )
+        effectData:SetColor( color )
+
+        util.Effect( "terminator_reanimatorpulse", effectData )
+
+    end )
 
 end
- -- This is here so that the effect is created regardless if there is a ton of effects on the server, that way there
- -- is still an indicator to where the reanimator is if there is a lot of effects
- -- Otherwise you'd be playing where's waldo with it
-net.Receive( "REANIM_SpawnPulseOnClients", function()
-    local position = net.ReadVector()
-    local magnitude = net.ReadFloat()
-    local scale = net.ReadFloat()
-    local color = net.ReadUInt( 8 )
-
-    local effectData = EffectData()
-
-    effectData:SetOrigin( position )
-    effectData:SetMagnitude( magnitude )
-    effectData:SetScale( scale )
-    effectData:SetColor( color )
-
-    util.Effect( "terminator_reanimatorpulse", effectData )
-
-end )
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Bool", 31, "Vulnerable" )
@@ -537,29 +537,6 @@ function ENT:OnTakeDamage( damage )
         util.Effect( "StriderBlood", effectData )
 
     end
-
-end
-
-function ENT:Draw()
-    self:DrawModel()
-
-    if !self:GetVulnerable() then return end
-
-    local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
-    local backBonePos, backBoneAng = self:GetBonePosition( backBone )
-    local backBoneDir = backBoneAng:Forward() - Angle( 0, self:GetAngles()[ "y" ], 0 ):Forward() * 6
-
-    local LOS_check = util.TraceLine( {
-        start = LocalPlayer():EyePos(),
-        endpos = backBonePos + backBoneDir,
-        filter = LocalPlayer(),
-        mask = MASK_VISIBLE_AND_NPCS
-    } )
-
-    if LOS_check.Hit and LOS_check.HitPos:Distance( backBonePos + backBoneDir ) > 16 then return end
-
-    render.SetMaterial( Material( "effects/redflare" ) )
-    render.DrawSprite( backBonePos + backBoneDir, 256, 256 )
 
 end
 
