@@ -100,6 +100,28 @@ elseif CLIENT then
 
     end )
 
+    function ENT:Draw()
+        self:DrawModel()
+
+        if !self:GetVulnerable() then return end
+
+        local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
+        local backBonePos, backBoneAng = self:GetBonePosition( backBone )
+        local backBoneDir = backBoneAng:Forward() - Angle( 0, self:GetAngles()[ "y" ], 0 ):Forward() * 6
+
+        local LOS_check = util.TraceLine( {
+            start = LocalPlayer():EyePos(),
+            endpos = backBonePos + backBoneDir,
+            filter = LocalPlayer(),
+            mask = MASK_VISIBLE_AND_NPCS
+        } )
+
+        if LOS_check.Hit and LOS_check.HitPos:Distance( backBonePos + backBoneDir ) > 16 then return end
+
+        render.SetMaterial( Material( "effects/redflare" ) )
+        render.DrawSprite( backBonePos + backBoneDir, 256, 256 )
+
+    end
 end
 
 function ENT:SetupDataTables()
