@@ -27,6 +27,7 @@ ENT.MySpecialActions = {
 
 ENT.JumpHeight = 500
 ENT.SpawnHealth = 1750
+ENT.Term_Leaps = true
 ENT.ExtraSpawnHealthPerPlayer = 50
 ENT.HealthRegen = 3
 ENT.HealthRegenInterval = 1
@@ -61,7 +62,7 @@ ENT.IdleActivityTranslations = {
     [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
     [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
     [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
-    [ACT_MP_JUMP]                       = ACT_HL2MP_JUMP_FIST,
+    [ACT_MP_JUMP]                       = ACT_JUMP,
     [ACT_MP_SWIM]                       = ACT_WALK,
     [ACT_LAND]                          = ACT_LAND,
 }
@@ -210,18 +211,27 @@ function ENT:AdditionalInitialize()
     self:SetSubMaterial( 0, "models/charple/charple3_sheet" )
     self.zamb_LoseCoolRatio = 0.5
 
+    hook.Add( "zamb_OnBecomeTorso", self, function( me, died, newTorso )
+        local diedOwner = died:GetOwner()
+        died.BecameTorso = true
+        newTorso:SetOwner( diedOwner )
+        newTorso:SetNWBool( "IsPuppet", died:GetNWBool( "IsPuppet" ) )
+        newTorso.ID = died.ID
+
+        if not me.ZAMBIE_PUPPETS[died.ID] then return end
+        me.ZAMBIE_PUPPETS[died.ID] = newTorso
+
+    end )
+
     hook.Add( "OnNPCKilled", self, function( me, npc )
         if not npc.IsTerminatorZambie then return end
 
-        if isZambie then
-            local hasMinions = npc.ZAMBIE_MINIONS
-            local dontReviveThese = nil
+        local hasMinions = npc.ZAMBIE_MINIONS
+        local dontReviveThese = nil
 
-            if hasMinions then dontReviveThese = hasMinions end
+        if hasMinions then dontReviveThese = hasMinions end
 
-            me:REANIM_AddZambieDied( npc, dontReviveThese )
-
-        end
+        me:REANIM_AddZambieDied( npc, dontReviveThese )
 
     end )
 
