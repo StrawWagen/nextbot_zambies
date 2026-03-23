@@ -32,8 +32,7 @@ function EFFECT:Think()
 	else
 		return true
 		
-	end
-	
+	end	
 end
 
 function EFFECT:Render()

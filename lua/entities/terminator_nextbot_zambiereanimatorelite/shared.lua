@@ -53,6 +53,16 @@ ENT.IdleActivityTranslations = {
     [ACT_LAND]                          = ACT_LAND,
 }
 
+if CLIENT then
+	language.Add( "terminator_nextbot_zambiereanimatorelite", ENT.PrintName )
+
+	function ENT:Draw()
+		render.SetColorModulation( 0.75, 0.75, 0.2 )
+		BaseClass.Draw( self )
+		
+	end
+end
+
 function ENT:AdditionalInitialize()
 	BaseClass.AdditionalInitialize( self )
 	
@@ -62,10 +72,4 @@ function ENT:AdditionalInitialize()
 	self.reanim_PulseColor = 144
 	self.reanim_PulseRadius = 3500
 
-end
-
-function ENT:Draw()
-	render.SetColorModulation( 0.75, 0.75, 0.2 )
-	BaseClass.Draw( self )
-	
 end
