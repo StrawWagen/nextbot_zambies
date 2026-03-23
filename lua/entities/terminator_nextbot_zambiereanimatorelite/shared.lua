@@ -15,8 +15,8 @@ list.Set( "NPC", "terminator_nextbot_zambiereanimatorelite", {
 } )
 
 ENT.JumpHeight = 650
-ENT.SpawnHealth = 4500
-ENT.ExtraSpawnHealthPerPlayer = 75
+ENT.SpawnHealth = 4000
+ENT.ExtraSpawnHealthPerPlayer = 100
 ENT.HealthRegen = 3
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 500
@@ -60,6 +60,7 @@ function ENT:AdditionalInitialize()
 	self.reanim_ReviveDebuff = -10
 	self.reanim_ShriekSoundLevelShift = 40 -- Make it heard from farther
 	self.reanim_PulseColor = 144
+	self.reanim_PulseRadius = 3500
 
 end
 

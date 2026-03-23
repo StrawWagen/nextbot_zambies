@@ -3,8 +3,8 @@ AddCSLuaFile()
 
 function EFFECT:Init( effectData )
 	self.origin = effectData:GetOrigin()
-	self.size = effectData:GetScale()
-	self.growth = effectData:GetMagnitude() * 100
+	self.size = effectData:GetScale() * 2.75
+	self.growth = effectData:GetMagnitude() * 100 * 2.75
 	self.R_color = effectData:GetColor()
 	self.startTime = CurTime()
 
