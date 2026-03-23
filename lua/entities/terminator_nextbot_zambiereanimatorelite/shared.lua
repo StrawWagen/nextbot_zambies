@@ -21,15 +21,15 @@ ENT.HealthRegen = 3
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 500
 ENT.WalkSpeed = 175
-ENT.MoveSpeed = 575
-ENT.RunSpeed = 700
-ENT.AccelerationSpeed = 500
+ENT.MoveSpeed = 600
+ENT.RunSpeed = 900
+ENT.AccelerationSpeed = 800
 
-ENT.zamb_MeleeAttackSpeed = 0.8
+ENT.zamb_MeleeAttackSpeed = 1
 
-ENT.FistDamageMul = 3.5
+ENT.FistDamageMul = 3
 ENT.FistForceMul = 2
-ENT.FistRangeMul = 2.25
+ENT.FistRangeMul = 2
 ENT.PrefersVehicleEnemies = false
 
 ENT.TERM_MODELSCALE = 2

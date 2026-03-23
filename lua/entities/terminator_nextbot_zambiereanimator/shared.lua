@@ -35,18 +35,18 @@ ENT.AimSpeed = 500
 ENT.WalkSpeed = 150
 ENT.MoveSpeed = 450
 ENT.RunSpeed = 650
-ENT.AccelerationSpeed = 500
+ENT.AccelerationSpeed = 600
 
 ENT.zamb_MeleeAttackSpeed = 1
 
-ENT.FistDamageMul = 2.5
+ENT.FistDamageMul = 1.5
 ENT.FistForceMul = 1
 ENT.FistRangeMul = 2
 ENT.PrefersVehicleEnemies = false
 
 local REANIM_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
 ENT.ARNOLD_MODEL = REANIM_ZAMBIE_MODEL
-ENT.TERM_MODELSCALE = 1.4
+ENT.TERM_MODELSCALE = 1.5
 ENT.CollisionBounds = { Vector( -12, -12, 0 ), Vector( 12, 12, 40 ) }
 ENT.MyPhysicsMass = 800
 
@@ -303,7 +303,7 @@ function ENT:REANIM_AddZambieDied( zamb, dontReviveList )
 		
 	end
 	
-    if zamb:GetOwner() ~= self or !zamb.ID and zamb:GetNWBool( "IsZambReanim_Puppet" ) then 
+    if zamb:GetOwner() ~= self and zamb:GetNWBool( "IsZambReanim_Puppet" ) then 
 		return
 		
 	end
@@ -351,14 +351,6 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
 		newZamb[ key ] = currentValue * calculatedDebuff
 	
 	end
-   
-    if newZamb.zamb_NextPuppetCheck then
-		newZamb.zamb_NextPuppetCheck = math.huge
-
-	elseif newZamb.zamb_NextMinionCheck then
-		newZamb.zamb_NextMinionCheck = math.huge
-		
-	end
 
     newZamb:SetOwner( self )
     newZamb:SetNWBool( "IsZambReanim_Puppet", true )
@@ -367,6 +359,14 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
     newZamb:SetPos( pos )
     newZamb:Spawn()
     newZamb:Activate()
+
+	if newZamb.zamb_NextPuppetCheck then
+		newZamb.zamb_NextPuppetCheck = math.huge
+
+	elseif newZamb.zamb_NextMinionCheck then
+		newZamb.zamb_NextMinionCheck = math.huge
+		
+	end
 
     local soundPath = self.reanim_PuppetFormationSounds[ math.random( 1, 2 ) ]
 

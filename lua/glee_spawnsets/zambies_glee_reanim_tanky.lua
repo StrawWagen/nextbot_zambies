@@ -1,6 +1,6 @@
 
 local reanimatorSpawnSet = {
-	name = "gleesyphus",
+	name = "zambies_glee_reanim_tanky",
 	prettyName = "Gleesyphus",
 	description = "One must imagine Sisyphus gleeful...",
 	difficultyPerMin = "default",
@@ -25,7 +25,7 @@ local reanimatorSpawnSet = {
 			maxCount = { 2, 3 },	
 		},
 		{
-			hardRandomChance = { 5, 8 },
+			hardRandomChance = { 7 },
 			name = "zambie_reanimator_early",
 			prettyName = "Reanimator Zombie Early",
 			class = "terminator_nextbot_zambiereanimator",
@@ -46,7 +46,7 @@ local reanimatorSpawnSet = {
 			maxCount = { 1, 2 },			
 		},
 		{
-			hardRandomChance = nil,
+			hardRandomChance = { 50, 75 },
 			name = "zambie_grunt",
 			prettyName = "Zombie Grunt",
 			class = "terminator_nextbot_zambiegrunt",
