@@ -130,7 +130,7 @@ elseif CLIENT then
 				mask = MASK_VISIBLE_AND_NPCS
 			} )
 			
-			LOS_CheckData.visible = !LOS_check.Hit and LOS_check.HitPos:Distance( backBonePos + backBoneDir ) < 16
+			LOS_CheckData.visible = !LOS_check.Hit or LOS_check.HitPos:Distance( backBonePos + backBoneDir ) < 16
 			LOS_CheckData.time = CurTime() + 0.1
 		
 		end
