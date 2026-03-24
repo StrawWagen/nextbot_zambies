@@ -1,7 +1,7 @@
 
 local reanimatorSpawnSet = {
 	name = "zambies_glee_reanim_collateral",
-	prettyName = "Death Penalty",
+	prettyName = "Infinite Collateral Damage",
 	description = "For masochists and sadists",
 	difficultyPerMin = "default",
 	waveInterval = "default",
