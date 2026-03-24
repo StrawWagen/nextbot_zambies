@@ -180,7 +180,6 @@ function ENT:AdditionalInitialize()
         cycles = 60, -- You can think of this as the "resolution" of the forming
     }
 
-
     self.isTerminatorHunterChummy = "zambies"
     self.HasBrains = true
 
