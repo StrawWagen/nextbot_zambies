@@ -135,7 +135,7 @@ elseif CLIENT then
 		
 		end
 
-        if not self.reanim_LastLOSData.visible then return end
+        if not LOS_CheckData.visible then return end
 
         render.SetMaterial( Material( "effects/redflare" ) )
         render.DrawSprite( backBonePos + backBoneDir, 256, 256 )
@@ -144,7 +144,7 @@ elseif CLIENT then
 end
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "Bool", 31, "reanim_IsVulnerable" ) -- Something keeps overriding this if it's not in a different slot
+    self:NetworkVar( "Bool", 31, "reanim_IsVulnerable" ) -- Idk why but if I adhere from using the slot argument then it just gets overriden
     self:Setreanim_IsVulnerable( false )
 
 end
@@ -161,6 +161,25 @@ end
 
 function ENT:AdditionalInitialize()
     self:SetModel( REANIM_ZAMBIE_MODEL )
+
+	self.reanim_NextPuppetID = 0
+
+    self.reanim_PulseRadius = 1750 -- How far it can revive things
+    self.reanim_PulseSpeed = 60 -- How fast the pulse grows
+    self.reanim_PulseColor = 196 -- The red toning of the pulse
+
+    self.reanim_ReviveDebuff = -25 -- This is how much percent less should revived zambies have their stats decrease by.
+    self.reanim_ShriekSoundLevelShift = 30 -- How much to change our sound level by when we start to revive stuff
+
+    self.reanim_PuppetFormationSounds = { -- The sounds that puppets will make when they are forming
+        "npc/barnacle/barnacle_die1.wav",
+        "npc/barnacle/barnacle_die2.wav"
+    }
+    self.reanim_PuppetFormationTimer = { -- Some timer info for puppets having their bones configured over time
+        duration = 0.25, -- How long it takes for puppets to be fully formed
+        cycles = 60, -- You can think of this as the "resolution" of the forming
+    }
+
 
     self.isTerminatorHunterChummy = "zambies"
     self.HasBrains = true
@@ -206,24 +225,6 @@ function ENT:AdditionalInitialize()
         "terminator_nextbot_zambienecroelite",
         "terminator_nextbot_zambiebigheadcrab",
         "terminator_nextbot_zambiebiggerheadcrab",
-    }
-
-	self.reanim_NextPuppetID = 0
-
-    self.reanim_PulseRadius = 1750 -- How far it can revive things
-    self.reanim_PulseSpeed = 60 -- How fast the pulse grows
-    self.reanim_PulseColor = 196 -- The red toning of the pulse
-
-    self.reanim_ReviveDebuff = -25 -- This is how much percent less should revived zambies have their stats decrease by.
-    self.reanim_ShriekSoundLevelShift = 30 -- How much to change our sound level by when we start to revive stuff
-
-    self.reanim_PuppetFormationSounds = { -- The sounds that puppets will make when they are forming
-        "npc/barnacle/barnacle_die1.wav",
-        "npc/barnacle/barnacle_die2.wav"
-    }
-    self.reanim_PuppetFormationTimer = { -- Some timer info for puppets having their bones configured over time
-        duration = 0.25, -- How long it takes for puppets to be fully formed
-        cycles = 60, -- You can think of this as the "resolution" of the forming
     }
 
     self:SetBodygroup( 1, 1 )

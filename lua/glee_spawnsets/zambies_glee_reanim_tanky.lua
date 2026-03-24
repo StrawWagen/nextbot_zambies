@@ -138,7 +138,6 @@ local reanimatorSpawnSet = {
 			maxCount = { 1 },
 		},
 	}
-
 }
 
 table.insert( GLEE_SPAWNSETS, reanimatorSpawnSet )
