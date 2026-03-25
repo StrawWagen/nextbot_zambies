@@ -34,24 +34,7 @@ ENT.PrefersVehicleEnemies = false
 
 ENT.TERM_MODELSCALE = 2
 ENT.CollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 30 ) }
-ENT.MyPhysicsMass = 1600
-
-local IdleActivity = ACT_IDLE_ANGRY
-ENT.IdleActivity = IdleActivity
-ENT.IdleActivityTranslations = {
-    [ACT_MP_STAND_IDLE]                 = IdleActivity,
-    [ACT_MP_WALK]                       = ACT_WALK,
-    [ACT_MP_RUN]                        = ACT_RUN,
-    [ACT_MP_CROUCH_IDLE]                = ACT_WALK,
-    [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
-    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
-    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
-    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
-    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
-    [ACT_MP_JUMP]                       = ACT_HL2MP_JUMP_FIST,
-    [ACT_MP_SWIM]                       = ACT_WALK,
-    [ACT_LAND]                          = ACT_LAND,
-}
+ENT.MyPhysicsMass = 1000
 
 if CLIENT then
 	language.Add( "terminator_nextbot_zambiereanimatorelite", ENT.PrintName )

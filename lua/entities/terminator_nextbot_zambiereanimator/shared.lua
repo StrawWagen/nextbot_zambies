@@ -48,22 +48,20 @@ local REANIM_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
 ENT.ARNOLD_MODEL = REANIM_ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = 1.5
 ENT.CollisionBounds = { Vector( -12, -12, 0 ), Vector( 12, 12, 40 ) }
-ENT.MyPhysicsMass = 800
+ENT.MyPhysicsMass = 500
 
-local IdleActivity = ACT_IDLE_ANGRY
-ENT.IdleActivity = IdleActivity
 ENT.IdleActivityTranslations = {
-    [ACT_MP_STAND_IDLE]                 = IdleActivity,
+    [ACT_MP_STAND_IDLE]                 = ACT_IDLE_ANGRY,
     [ACT_MP_WALK]                       = ACT_WALK,
     [ACT_MP_RUN]                        = ACT_RUN,
-    [ACT_MP_CROUCH_IDLE]                = ACT_WALK,
-    [ACT_MP_CROUCHWALK]                 = ACT_HL2MP_WALK_CROUCH,
-    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = IdleActivity + 5,
-    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = IdleActivity + 5,
-    [ACT_MP_RELOAD_STAND]               = IdleActivity + 6,
-    [ACT_MP_RELOAD_CROUCH]              = IdleActivity + 7,
+    [ACT_MP_CROUCH_IDLE]                = ACT_RUN,
+    [ACT_MP_CROUCHWALK]                 = ACT_RUN,
+    [ACT_MP_ATTACK_STAND_PRIMARYFIRE]   = ACT_MELEE_ATTACK1,
+    [ACT_MP_ATTACK_CROUCH_PRIMARYFIRE]  = ACT_MELEE_ATTACK1,,
+    [ACT_MP_RELOAD_STAND]               = ACT_INVALID,
+    [ACT_MP_RELOAD_CROUCH]              = ACT_INVALID,
     [ACT_MP_JUMP]                       = ACT_JUMP,
-    [ACT_MP_SWIM]                       = ACT_WALK,
+    [ACT_MP_SWIM]                       = ACT_RUN,
     [ACT_LAND]                          = ACT_LAND,
 }
 
