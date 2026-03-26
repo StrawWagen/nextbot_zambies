@@ -21,20 +21,23 @@ ENT.MySpecialActions = {
         name = "Raise the dead but better.",
         desc = "Revive zambies that have died near you within your lifetime.",
         ratelimit = 4,
-        svAction = function( _drive, _driver, bot ) bot:REANIM_TrySpawnPuppets( true ) end,
+        svAction = function( _drive, _driver, bot )
+	        bot:REANIM_TrySpawnPuppets( true )
+
+        end,
     }
 }
 
 ENT.JumpHeight = 500
-ENT.SpawnHealth = 1200
+ENT.SpawnHealth = 500
 ENT.Term_Leaps = true
 ENT.ExtraSpawnHealthPerPlayer = 75
 ENT.HealthRegen = 3
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 500
 ENT.WalkSpeed = 150
-ENT.MoveSpeed = 450
-ENT.RunSpeed = 650
+ENT.MoveSpeed = 500
+ENT.RunSpeed = 700
 ENT.AccelerationSpeed = 600
 
 ENT.zamb_MeleeAttackSpeed = 1
@@ -142,7 +145,7 @@ elseif CLIENT then
 end
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "Bool", 31, "reanim_IsVulnerable" ) -- Idk why but if I adhere from using the slot argument then it just gets overriden
+    self:NetworkVar( "Bool", 1, "reanim_IsVulnerable" )
     self:Setreanim_IsVulnerable( false )
 
 end
@@ -161,13 +164,13 @@ function ENT:AdditionalInitialize()
     self:SetModel( REANIM_ZAMBIE_MODEL )
 
     self.reanim_NextPuppetID = 0
+	self.reanim_TryReviveInterval = 8
 
-    self.reanim_PulseRadius = 1750 -- How far it can revive things
+    self.reanim_PulseRadius = 2000 -- How far it can revive things
     self.reanim_PulseSpeed = 60 -- How fast the pulse grows
     self.reanim_PulseColor = 196 -- The red toning of the pulse
 
     self.reanim_ReviveDebuff = -25 -- This is how much percent less should revived zambies have their stats decrease by.
-    self.reanim_ShriekSoundLevelShift = 30 -- How much to change our sound level by when we start to revive stuff
 
     self.reanim_PuppetFormationSounds = { -- The sounds that puppets will make when they are forming
         "npc/barnacle/barnacle_die1.wav",
@@ -185,9 +188,9 @@ function ENT:AdditionalInitialize()
     self.term_NextIdleTaunt = math.huge
 
     self.term_SoundPitchShift = -30
-    self.term_SoundLevelShift = 10
+    self.term_SoundLevelShift = 15
 
-    self.term_CallingSound = "npc/stalker/go_alert2a.wav"
+    self.term_CallingSound = "npc/strider/striderx_die1.wav"
     self.term_CallingSmallSound = "npc/stalker/go_alert2a.wav"
     self.term_FindEnemySound = { "npc/headcrab_poison/ph_scream1.wav", "npc/headcrab_poison/ph_scream2.wav", "npc/headcrab_poison/ph_scream3.wav" }
     self.term_AttackSound = { "npc/fast_zombie/fz_scream1.wav" }
@@ -213,7 +216,7 @@ function ENT:AdditionalInitialize()
     self.DeathDropHeight = 2000
     self.CanUseLadders = false
 
-    self.zamb_NextPuppetCheck = CurTime() + 6
+    self.zamb_NextPuppetCheck = CurTime() + self.reanim_TryReviveInterval
     self.ZAMBIE_PUPPETS = {}
     self.DONT_REVIVE = {} -- List of zambies to not revive if they show up
 
@@ -231,11 +234,14 @@ function ENT:AdditionalInitialize()
     hook.Add( "zamb_OnBecomeTorso", self, function( me, died, newTorso )
         local diedOwner = died:GetOwner()
         died.BecameTorso = true
-        newTorso:SetOwner( diedOwner )
-        newTorso:SetNWBool( "IsZambReanim_Puppet", died:GetNWBool( "IsZambReanim_Puppet" ) )
-        newTorso.ID = died.ID
 
         if not me.ZAMBIE_PUPPETS[died.ID] then return end
+
+        newTorso:SetOwner( diedOwner )
+        newTorso:SetNWBool( "IsZambReanim_Puppet", died:GetNWBool( "IsZambReanim_Puppet" ) )
+        newTorso.localID = died.ID
+        newTorso.sharedID = died.sharedID
+
         me.ZAMBIE_PUPPETS[died.ID] = newTorso
 
     end )
@@ -248,29 +254,12 @@ function ENT:AdditionalInitialize()
 
         if hasMinions then 
             dontReviveThese = hasMinions 
-            
+
         end
 
         me:REANIM_AddZambieDied( npc, dontReviveThese )
 
     end )
-end
-
-function ENT:AdditionalThink()
-    if self.zamb_NextPuppetCheck > CurTime() then return end
-
-    local nextResurrectTime = 6
-
-    if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) then 
-        nextResurrectTime = 4 
-        
-    end
-
-    self.zamb_NextPuppetCheck = CurTime() + nextResurrectTime
-
-    if self:IsControlledByPlayer() then return end
-    self:REANIM_TrySpawnPuppets()
-
 end
 
 function ENT:REANIM_AddZambieDied( zamb, dontReviveList )
@@ -286,13 +275,13 @@ function ENT:REANIM_AddZambieDied( zamb, dontReviveList )
         isMinion = table.HasValue( self.DONT_REVIVE, zamb )
         
     end
-    
+
     if isMinion then
         table.RemoveByValue( self.DONT_REVIVE, zamb )
         return
         
     end
-    
+
     if zamb.BecameTorso then -- If our class is not a torso but when we died we became one
         return
         
@@ -300,12 +289,12 @@ function ENT:REANIM_AddZambieDied( zamb, dontReviveList )
         class = string.gsub( class, "torso", "" ) 
         
     end
-    
+
     if zamb:GetOwner() ~= self and zamb:GetNWBool( "IsZambReanim_Puppet" ) then 
         return
         
     end
-    
+
     if dontReviveList then 
         self.DONT_REVIVE = table.Add( self.DONT_REVIVE, dontReviveList ) 
         
@@ -313,13 +302,14 @@ function ENT:REANIM_AddZambieDied( zamb, dontReviveList )
 
     local zambInfo = {
         class = class,
-        pos    = zamb:GetPos(),
+        pos = zamb:GetPos(),
         pending = false,
-        eldritch = zamb.IsEldritch
+        eldritch = zamb.IsEldritch,
+        sharedID = zamb.parentID or zamb:GetCreationID()
     }
 
-    local id = zamb.ID or tostring( self.reanim_NextPuppetID .. "_" .. self:EntIndex() )
-    self.ZAMBIE_PUPPETS[ id ] = zambInfo
+    local localID = zamb.ID or tostring( self.reanim_NextPuppetID .. "_" .. self:EntIndex() )
+    self.ZAMBIE_PUPPETS[ localID ] = zambInfo
 
     if !zamb.ID then
         self.reanim_NextPuppetID = self.reanim_NextPuppetID + 1
@@ -327,8 +317,13 @@ function ENT:REANIM_AddZambieDied( zamb, dontReviveList )
     end
 end
 
-function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
+function ENT:REANIM_SpawnPuppetedZamb( class, pos, ID_local, ID_parent )
     local newZamb = ents.Create( class )
+
+	if not IsValid( newZamb ) then
+        return
+
+    end
 
     local reviveDebuff = self.reanim_ReviveDebuff
     local calculatedDebuff = ( 100 + reviveDebuff ) / 100
@@ -340,11 +335,11 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
         { key = "MoveSpeed" },
         { key = "RunSpeed" },
     }
-    
+
     for _, statData in ipairs( statsToChange ) do
         local key = statData.key
         local fallback = statData.fallback or nil
-        
+
         local currentValue = newZamb[ key ] or fallback
         newZamb[ key ] = currentValue * calculatedDebuff
     
@@ -352,7 +347,16 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
 
     newZamb:SetOwner( self )
     newZamb:SetNWBool( "IsZambReanim_Puppet", true )
-    newZamb.ID = id
+    newZamb.localID = ID_local -- ID that is used for table indexing
+    newZamb.parentID = ID_parent -- ID that is garenteed to be shared across all puppets revived from the same zombie
+    --[[------------------------------------------------------------------------------------------------------------
+    Basically, if another reanimator wants to check if this zombie has already been revived this will return true.
+    You can see it in use within the loop that obtains valid zombies to spawn owo.
+    ------------------------------------------------------------------------------------------------------------]]--
+    hook.Add( tostring( ID_parent ), newZamb, function()
+        return true
+
+    end )
 
     newZamb:SetPos( pos )
     newZamb:Spawn()
@@ -398,7 +402,7 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, id )
             end
         end
 
-        timer.Create( "boneManipTimer_" .. id, timerData.duration / timerData.cycles, timerData.cycles, function()
+        timer.Create( "boneManipTimer_" .. ID_local .. CurTime(), timerData.duration / timerData.cycles, timerData.cycles, function()
             if !IsValid( newZamb ) then return end
             for index = 0, boneCount - 1 do
                 local baseScale = boneScales[index] or REANIM_VECTOR_ONE
@@ -446,17 +450,24 @@ function ENT:REANIM_GiveAneurysm()
 end
 
 function ENT:REANIM_KillAllPuppets()
+    local timeAddIndex = 0
+
     for _, puppet in pairs( self.ZAMBIE_PUPPETS ) do
         if isentity( puppet ) and IsValid( puppet ) then
-            local damageInfo = DamageInfo()
+            timer.Simple( timeAddIndex * 0.1, function()
+                local damageInfo = DamageInfo()
 
-            damageInfo:SetDamage( math.huge )
-            damageInfo:SetDamageForce( vector_origin )
-            damageInfo:SetAttacker( puppet )
+                damageInfo:SetDamage( math.huge )
+                damageInfo:SetDamageForce( vector_origin )
+                damageInfo:SetAttacker( puppet )
 
-            puppet:SetHealth( 1 )
-            puppet:TakeDamageInfo( damageInfo )
-            SafeRemoveEntity( puppet )
+                puppet:SetHealth( 1 )
+                puppet:TakeDamageInfo( damageInfo )
+                SafeRemoveEntity( puppet )
+	
+            end )
+
+            timeAddIndex = timeAddIndex + 1
 
         end
     end
@@ -466,38 +477,34 @@ function ENT:REANIM_TrySpawnPuppets()
     local modelCenter = self:WorldSpaceCenter()
     local hasEldritch = false
 
-    --local expiredKeys = {}
-
     local validRevives = {}
 
     for id, value in SortedPairs( self.ZAMBIE_PUPPETS ) do
-        local position = value.pos or value:GetPos()
+        if table.Count( self.ZAMBIE_PUPPETS ) + table.Count( validRevives ) > 20 then break end
+        if not istable( value ) then continue end
+
+        local position = value.pos
         local distance = position:Distance( modelCenter )
-        local withinSOF = distance < self.reanim_PulseRadius
+        local closeEnough = distance < self.reanim_PulseRadius
+        local withinView = self:VisibleVec( position )
+        local alreadyExists = hook.Run( tostring( value.sharedID ) )
+        
+        if not closeEnough or not withinView or alreadyExists then continue end
 
-        if istable( value ) and withinSOF then
-            validRevives[id] = value
-            validRevives[id].distance = distance
+        validRevives[id] = value
+        validRevives[id].distance = distance
 
-            if !hasEldritch and value.eldritch then 
-                hasEldritch = true 
-                
-            end
+        if !hasEldritch and value.eldritch then 
+            hasEldritch = true
+            
         end
     end
-    --[[
-    for _, value in ipairs( expiredKeys ) do
-        table.RemoveByValue( self.ZAMBIE_PUPPETS, value )
-    
-    end]]
+
 
     if table.Count( validRevives ) <= 0 then return end
 
     self:Term_ClearStuffToSay()
-
-    self.term_SoundLevelShift = self.reanim_ShriekSoundLevelShift
     self:ZAMB_AngeringCall()
-    self.term_SoundLevelShift = -30
 
     self:Setreanim_IsVulnerable( true )
 
@@ -533,7 +540,7 @@ function ENT:REANIM_TrySpawnPuppets()
                     if not IsValid( self ) then return end
 
                     local newPos = stuff.pos
-                    local puppet = self:REANIM_SpawnPuppetedZamb( stuff.class, newPos, id )
+                    local puppet = self:REANIM_SpawnPuppetedZamb( stuff.class, newPos, id, stuff.sharedID )
 
                     local effectData = EffectData()
 
@@ -553,82 +560,102 @@ function ENT:REANIM_TrySpawnPuppets()
     end    
 end
 
-function ENT:OnTakeDamage( damage )
-    BaseClass.OnTakeDamage( self, damage )
+ENT.MyClassTask = {
+    OnDamaged = function( self, _, damage )
+        if !self:Getreanim_IsVulnerable() then return end
 
-    if !self:Getreanim_IsVulnerable() then return end
+        local position = damage:GetDamagePosition()
+        local weapon = damage:GetWeapon()
 
-    local position = damage:GetDamagePosition()
-    local weapon = damage:GetWeapon()
+        local isCrowbar = nil
 
-    local isCrowbar = nil
-
-    if IsValid( weapon ) then 
-        local isCrowbar = weapon:GetClass() == "weapon_crowbar" or weapon:GetClass() == "weapon_stunstick" 
-        
-    end
-
-    local coneDir = self:EyeAngles():Forward() * -1
-    local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir
-    local coneAngle = math.sin( math.rad( 135 * self.TERM_MODELSCALE / 1.4 ) )
-    local coneLength = 1024 * 2
-
-    local isBehind = util.IsPointInCone( position, coneOrigin, coneDir, coneAngle, coneLength )
-
-    if !isBehind then
-        local damageScale = 2 / 3
-
-        damage:ScaleDamage( damageScale )
-        self:EmitSound( "physics/surfaces/tile_impact_bullet1.wav", 125 )
-
-        local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
-        local backBonePos, backBoneAng = self:GetBonePosition( backBone )
-        local backBoneDir = backBoneAng:Forward()
-
-        local effectData = EffectData()
-
-        effectData:SetOrigin( backBonePos )
-        effectData:SetNormal( backBoneDir )
-        effectData:SetMagnitude( 1 )
-        effectData:SetRadius( 0.5 )
-        effectData:SetScale( 1 )
-
-        util.Effect( "Sparks", effectData )
-
-    else
-        local damageScale
-        if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then 
-            damageScale = 1.5 
-            
-        elseif isCrowbar then
-            damageScale = 30 -- Risky to go in with a crowbar/stunstick but does a TON of damage as a reward (hopefully less pointless -w-)
-            
-        else
-            damageScale = 2
+        if IsValid( weapon ) then 
+            local isCrowbar = weapon:GetClass() == "weapon_crowbar" or weapon:GetClass() == "weapon_stunstick" 
             
         end
 
-        damage:ScaleDamage( damageScale )
-        self:EmitSound( "npc/antlion_grub/squashed.wav", 125 )
+        local coneDir = self:EyeAngles():Forward() * -1
+        local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir
+        local coneAngle = math.sin( math.rad( 135 * self.TERM_MODELSCALE / 1.4 ) )
+        local coneLength = 1024 * 2
 
-        local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
-        local backBonePos, backBoneAng = self:GetBonePosition( backBone )
-        local backBoneDir = backBoneAng:Forward() * -1
+        local isBehind = util.IsPointInCone( position, coneOrigin, coneDir, coneAngle, coneLength )
 
-        local effectData = EffectData()
+        if !isBehind then
+            local damageScale = 1 / 4
 
-        effectData:SetOrigin( backBonePos )
-        effectData:SetNormal( backBoneDir )
-        effectData:SetScale( 1 )
+            damage:ScaleDamage( damageScale )
+            self:EmitSound( "physics/surfaces/tile_impact_bullet1.wav", 125 )
 
-        util.Effect( "StriderBlood", effectData )
+            local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
+            local backBonePos, backBoneAng = self:GetBonePosition( backBone )
+            local backBoneDir = backBoneAng:Forward()
 
+            local effectData = EffectData()
+
+            effectData:SetOrigin( backBonePos )
+            effectData:SetNormal( backBoneDir )
+            effectData:SetMagnitude( 1 )
+            effectData:SetRadius( 1 )
+            effectData:SetScale( 1 )
+
+            util.Effect( "Sparks", effectData )
+
+        else
+            local damageScale
+            if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then 
+                damageScale = 1.5 
+                
+            elseif isCrowbar then
+                damageScale = 20 -- Risky to go in with a crowbar/stunstick but does a TON of damage as a reward (hopefully less pointless -w-)
+                
+            else
+                damageScale = 2
+                
+            end
+
+            damage:ScaleDamage( damageScale )
+            self:EmitSound( "npc/antlion_grub/squashed.wav", 125 )
+
+            local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
+            local backBonePos, backBoneAng = self:GetBonePosition( backBone )
+            local backBoneDir = backBoneAng:Forward() * -1
+
+            local effectData = EffectData()
+
+            effectData:SetOrigin( backBonePos )
+            effectData:SetNormal( backBoneDir )
+            effectData:SetScale( 1 )
+
+            util.Effect( "StriderBlood", effectData )
+
+        end
+    end,
+    
+    OnRemoved = function( self )
+        if SERVER and self.ZAMBIE_PUPPETS then 
+            self:REANIM_KillAllPuppets() 
+            
+        end    
+    end,
+    
+    Think = function( self )
+        if self.zamb_NextPuppetCheck > CurTime() then return end
+
+        local nextResurrectTime
+
+        if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) then 
+            nextResurrectTime = self.reanim_TryReviveInterval * 0.75
+            
+        else
+            nextResurrectTime = self.reanim_TryReviveInterval
+            
+        end
+
+        self.zamb_NextPuppetCheck = CurTime() + nextResurrectTime
+
+        if self:IsControlledByPlayer() then return end
+        self:REANIM_TrySpawnPuppets()
+    
     end
-end
-
-function ENT:OnRemove()
-    if SERVER and self.ZAMBIE_PUPPETS then 
-        self:REANIM_KillAllPuppets() 
-        
-    end
-end
+}
