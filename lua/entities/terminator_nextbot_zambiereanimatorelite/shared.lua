@@ -4,14 +4,14 @@ AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambiereanimator"
 DEFINE_BASECLASS( ENT.Base )
 
-ENT.PrintName	= "Zombie Reanimator Elite"
-ENT.Spawnable	= false
-ENT.Author		= "Bluekrakan"
+ENT.PrintName   = "Zombie Reanimator Elite"
+ENT.Spawnable   = false
+ENT.Author	    = "Bluekrakan"
 
 list.Set( "NPC", "terminator_nextbot_zambiereanimatorelite", {
-	Name		= "Zombie Reanimator Elite",
-	Class		= "terminator_nextbot_zambiereanimatorelite",
-	Category	= "Nextbot Zambies"
+	Name = "Zombie Reanimator Elite",
+	Class = "terminator_nextbot_zambiereanimatorelite",
+	Category = "Nextbot Zambies"
 } )
 
 ENT.JumpHeight = 650
@@ -37,23 +37,23 @@ ENT.CollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 30 ) }
 ENT.MyPhysicsMass = 1000
 
 if CLIENT then
-	language.Add( "terminator_nextbot_zambiereanimatorelite", ENT.PrintName )
+    language.Add( "terminator_nextbot_zambiereanimatorelite", ENT.PrintName )
 
-	function ENT:Draw()
-		render.SetColorModulation( 0.8, 0.8, 0.5 )
-		BaseClass.Draw( self )
-		
-	end
+    function ENT:Draw()
+        render.SetColorModulation( 0.8, 0.8, 0.5 )
+        BaseClass.Draw( self )
+
+    end
 end
 
 function ENT:AdditionalInitialize()
-	BaseClass.AdditionalInitialize( self )
+    BaseClass.AdditionalInitialize( self )
 
-	self.term_SoundPitchShift = -50
+    self.term_SoundPitchShift = -50
 
-	self.reanim_ReviveDebuff = -10
-	self.reanim_TryReviveInterval = 6	
-	self.reanim_PulseColor = 144
-	self.reanim_PulseRadius = 4000
+    self.reanim_ReviveDebuff = -10
+    self.reanim_TryReviveInterval = 6
+    self.reanim_PulseColor = 144
+    self.reanim_PulseRadius = 4000
 
 end
