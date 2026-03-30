@@ -29,7 +29,7 @@ ENT.MySpecialActions = {
 }
 
 ENT.JumpHeight = 500
-ENT.SpawnHealth = 500
+ENT.SpawnHealth = 1250
 ENT.Term_Leaps = true
 ENT.ExtraSpawnHealthPerPlayer = 75
 ENT.HealthRegen = 3
@@ -227,7 +227,7 @@ function ENT:AdditionalInitialize()
 
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/charple/charple3_sheet" )
-    self.zamb_LoseCoolRatio = 2 / 3
+    self.zamb_LoseCoolRatio = 2 / 3 -- behavior changes at 2/3 health, loses cool and can run at 1/3 health
 
     hook.Add( "zamb_OnBecomeTorso", self, function( me, died, newTorso )
         local diedOwner = died:GetOwner()
@@ -487,7 +487,7 @@ function ENT:REANIM_TrySpawnPuppets()
         validRevives[id] = value
         validRevives[id].distance = distance
 
-        if !hasEldritch and value.eldritch then
+        if not hasEldritch and value.eldritch then
             hasEldritch = true
 
         end
