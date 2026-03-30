@@ -344,7 +344,7 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, ID )
     Basically, if another reanimator wants to check if this zombie has already been revived this will return true.
     You can see it in use within the loop that obtains valid zombies to spawn owo.
     ------------------------------------------------------------------------------------------------------------]]--
-    hook.Add( tostring( ID ), newZamb, function()
+    hook.Add( ID .. "_puppetExists", newZamb, function()
         return true
 
     end )
@@ -373,11 +373,12 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, ID )
         end )
     end
 
-    local cycle = 1
     local timerData = self.reanim_PuppetFormationTimer
 
     local boneCount = newZamb:GetBoneCount()
     local boneScales = {}
+
+    local timerName = "boneManipTimer_" .. ID .. self:GetCreationID()
 
     timer.Simple( 0, function()
         newZamb:SetSubMaterial( 0, "models/flesh" )
@@ -393,19 +394,23 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, ID )
             end
         end
 
-        timer.Create( "boneManipTimer_" .. ID .. self:GetCreationID(), timerData.duration / timerData.cycles, timerData.cycles, function()
-            if not IsValid( newZamb ) then return end
+        timer.Create( timerName, timerData.duration / timerData.cycles, timerData.cycles, function()
+            if not IsValid( newZamb ) then
+                timer.Pause( timerName )
+                timer.Remove( timerName )
+
+                return
+
+            end
+
+            local cycle = timerData.cycles - timer.RepsLeft( timerName )
             for index = 0, boneCount - 1 do
                 local baseScale = boneScales[index] or REANIM_VECTOR_ONE
-
                 local scale_vector = baseScale / timerData.cycles * cycle
 
                 newZamb:ManipulateBoneScale( index, scale_vector )
 
             end
-
-            cycle = cycle + 1
-
         end )
     end )
 
@@ -441,28 +446,27 @@ function ENT:REANIM_GiveAneurysm()
 end
 
 function ENT:REANIM_KillAllPuppets()
-    local timeAddIndex = 0
+    local timeAdd = 0
 
-    for _, puppet in pairs( self.ZAMBIE_PUPPETS ) do
-        if isentity( puppet ) and IsValid( puppet ) then
-            timer.Simple( timeAddIndex * 0.1, function()
-                if not IsValid( puppet ) then return end
+    for id, puppet in pairs( self.ZAMBIE_PUPPETS ) do
+        if not IsValid( puppet ) then continue end
 
-                local damageInfo = DamageInfo()
+        timeAdd = timeAdd + 1
 
-                damageInfo:SetDamage( math.huge )
-                damageInfo:SetDamageForce( vector_origin )
-                damageInfo:SetAttacker( puppet )
+        timer.Simple( ( timeAdd - 1 ) * 0.1, function()
+            if not IsValid( puppet ) then return end
 
-                puppet:SetHealth( 1 )
-                puppet:TakeDamageInfo( damageInfo )
-                SafeRemoveEntity( puppet )
+            local damageInfo = DamageInfo()
 
-            end )
+            damageInfo:SetDamage( math.huge )
+            damageInfo:SetDamageForce( vector_origin )
+            damageInfo:SetAttacker( puppet )
 
-            timeAddIndex = timeAddIndex + 1
+            puppet:SetHealth( 1 )
+            puppet:TakeDamageInfo( damageInfo )
+            SafeRemoveEntity( puppet )
 
-        end
+        end )
     end
 end
 
@@ -474,15 +478,16 @@ function ENT:REANIM_TrySpawnPuppets()
 
     for id, value in SortedPairs( self.ZAMBIE_PUPPETS ) do
         if table.Count( self.ZAMBIE_PUPPETS ) + table.Count( validRevives ) > 20 then break end
-        if not istable( value ) then continue end
+        if IsEntity( value ) then continue end
 
         local position = value.pos
         local distance = position:Distance( modelCenter )
         local closeEnough = distance < self.reanim_PulseRadius
         local withinView = self:VisibleVec( position )
-        local alreadyExists = hook.Run( tostring( value.sharedID ) )
+        local alreadyExists = hook.Run( id .. "_puppetExists" )
+        local isPending = value.pending
 
-        if not closeEnough or not withinView or alreadyExists then continue end
+        if not closeEnough or not withinView or alreadyExists or isPending then continue end
 
         validRevives[id] = value
         validRevives[id].distance = distance
@@ -493,7 +498,7 @@ function ENT:REANIM_TrySpawnPuppets()
         end
     end
 
-    if table.Count( validRevives ) <= 0 then return end
+    if table.IsEmpty( validRevives ) then return end
 
     self:Term_ClearStuffToSay()
     self:ZAMB_AngeringCall()
@@ -521,32 +526,30 @@ function ENT:REANIM_TrySpawnPuppets()
         net.Send( terminator_Extras.recipFilterAllTargetablePlayers() )
 
         for id, stuff in pairs( validRevives ) do
-            local distance = stuff.distance or 0 / 0 -- NaN will always return false when compared to another number
+            stuff.pending = true
 
-            if istable( stuff ) and stuff.pending == false and distance < self.reanim_PulseRadius then
-                local time = stuff.distance / ( self.reanim_PulseSpeed * 100 )
-                stuff.pending = true
+            local distance = stuff.distance
+            local time = stuff.distance / ( self.reanim_PulseSpeed * 100 )
 
-                timer.Simple( time, function()
-                    if not IsValid( self ) then return end
+            timer.Simple( time, function()
+                if not IsValid( self ) then return end
 
-                    local newPos = stuff.pos
-                    local puppet = self:REANIM_SpawnPuppetedZamb( stuff.class, newPos, id )
+                local newPos = stuff.pos
+                local puppet = self:REANIM_SpawnPuppetedZamb( stuff.class, newPos, id )
 
-                    local effectData = EffectData()
+                local effectData = EffectData()
 
-                    effectData:SetOrigin( newPos )
-                    effectData:SetNormal( vector_up )
-                    effectData:SetFlags( 7 )
-                    effectData:SetScale( 10 )
-                    effectData:SetColor( 0 )
+                effectData:SetOrigin( newPos )
+                effectData:SetNormal( vector_up )
+                effectData:SetFlags( 7 )
+                effectData:SetScale( 10 )
+                effectData:SetColor( 0 )
 
-                    util.Effect( "bloodspray", effectData )
+                util.Effect( "bloodspray", effectData )
 
-                    self.ZAMBIE_PUPPETS[id] = puppet
+                self.ZAMBIE_PUPPETS[id] = puppet
 
-                end )
-            end
+            end )
         end
     end
 end
