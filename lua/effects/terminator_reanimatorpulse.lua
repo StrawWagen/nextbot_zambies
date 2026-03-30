@@ -8,7 +8,7 @@ function EFFECT:Init( effectData )
     self.R_color = effectData:GetColor()
     self.startTime = CurTime()
 
-    self:SetModel( "models/hunter/misc/shell2x2.mdl" )
+    self:SetModel( "models/hunter/misc/sphere2x2.mdl" )
     self:SetRenderMode( RENDERMODE_TRANSADD )
     self:SetMaterial( "lights/white002" )
     self:SetModelScale( 0 )
@@ -36,6 +36,8 @@ function EFFECT:Think()
 end
 
 function EFFECT:Render()
+    render.CullMode( MATERIAL_CULLMODE_NONE )
     self:DrawModel()
+    render.CullMode( MATERIAL_CULLMODE_CCW )
 
 end
