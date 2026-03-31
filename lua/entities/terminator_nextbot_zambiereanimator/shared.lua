@@ -22,7 +22,7 @@ ENT.MySpecialActions = {
         desc = "Revive zambies that have died near you within your lifetime.",
         ratelimit = 6,
         svAction = function( _drive, _driver, bot )
-	        bot:REANIM_TrySpawnPuppets( true )
+            bot:REANIM_TrySpawnPuppets( true )
 
         end,
     }
