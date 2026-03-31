@@ -18,7 +18,7 @@ ENT.MySpecialActions = {
     ["call"] = {
         inBind = IN_RELOAD,
         drawHint = true,
-        name = "Raise the dead but better.",
+        name = "Call upon the fallen.",
         desc = "Revive zambies that have died near you within your lifetime.",
         ratelimit = 6,
         svAction = function( _drive, _driver, bot )
@@ -104,6 +104,8 @@ elseif CLIENT then
 
     end )
 
+    local vulnerableHintMat = Material( "effects/redflare" )
+
     function ENT:Draw()
         self:DrawModel()
 
@@ -111,7 +113,11 @@ elseif CLIENT then
 
         local backBone = self:LookupBone( "ValveBiped.Bip01_Spine2" )
         local backBonePos, backBoneAng = self:GetBonePosition( backBone )
-        local backBoneDir = backBoneAng:Forward() - Angle( 0, self:GetAngles()[ "y" ], 0 ):Forward() * 6
+        local boneFacingDir = backBoneAng:Forward()
+
+        local entityFlatForward = Angle( 0, self:GetAngles()["y"], 0 ):Forward()
+        local backBoneOffset = boneFacingDir - entityFlatForward * 6
+        local offsettedSpritePos = backBonePos + backBoneOffset
 
         if not self.reanim_LastLOSData then
             self.reanim_LastLOSData = {
@@ -125,26 +131,26 @@ elseif CLIENT then
         if LOS_CheckData.time < CurTime() then
             local LOS_check = util.TraceLine( {
                 start = LocalPlayer():EyePos(),
-                endpos = backBonePos + backBoneDir,
+                endpos = offsettedSpritePos,
                 filter = LocalPlayer(),
                 mask = MASK_VISIBLE_AND_NPCS
             } )
 
-            LOS_CheckData.visible = not LOS_check.Hit or LOS_check.HitPos:Distance( backBonePos + backBoneDir ) < 16
+            LOS_CheckData.visible = not LOS_check.Hit or LOS_check.HitPos:Distance( offsettedSpritePos ) < 16
             LOS_CheckData.time = CurTime() + 0.1
 
         end
 
         if not LOS_CheckData.visible then return end
 
-        render.SetMaterial( Material( "effects/redflare" ) )
-        render.DrawSprite( backBonePos + backBoneDir, 256, 256 )
+        render.SetMaterial( vulnerableHintMat )
+        render.DrawSprite( offsettedSpritePos, 256, 256 )
 
     end
 end
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "Bool", 1, "reanim_IsVulnerable" )
+    self:NetworkVar( "Bool", "reanim_IsVulnerable" )
     self:Setreanim_IsVulnerable( false )
 
 end
@@ -175,8 +181,8 @@ function ENT:AdditionalInitialize()
         "npc/barnacle/barnacle_die2.wav"
     }
     self.reanim_PuppetFormationTimer = { -- Some timer info for puppets having their bones configured over time
-        duration = 0.25, -- How long it takes for puppets to be fully formed
-        cycles = 60, -- You can think of this as the "resolution" of the forming
+        duration = 2, -- How long it takes for puppets to be fully formed
+        cycles = 10, -- You can think of this as the "resolution" of the forming
     }
 
     self.isTerminatorHunterChummy = "zambies"
@@ -332,8 +338,8 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, ID )
         local key = statData.key
         local fallback = statData.fallback or nil
 
-        local currentValue = newZamb[ key ] or fallback
-        newZamb[ key ] = currentValue * calculatedDebuff
+        local currentValue = newZamb[key] or fallback
+        newZamb[key] = currentValue * calculatedDebuff
 
     end
 
@@ -528,7 +534,6 @@ function ENT:REANIM_TrySpawnPuppets()
         for id, stuff in pairs( validRevives ) do
             stuff.pending = true
 
-            local distance = stuff.distance
             local time = stuff.distance / ( self.reanim_PulseSpeed * 100 )
 
             timer.Simple( time, function()
