@@ -15,8 +15,8 @@ list.Set( "NPC", "terminator_nextbot_zambiereanimatorelite", {
 } )
 
 ENT.JumpHeight = 650
-ENT.SpawnHealth = 4000
-ENT.ExtraSpawnHealthPerPlayer = 100
+ENT.SpawnHealth = 20000
+ENT.ExtraSpawnHealthPerPlayer = 500
 ENT.HealthRegen = 3
 ENT.HealthRegenInterval = 1
 ENT.AimSpeed = 500
@@ -34,7 +34,7 @@ ENT.PrefersVehicleEnemies = false
 
 ENT.TERM_MODELSCALE = 2
 ENT.CollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 30 ) }
-ENT.MyPhysicsMass = 1000
+ENT.MyPhysicsMass = 5000
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambiereanimatorelite", ENT.PrintName )
@@ -52,8 +52,9 @@ function ENT:AdditionalInitialize()
     self.term_SoundPitchShift = -50
 
     self.reanim_ReviveDebuff = -10
+    self.reanim_ReviveThruWalls = true -- :steamhappy:
     self.reanim_TryReviveInterval = 6
     self.reanim_PulseColor = 144
-    self.reanim_PulseRadius = 4000
+    self.reanim_PulseRadius = 6000
 
 end
