@@ -5,7 +5,7 @@ terminator_Extras.reanim_SpawnTable = {}
 terminator_Extras.reanim_DontRevive = {}
 
 local reanimatorCount = 0
-local termXtras_BadParents = { -- A blacklist of things basically, also the reason reanimators aren't here is because they're already handeled
+local termXtras_BadParents = { -- A blacklist of things basically, also the reason reanimators aren't here is because they're already handled
     "terminator_nextbot_zambienecro",
     "terminator_nextbot_zambienecroelite",
     "terminator_nextbot_zambiebigheadcrab",
@@ -57,29 +57,19 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
 
 end
 
-hook.Add( "OnEntityCreated", "termXtras_IncrementReanimCount", function( ent )
-    timer.Simple( 0, function()
-        local isReanimator = ent.reanim_IsReanimator
-
-        if not isReanimator then return end
-
+hook.Add( "reanim_AliveCountUpdated", "termXtras_UpdateReanimCount", function( increment )
+    if increment then
         reanimatorCount = reanimatorCount + 1
 
-    end )
-end )
+    else
+        reanimatorCount = math.Clamp( reanimatorCount - 1, 0, 10000 ) -- Just in case
 
-hook.Add( "EntityRemoved", "termXtras_CheckReanimCount", function( ent )
-    local isReanimator = ent.reanim_IsReanimator
-    
-    if not isReanimator then return end
-    
-    reanimatorCount = math.Clamp( reanimatorCount - 1, 0, 10000 )
-    
-    if reanimatorCount > 0 then return end
-    
-    terminator_Extras.reanim_SpawnTable = {}
-    terminator_Extras.reanim_DontRevive = {}
-    
+        if reanimatorCount > 0 then return end
+
+        terminator_Extras.reanim_SpawnTable = {}
+        terminator_Extras.reanim_DontRevive = {}
+
+    end
 end )
 
 hook.Add( "zamb_OnBecomeTorso", "termXtras_HandleZambieTorso", function( died, newTorso )
@@ -99,7 +89,7 @@ hook.Add( "zamb_OnBecomeTorso", "termXtras_HandleZambieTorso", function( died, n
 end )
 
 hook.Add( "OnNPCKilled", "termXtras_HandleNPCDeath", function( npc )
-    if not npc.IsTerminatorZambie or reanimatorCount == 0 then return end
+    if reanimatorCount == 0 or not npc.IsTerminatorZambie then return end
 
     local hasMinions = npc.ZAMBIE_MINIONS
     local dontReviveThese = nil

@@ -232,13 +232,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/charple/charple3_sheet" )
     self.zamb_LoseCoolRatio = 2 / 3 -- behavior changes at 2/3 health, loses cool and can run at 1/3 health
-    
-    hook.Add( "OnNPCKilled", self, function( me, npc )
-        if not table.HasValue( me.reanim_RevivedZambs, npc ) then return end
 
-        table.RemoveByValue( me.reanim_RevivedZambs, npc )
-
-    end )
 end
 
 function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
@@ -332,6 +326,23 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
 
 end
 
+function ENT:REANIM_GetSpawnedZambies()
+    local currentPuppets = {}
+
+    for _, info in pairs( terminator_Extras.reanim_SpawnTable ) do
+        local puppet = info.currentRevivedZamb
+
+        if not IsValid( puppet ) then continue end
+        if puppet:GetOwner() ~= self then continue end
+
+        table.insert( currentPuppets, puppet )
+
+    end
+
+    return currentPuppets
+
+end
+
 function ENT:REANIM_GiveAneurysm()
     local headBone = self:LookupBone( "ValveBiped.Bip01_Spine4" ) -- It don't actually have a head
     local headBonePos, headBoneAng = self:GetBonePosition( headBone )
@@ -361,13 +372,9 @@ end
 
 function ENT:REANIM_KillAllPuppets()
     local timeAdd = 0
+    local ourPuppets = self:REANIM_GetSpawnedZambies()
 
-    for _, info in pairs( terminator_Extras.reanim_SpawnTable ) do
-        local puppet = info.currentRevivedZamb
-    
-        if not IsValid( puppet ) then continue end
-        if puppet:GetOwner() ~= self then continue end
-
+    for _, puppet in ipairs( ourPuppets ) do
         timeAdd = timeAdd + 1
 
         timer.Simple( ( timeAdd - 1 ) * 0.1, function()
@@ -391,19 +398,29 @@ function ENT:REANIM_TrySpawnPuppets()
     local modelCenter = self:WorldSpaceCenter()
     local hasEldritch = false
 
+    local ourPuppets = self:REANIM_GetSpawnedZambies()
     local validRevives = {}
 
     for key, value in pairs( terminator_Extras.reanim_SpawnTable ) do
-        if #self.reanim_RevivedZambs + table.Count( validRevives ) > 20 then break end
+        if #ourPuppets + table.Count( validRevives ) > 20 then break end
         if value.currentRevivedZamb then continue end
 
         local position = value.diedPos
         local distance = position:Distance( modelCenter )
         local closeEnough = distance < self.reanim_PulseRadius
-        local withinView = self:VisibleVec( position )
         local isPending = value.pending
 
-        if not closeEnough or not withinView and not self.reanim_ReviveThruWalls or isPending then continue end
+        local withinView
+
+        if self.reanim_ReviveThruWalls then
+            withinView = true
+
+        else
+            withinView = self:VisibleVec( position )
+
+        end
+
+        if not closeEnough or not withinView or isPending then continue end
 
         validRevives[key] = value
         validRevives[key].distance = distance
@@ -544,10 +561,18 @@ ENT.MyClassTask = {
     OnRemoved = function( self )
         if SERVER then
             self:REANIM_KillAllPuppets()
+            hook.Run( "reanim_AliveCountUpdated", false )
 
         end
     end,
-    
+
+    OnPostCreated = function( self )
+        if SERVER then
+            hook.Run( "reanim_AliveCountUpdated", true )
+
+        end
+    end,
+
     Think = function( self )
         if self.zamb_NextPuppetCheck > CurTime() then return end
 
@@ -563,7 +588,8 @@ ENT.MyClassTask = {
 
         self.zamb_NextPuppetCheck = CurTime() + nextResurrectTime
 
-        if self:IsControlledByPlayer() or IsValid( self.zamb_NecroMaster ) then return end
+        if IsValid( self.zamb_NecroMaster ) then return end
+        if self:IsControlledByPlayer() then return end
         self:REANIM_TrySpawnPuppets()
 
     end
