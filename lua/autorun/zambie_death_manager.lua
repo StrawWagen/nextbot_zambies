@@ -4,6 +4,7 @@ terminator_Extras = terminator_Extras or {}
 terminator_Extras.reanim_SpawnTable = {}
 terminator_Extras.reanim_DontRevive = {}
 
+local nextDeadCheck = 0
 local reanimatorCount = 0
 local termXtras_BadParents = { -- A blacklist of things basically, also the reason reanimators aren't here is because they're already handled
     "terminator_nextbot_zambienecro",
@@ -49,13 +50,33 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
         diedPos = zamb:GetPos(),
         class = class,
         currentRevivedZamb = nil,
-        isEldritch = zamb.IsEldritch
+        isEldritch = zamb.IsEldritch,
+        deletion = CurTime() + 180,
     }
 
     local key = zamb.ReferenceKey or tostring( zamb:GetCreationID() )
     terminator_Extras.reanim_SpawnTable[key] = zambInfo
 
 end
+
+hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
+    if nextDeadCheck > CurTime() then return end
+
+    local castTable = {}
+
+    for key, info in SortedPairsByMemberValue( terminator_Extras.reanim_SpawnTable, "deletion", true ) do
+        if info.deletion < CurTime() then break end
+        castTable[key] = info
+
+    end
+
+    terminator_Extras.reanim_SpawnTable = castTable
+
+    PrintTable( terminator_Extras.reanim_SpawnTable )
+
+    nextDeadCheck = CurTime() + 3
+
+end )
 
 hook.Add( "reanim_AliveCountUpdated", "termXtras_UpdateReanimCount", function( increment )
     if increment then
