@@ -177,7 +177,7 @@ function ENT:AdditionalInitialize()
     self.reanim_TryReviveInterval = 8
 
     self.reanim_PulseRadius = 2000 -- How far it can revive things
-    self.reanim_PulseSpeed = 60 -- How fast the pulse grows
+    self.reanim_PulseSpeed = 30 -- How fast the pulse grows
     self.reanim_PulseColor = 196 -- The red toning of the pulse
 
     self.reanim_ReviveDebuff = -25 -- This is how much percent less should revived zambies have their stats decrease by.
@@ -480,6 +480,7 @@ function ENT:REANIM_TrySpawnPuppets()
                 util.Effect( "bloodspray", effectData )
 
                 terminator_Extras.reanim_SpawnTable[key].currentRevivedZamb = puppet
+                terminator_Extras.reanim_SpawnTable[key].deletion = math.huge
 
             end )
         end

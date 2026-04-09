@@ -60,7 +60,7 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
 end
 
 hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
-    if nextDeadCheck > CurTime() then return end
+    if nextDeadCheck > CurTime() or reanimatorCount == 0 then return end
 
     local castTable = {}
 
@@ -71,8 +71,6 @@ hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
     end
 
     terminator_Extras.reanim_SpawnTable = castTable
-
-    PrintTable( terminator_Extras.reanim_SpawnTable )
 
     nextDeadCheck = CurTime() + 3
 
