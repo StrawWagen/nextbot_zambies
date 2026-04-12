@@ -51,7 +51,7 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
         class = class,
         currentRevivedZamb = nil,
         isEldritch = zamb.IsEldritch,
-        deletion = CurTime() + 180,
+        deletion = CurTime() + 120,
     }
 
     local key = zamb.ReferenceKey or tostring( zamb:GetCreationID() )
@@ -72,7 +72,7 @@ hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
 
     terminator_Extras.reanim_SpawnTable = castTable
 
-    nextDeadCheck = CurTime() + 3
+    nextDeadCheck = CurTime() + 5
 
 end )
 

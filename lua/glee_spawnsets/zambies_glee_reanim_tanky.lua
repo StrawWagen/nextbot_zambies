@@ -11,7 +11,7 @@ local reanimatorSpawnSet = {
 	startingSpawnCount = { 6, 8 },
 	maxSpawnCount = 30,
 	roundEndSound = "music/ravenholm_1.mp3",
-	roundStartSound = "ambient/creatures/town_zombie_call1.wav",
+	roundStartSound = "music/stingers/industrial_suspense1.wav",
 	chanceToBeVotable = 10,
 	spawns = {
 		{
@@ -31,12 +31,12 @@ local reanimatorSpawnSet = {
 			class = "terminator_nextbot_zambiereanimator",
 			spawnType = "hunter",
 			difficultyCost = { 6, 8 },
-			difficultyStopAfter = { 60 },
+			difficultyStopAfter = { 50 },
 			countClass = "terminator_nexbot_zambiereanimator",
 			maxCount = { 1 },	
 		},
 		{
-			hardRandomChance = { 40, 50 },
+			hardRandomChance = { 80 },
 			name = "zambie_reanimator_elite",
 			prettyName = "The Menace",
 			class = "terminator_nextbot_zambiereanimatorelite",
