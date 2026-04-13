@@ -18,17 +18,19 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
     local class = zamb:GetClass()
     local isMinion -- This is if we were owned by a necromancer, or a crab of the god variety
 
+    local dontRevive = terminator_Extras.reanim_DontRevive
+
     -- BEHOLD! THE POWER OF LIKE 8 DIFFERENT 'IF' STATEMENTS!
     if IsValid( zamb:GetOwner() ) then
         isMinion = table.HasValue( termXtras_BadParents, zamb:GetOwner():GetClass() )
 
     else
-        isMinion = table.HasValue( terminator_Extras.reanim_DontRevive, zamb )
+        isMinion = table.HasValue( dontRevive, zamb )
 
     end
 
     if isMinion then
-        table.RemoveByValue( terminator_Extras.reanim_DontRevive, zamb )
+        table.RemoveByValue( dontRevive, zamb )
         return
 
     end
@@ -42,7 +44,7 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
     end
 
     if dontReviveList then
-        terminator_Extras.reanim_DontRevive = table.Add( terminator_Extras.reanim_DontRevive, dontReviveList )
+        dontRevive = table.Add( dontRevive, dontReviveList )
 
     end
 
@@ -62,15 +64,16 @@ end
 hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
     if nextDeadCheck > CurTime() or reanimatorCount == 0 then return end
 
+    local spawnTable = terminator_Extras.reanim_SpawnTable
     local castTable = {}
 
-    for key, info in SortedPairsByMemberValue( terminator_Extras.reanim_SpawnTable, "deletion", true ) do
+    for key, info in SortedPairsByMemberValue( spawnTable, "deletion", true ) do
         if info.deletion < CurTime() then break end
         castTable[key] = info
 
     end
 
-    terminator_Extras.reanim_SpawnTable = castTable
+    spawnTable = castTable
 
     nextDeadCheck = CurTime() + 5
 
@@ -94,16 +97,18 @@ end )
 hook.Add( "zamb_OnBecomeTorso", "termXtras_HandleZambieTorso", function( died, newTorso )
     if reanimatorCount == 0 then return end
 
+    local spawnTable = terminator_Extras.reanim_SpawnTable
+
     local diedOwner = died:GetOwner()
     died.BecameTorso = true
 
-    if not terminator_Extras.reanim_SpawnTable[died.ReferenceKey] then return end
+    if not spawnTable[died.ReferenceKey] then return end
 
     newTorso:SetOwner( diedOwner )
     newTorso:SetNWBool( "IsZambReanim_Puppet", died:GetNWBool( "IsZambReanim_Puppet" ) )
     newTorso.ReferenceKey = died.ReferenceKey
 
-    terminator_Extras.reanim_SpawnTable[died.ReferenceKey] = newTorso
+    spawnTable[died.ReferenceKey] = newTorso
 
 end )
 
