@@ -32,8 +32,8 @@ ENT.FistForceMul = 2
 ENT.FistRangeMul = 2
 ENT.PrefersVehicleEnemies = false
 
-ENT.TERM_MODELSCALE = 2
-ENT.CollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 30 ) }
+ENT.TERM_MODELSCALE = 2.5
+ENT.CollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 22 ) }
 ENT.MyPhysicsMass = 5000
 
 if CLIENT then

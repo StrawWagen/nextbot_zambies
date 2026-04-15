@@ -6,7 +6,7 @@ local reanimatorSpawnSet = {
 	difficultyPerMin = "default",
 	waveInterval = "default",
 	diffBumpWhenWaveKilled = "default",
-	startingBudget = "default",
+	startingBudget = "default*4",
 	spawnCountPerDifficulty = "default",
 	startingSpawnCount = { 6, 8 },
 	maxSpawnCount = 30,
@@ -76,7 +76,7 @@ local reanimatorSpawnSet = {
 			maxCount = { 3, 4 },
 		},
 		{
-			hardRandomChance = { 1, 4 },
+			hardRandomChance = { 8 },
 			name = "zambie_tank_early",
 			prettyName = "Zombie Tank Early",
 			class = "terminator_nextbot_zambietank",

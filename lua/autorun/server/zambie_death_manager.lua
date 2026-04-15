@@ -6,23 +6,27 @@ terminator_Extras.reanim_DontRevive = {}
 
 local nextDeadCheck = 0
 local reanimatorCount = 0
-local termXtras_BadParents = { -- A blacklist of things basically, also the reason reanimators aren't here is because they're already handled
-    "terminator_nextbot_zambienecro",
-    "terminator_nextbot_zambienecroelite",
-    "terminator_nextbot_zambiebigheadcrab",
-    "terminator_nextbot_zambiebiggerheadcrab",
-}
 
 local function termXtras_AddZambieDied( zamb, dontReviveList )
     local isTorso = string.match( zamb:GetClass(), "torso" ) == "torso"
     local class = zamb:GetClass()
     local isMinion -- This is if we were owned by a necromancer, or a crab of the god variety
+    local necroMaster = zamb.zamb_NecroMaster
+    local masterIsReanim
+
+    if necroMaster then
+        masterIsReanim = necroMaster.reanim_IsReanimator
+
+    else
+        masterIsReanim = false
+
+    end
 
     local dontRevive = terminator_Extras.reanim_DontRevive
 
     -- BEHOLD! THE POWER OF LIKE 8 DIFFERENT 'IF' STATEMENTS!
-    if IsValid( zamb:GetOwner() ) then
-        isMinion = table.HasValue( termXtras_BadParents, zamb:GetOwner():GetClass() )
+    if IsValid( necroMaster ) and not masterIsReanim then -- We want dead puppets to override their original entries
+        isMinion = true
 
     else
         isMinion = table.HasValue( dontRevive, zamb )
@@ -62,7 +66,8 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
 end
 
 hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
-    if nextDeadCheck > CurTime() or reanimatorCount == 0 then return end
+    if reanimatorCount == 0 then return end
+    if nextDeadCheck > CurTime() then return end
 
     local spawnTable = terminator_Extras.reanim_SpawnTable
     local castTable = {}
@@ -75,7 +80,7 @@ hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
 
     spawnTable = castTable
 
-    nextDeadCheck = CurTime() + 5
+    nextDeadCheck = CurTime() + 5 -- No reason to be calling this every frame
 
 end )
 
@@ -94,6 +99,10 @@ hook.Add( "reanim_AliveCountUpdated", "termXtras_UpdateReanimCount", function( i
     end
 end )
 
+--[[--------------------------------------------------------------------------
+This makes zombies that become torsos not revived so there isn't duplicates.
+Instead torsos get revived as full zambies.
+--------------------------------------------------------------------------]]--
 hook.Add( "zamb_OnBecomeTorso", "termXtras_HandleZambieTorso", function( died, newTorso )
     if reanimatorCount == 0 then return end
 

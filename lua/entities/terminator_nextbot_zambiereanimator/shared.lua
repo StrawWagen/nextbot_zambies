@@ -82,10 +82,9 @@ if SERVER then
 elseif CLIENT then
     language.Add( "terminator_nextbot_zambiereanimator", ENT.PrintName )
     --[[--------------------------------------------------------------
-    This is here so that the effect is created regardless if there is
-    a ton of effects on the server, that way there is still an indicator
-    to where the reanimator is if there is a lot of effects Otherwise
-    you'd be playing where's waldo with it
+    Plays effect using networking to bypass effect limit.
+    It also makes it plays even outside the PVS of the reanimator
+    so it's easier to locate.
     --------------------------------------------------------------]]--
     net.Receive( "REANIM_SpawnPulseOnClients", function()
         local position = net.ReadVector()
@@ -388,7 +387,7 @@ function ENT:REANIM_KillAllPuppets()
 
             puppet:SetHealth( 1 )
             puppet:TakeDamageInfo( damageInfo )
-            SafeRemoveEntityDelayed( puppet, 0.1 )
+            SafeRemoveEntityDelayed( puppet, 1 )
 
         end )
     end
@@ -402,13 +401,15 @@ function ENT:REANIM_TrySpawnPuppets()
     local validRevives = {}
 
     for key, value in pairs( terminator_Extras.reanim_SpawnTable ) do
-        if #ourPuppets + table.Count( validRevives ) > 20 then break end
+        if #ourPuppets + table.Count( validRevives ) >= 20 then break end
         if value.currentRevivedZamb then continue end
+
+        local isPending = value.pending
+        if isPending then continue end
 
         local position = value.diedPos
         local distance = position:Distance( modelCenter )
         local closeEnough = distance < self.reanim_PulseRadius
-        local isPending = value.pending
 
         local withinView
 
@@ -420,7 +421,7 @@ function ENT:REANIM_TrySpawnPuppets()
 
         end
 
-        if not closeEnough or not withinView or isPending then continue end
+        if not closeEnough or not withinView then continue end
 
         validRevives[key] = value
         validRevives[key].distance = distance
