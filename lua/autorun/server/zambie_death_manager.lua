@@ -13,7 +13,9 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
     local isMinion -- This is if we were owned by a necromancer, or a crab of the god variety
     local necroMaster = zamb.zamb_NecroMaster
     local masterIsReanim
+    local dontRevive = terminator_Extras.reanim_DontRevive
 
+    -- BEHOLD! THE POWER OF LIKE 8 DIFFERENT 'IF' STATEMENTS!
     if necroMaster then
         masterIsReanim = necroMaster.reanim_IsReanimator
 
@@ -22,9 +24,6 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
 
     end
 
-    local dontRevive = terminator_Extras.reanim_DontRevive
-
-    -- BEHOLD! THE POWER OF LIKE 8 DIFFERENT 'IF' STATEMENTS!
     if IsValid( necroMaster ) and not masterIsReanim then -- We want dead puppets to override their original entries
         isMinion = true
 

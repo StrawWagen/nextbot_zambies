@@ -12,7 +12,7 @@ local reanimatorSpawnSet = {
 	maxSpawnCount = 30,
 	roundEndSound = "music/ravenholm_1.mp3",
 	roundStartSound = "music/stingers/industrial_suspense1.wav",
-	chanceToBeVotable = 10,
+	chanceToBeVotable = 4,
 	spawns = {
 		{
 			hardRandomChance = { 20, 30 },
