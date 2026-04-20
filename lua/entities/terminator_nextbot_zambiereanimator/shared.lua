@@ -132,7 +132,7 @@ elseif CLIENT then
                 start = LocalPlayer():EyePos(),
                 endpos = offsettedSpritePos,
                 filter = LocalPlayer(),
-                mask = MASK_VISIBLE_AND_NPCS
+                mask = MASK_VISIBLE_AND_NPCS,
             } )
 
             LOS_CheckData.visible = not LOS_check.Hit or LOS_check.HitPos:Distance( offsettedSpritePos ) < 16
@@ -291,7 +291,7 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
     local timerName = "boneManipTimer_" .. key
 
     timer.Simple( 0, function()
-        newZamb:SetMaterial( "models/flesh" ) -- We have to do this so it works on wraiths
+        newZamb:SetMaterial( "models/flesh" )
 
         if newZamb:HasBoneManipulations() then
             for index = 0, boneCount - 1 do
@@ -399,9 +399,10 @@ function ENT:REANIM_TrySpawnPuppets()
 
     local ourPuppets = self:REANIM_GetSpawnedZambies()
     local validRevives = {}
+    local offsetCreationTime = self:GetCreationTime() + 120 -- More optimized to do a math operation once than multiple times
 
-    for key, value in pairs( terminator_Extras.reanim_SpawnTable ) do
-        if #ourPuppets + table.Count( validRevives ) >= 20 then break end
+    for key, value in SortedPairsByMemberValue( terminator_Extras.reanim_SpawnTable, "deletion", true ) do
+        if offsetCreationTime > value.deletion or #ourPuppets + table.Count( validRevives ) >= 20 then break end
         if value.currentRevivedZamb then continue end
 
         local isPending = value.pending
