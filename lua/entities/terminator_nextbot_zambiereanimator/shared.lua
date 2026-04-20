@@ -203,7 +203,11 @@ function ENT:AdditionalInitialize()
     self.term_CallingSound = "npc/stalker/stalker_scream4.wav"
     self.term_CallingSmallSound = "npc/stalker/stalker_scream1.wav"
     self.term_FindEnemySound = { "npc/headcrab_poison/ph_scream1.wav", "npc/headcrab_poison/ph_scream2.wav", "npc/headcrab_poison/ph_scream3.wav" }
-    self.term_AttackSound = { "npc/fast_zombie/fz_scream1.wav" }
+    self.term_AttackSound = {
+        "npc/headcrab_poison/ph_rattle1.wav",
+        "npc/headcrab_poison/ph_rattle2.wav",
+        "npc/headcrab_poison/ph_rattle3.wav",
+    }
     self.term_AngerSound = "NPC_BlackHeadcrab.Threat"
     self.term_DamagedSound = { "npc/headcrab_poison/ph_pain1.wav", "npc/headcrab_poison/ph_pain2.wav", "npc/headcrab_poison/ph_pain3.wav" }
     self.term_DieSound = "npc/zombie_poison/pz_die1.wav"
