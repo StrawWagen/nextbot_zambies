@@ -11,7 +11,7 @@ wipeReviveStuff()
 
 local reanimatorCount = 0
 
-local function termXtras_AddZambieDied( zamb, dontReviveList )
+local function reanim_AddZambieDied( zamb, dontReviveList )
     local isTorso = string.match( zamb:GetClass(), "torso" ) == "torso"
     local class = zamb:GetClass()
     local isMinion -- This is if we were owned by a necromancer, or a crab of the god variety
@@ -136,6 +136,6 @@ hook.Add( "OnNPCKilled", "zambies_reanim_handlenpckilled", function( npc )
 
     end
 
-    termXtras_AddZambieDied( npc, dontReviveThese )
+    reanim_AddZambieDied( npc, dontReviveThese )
 
 end )
