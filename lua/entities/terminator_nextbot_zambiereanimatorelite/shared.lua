@@ -6,12 +6,12 @@ DEFINE_BASECLASS( ENT.Base )
 
 ENT.PrintName   = "Zombie Reanimator Elite"
 ENT.Spawnable   = false
-ENT.Author	    = "Bluekrakan"
+ENT.Author        = "Bluekrakan"
 
 list.Set( "NPC", "terminator_nextbot_zambiereanimatorelite", {
-	Name = "Zombie Reanimator Elite",
-	Class = "terminator_nextbot_zambiereanimatorelite",
-	Category = "Nextbot Zambies"
+    Name = "Zombie Reanimator Elite",
+    Class = "terminator_nextbot_zambiereanimatorelite",
+    Category = "Nextbot Zambies"
 } )
 
 ENT.JumpHeight = 650
