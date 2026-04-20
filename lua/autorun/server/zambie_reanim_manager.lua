@@ -1,5 +1,8 @@
 
 terminator_Extras = terminator_Extras or {}
+terminator_Extras.reanim_SpawnEntryDeletionOffset = 120
+-- The time it takes for an entry to be removed from the spawn pool after it hasn't been revived
+-- The reanimator itself also uses this for some math
 
 local function wipeReviveStuff()
     terminator_Extras.reanim_SpawnTable = {}
@@ -34,7 +37,7 @@ local function reanim_AddZambieDied( zamb )
         class = class,
         currentRevivedZamb = nil,
         isEldritch = zamb.IsEldritch,
-        deletion = CurTime() + 120,
+        deletion = CurTime() + terminator_Extras.reanim_SpawnEntryDeletionOffset,
     }
 
     local key = zamb.ReferenceKey or tostring( zamb:GetCreationID() )

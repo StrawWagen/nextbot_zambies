@@ -403,7 +403,8 @@ function ENT:REANIM_TrySpawnPuppets()
 
     local ourPuppets = self:REANIM_GetSpawnedZambies()
     local validRevives = {}
-    local offsetCreationTime = self:GetCreationTime() + 120 -- More optimized to do a math operation once than multiple times
+    local deletionOffset = terminator_Extras.reanim_SpawnEntryDeletionOffset
+    local offsetCreationTime = self:GetCreationTime() + deletionOffset -- More optimized to do a math operation once than multiple times
 
     for key, value in SortedPairsByMemberValue( terminator_Extras.reanim_SpawnTable, "deletion", true ) do
         if offsetCreationTime > value.deletion or #ourPuppets + table.Count( validRevives ) >= 20 then break end
