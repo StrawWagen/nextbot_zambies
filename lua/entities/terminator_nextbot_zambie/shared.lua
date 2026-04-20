@@ -658,7 +658,7 @@ ENT.MyClassTask = {
     OnKilled = function( self, data, damage, rag )
         self:EmitSound( "common/null.wav", 80 + self.term_SoundLevelShift, 100, 1, CHAN_VOICE )
         self:EmitSound( self.term_DieSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
-        local b1, b2 = self:GetCollisionBounds()
+        local b1, b2 = self:GetSafeCollisionBounds()
         b1 = b1 * 2
         b2 = b2 * 2
         local deadlyAreas = navmesh.FindInBox( self:LocalToWorld( b1 ), self:LocalToWorld( b2 ) )
@@ -991,7 +991,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                         -- determine where player CAN go
                         -- dont build path to somewhere behind walls
-                        local mymins,mymaxs = self:GetCollisionBounds()
+                        local mymins, mymaxs = self:GetSafeCollisionBounds()
                         mymins = mymins * 0.5
                         mymaxs = mymaxs * 0.5
 
