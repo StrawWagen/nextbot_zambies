@@ -126,7 +126,8 @@ end )
 
 -- add zambs to revive tracker
 hook.Add( "OnNPCKilled", "zambies_reanim_handlenpckilled", function( npc )
-    if reanimatorCount == 0 or not npc.IsTerminatorZambie then return end
+    if reanimatorCount == 0 then return end
+    if not npc.IsTerminatorZambie then return end
 
     local hasMinions = npc.ZAMBIE_MINIONS
     local dontReviveThese = nil
