@@ -1,8 +1,13 @@
 
 terminator_Extras = terminator_Extras or {}
 
-terminator_Extras.reanim_SpawnTable = {}
-terminator_Extras.reanim_DontRevive = {}
+local function wipeReviveStuff()
+    terminator_Extras.reanim_SpawnTable = {}
+    terminator_Extras.reanim_DontRevive = {}
+
+end
+
+wipeReviveStuff()
 
 local reanimatorCount = 0
 
@@ -92,8 +97,7 @@ hook.Add( "reanim_AliveCountUpdated", "zambies_reanim_updatecount", function( in
 
         if reanimatorCount > 0 then return end
 
-        terminator_Extras.reanim_SpawnTable = {}
-        terminator_Extras.reanim_DontRevive = {}
+        wipeReviveStuff()
 
     end
 end )
@@ -120,6 +124,7 @@ hook.Add( "zamb_OnBecomeTorso", "zambies_reanim_handlezombietorso", function( di
 
 end )
 
+-- add zambs to revive tracker
 hook.Add( "OnNPCKilled", "zambies_reanim_handlenpckilled", function( npc )
     if reanimatorCount == 0 or not npc.IsTerminatorZambie then return end
 
