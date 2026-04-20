@@ -4,7 +4,6 @@ terminator_Extras = terminator_Extras or {}
 terminator_Extras.reanim_SpawnTable = {}
 terminator_Extras.reanim_DontRevive = {}
 
-local nextDeadCheck = 0
 local reanimatorCount = 0
 
 local function termXtras_AddZambieDied( zamb, dontReviveList )
@@ -64,9 +63,12 @@ local function termXtras_AddZambieDied( zamb, dontReviveList )
 
 end
 
-hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
+local nextDeadCheck = 0
+
+hook.Add( "Think", "zambies_reanim_cleanupreanimtable", function()
     if reanimatorCount == 0 then return end
     if nextDeadCheck > CurTime() then return end
+    nextDeadCheck = CurTime() + 5
 
     local spawnTable = terminator_Extras.reanim_SpawnTable
     local castTable = {}
@@ -77,13 +79,11 @@ hook.Add( "Think", "termXtras_CheckForDeadInfo", function()
 
     end
 
-    spawnTable = castTable
-
-    nextDeadCheck = CurTime() + 5 -- No reason to be calling this every frame
+    terminator_Extras.reanim_SpawnTable = castTable
 
 end )
 
-hook.Add( "reanim_AliveCountUpdated", "termXtras_UpdateReanimCount", function( increment )
+hook.Add( "reanim_AliveCountUpdated", "zambies_reanim_updatecount", function( increment )
     if increment then
         reanimatorCount = reanimatorCount + 1
 
@@ -102,7 +102,7 @@ end )
 This makes zombies that become torsos not revived so there isn't duplicates.
 Instead torsos get revived as full zambies.
 --------------------------------------------------------------------------]]--
-hook.Add( "zamb_OnBecomeTorso", "termXtras_HandleZambieTorso", function( died, newTorso )
+hook.Add( "zamb_OnBecomeTorso", "zambies_reanim_handlezombietorso", function( died, newTorso )
     if reanimatorCount == 0 then return end
 
     local spawnTable = terminator_Extras.reanim_SpawnTable
@@ -120,7 +120,7 @@ hook.Add( "zamb_OnBecomeTorso", "termXtras_HandleZambieTorso", function( died, n
 
 end )
 
-hook.Add( "OnNPCKilled", "termXtras_HandleNPCDeath", function( npc )
+hook.Add( "OnNPCKilled", "zambies_reanim_handlenpckilled", function( npc )
     if reanimatorCount == 0 or not npc.IsTerminatorZambie then return end
 
     local hasMinions = npc.ZAMBIE_MINIONS
