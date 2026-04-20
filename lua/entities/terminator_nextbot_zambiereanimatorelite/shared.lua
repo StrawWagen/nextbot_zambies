@@ -46,6 +46,7 @@ if CLIENT then
     end
 end
 
+-- TODO; no more BaseClass.AdditionalInitialize call
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 
@@ -58,3 +59,37 @@ function ENT:AdditionalInitialize()
     self.reanim_PulseRadius = 6000
 
 end
+
+ENT.Term_FootstepTiming = "perfect"
+ENT.PerfectFootsteps_FeetBones = { "ValveBiped.Bip01_L_Foot", "ValveBiped.Bip01_R_Foot" }
+ENT.PerfectFootsteps_SteppingCriteria = -0.75
+ENT.Term_FootstepSoundWalking = {
+    {
+        path = "npc/headcrab_poison/ph_wallhit1.wav",
+        lvl = 78,
+        pitch = 70,
+    },
+    {
+        path = "npc/headcrab_poison/ph_wallhit2.wav",
+        lvl = 78,
+        pitch = 70,
+    },
+}
+ENT.Term_FootstepSound = { -- running sounds
+    {
+        path = "NPC_Strider.Footstep",
+        lvl = 93,
+        pitch = 80,
+    },
+    {
+        path = "NPC_Strider.Footstep",
+        lvl = 93,
+        pitch = 80,
+    },
+}
+ENT.Term_FootstepShake = {
+    amplitude = 2,
+    frequency = 20,
+    duration = 0.35,
+    radius = 1500,
+}
