@@ -3,7 +3,6 @@ terminator_Extras = terminator_Extras or {}
 
 local function wipeReviveStuff()
     terminator_Extras.reanim_SpawnTable = {}
-    terminator_Extras.reanim_DontRevive = {}
 
 end
 
@@ -11,33 +10,13 @@ wipeReviveStuff()
 
 local reanimatorCount = 0
 
-local function reanim_AddZambieDied( zamb, dontReviveList )
+local function reanim_AddZambieDied( zamb )
     local isTorso = string.match( zamb:GetClass(), "torso" ) == "torso"
     local class = zamb:GetClass()
-    local isMinion -- This is if we were owned by a necromancer, or a crab of the god variety
     local necroMaster = zamb.zamb_NecroMaster
-    local masterIsReanim
-    local dontRevive = terminator_Extras.reanim_DontRevive
 
-    -- BEHOLD! THE POWER OF LIKE 8 DIFFERENT 'IF' STATEMENTS!
-    if necroMaster then
-        masterIsReanim = necroMaster.reanim_IsReanimator
-
-    else
-        masterIsReanim = false
-
-    end
-
-    if IsValid( necroMaster ) and not masterIsReanim then -- We want dead puppets to override their original entries
-        isMinion = true
-
-    else
-        isMinion = table.HasValue( dontRevive, zamb )
-
-    end
-
-    if isMinion then
-        table.RemoveByValue( dontRevive, zamb )
+    -- If we were owned by a necromancer (alive or dead) that isn't itself a reanimator, skip revival
+    if necroMaster and not necroMaster.reanim_IsReanimator then
         return
 
     end
@@ -47,11 +26,6 @@ local function reanim_AddZambieDied( zamb, dontReviveList )
 
     elseif isTorso then
         class = string.gsub( class, "torso", "" )
-
-    end
-
-    if dontReviveList then
-        dontRevive = table.Add( dontRevive, dontReviveList )
 
     end
 
@@ -129,14 +103,6 @@ hook.Add( "OnNPCKilled", "zambies_reanim_handlenpckilled", function( npc )
     if reanimatorCount == 0 then return end
     if not npc.IsTerminatorZambie then return end
 
-    local hasMinions = npc.ZAMBIE_MINIONS
-    local dontReviveThese = nil
-
-    if hasMinions then
-        dontReviveThese = hasMinions
-
-    end
-
-    reanim_AddZambieDied( npc, dontReviveThese )
+    reanim_AddZambieDied( npc )
 
 end )
