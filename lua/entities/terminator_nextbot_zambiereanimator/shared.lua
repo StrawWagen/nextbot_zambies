@@ -275,6 +275,10 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
     newZamb:Spawn()
     newZamb:Activate()
 
+    -- if playermodel zombie, play slumprise
+    newZamb:DoGesture( "ACT_HL2MP_ZOMBIE_SLUMP_RISE", math.Rand( 1.5, 2.5 ), true )
+    newZamb.zambGrunt_HasArmor = false -- disable grunt armor, it's all flesh!
+
     local soundPath = self.reanim_PuppetFormationSounds[ math.random( 1, 2 ) ]
 
     newZamb:EmitSound( soundPath, 125, math.Rand( 75, 150 ), 1, CHAN_AUTO, 2 )
