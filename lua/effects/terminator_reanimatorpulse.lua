@@ -40,16 +40,16 @@ function EFFECT:Think()
 end
 
 function EFFECT:Render()
+    local mat = self.matOverlay
+    if not mat or mat:IsError() then return end -- content failed to ship!
+
     local scrollSpeed = 0.5
     local offset = ( CurTime() * scrollSpeed ) % 1
 
-    local mat = self.matOverlay
-    if mat and not mat:IsError() then
-        local matrixT = Matrix()
-        matrixT:Translate( Vector( 0, offset, 0 ) )
+    local matrixT = Matrix()
+    matrixT:Translate( Vector( 0, offset, 0 ) )
 
-        mat:SetMatrix( "$basetexturetransform", matrixT )
-    end
+    mat:SetMatrix( "$basetexturetransform", matrixT )
 
     render.CullMode( MATERIAL_CULLMODE_NONE )
     render.MaterialOverride( mat )
