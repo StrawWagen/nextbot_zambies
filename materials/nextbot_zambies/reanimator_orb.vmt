@@ -1,5 +1,5 @@
 "UnlitGeneric"
 {
-	"$basetexture" "reanimator/reanimator_orb"
+	"$basetexture" "nextbot_zambies/reanimator_orb"
 	"$translucent" 1
 }
