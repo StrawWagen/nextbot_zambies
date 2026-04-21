@@ -1,0 +1,5 @@
+"UnlitGeneric"
+{
+	"$basetexture" "reanimator/reanimator_orb"
+	"$translucent" 1
+}
