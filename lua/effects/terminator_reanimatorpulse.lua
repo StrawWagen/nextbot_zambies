@@ -9,7 +9,7 @@ function EFFECT:Init( effectData )
 
     self:SetModel( "models/hunter/misc/sphere2x2.mdl" )
     self:SetRenderMode( RENDERMODE_TRANSADD )
-    self:SetMaterial( "reanimator/reanimator_orb" )
+    self:SetMaterial( "nextbot_zambies/reanimator_orb" )
     self:SetModelScale( 0 )
 
     self:SetPos( self.origin )
