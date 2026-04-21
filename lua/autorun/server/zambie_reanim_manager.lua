@@ -97,8 +97,6 @@ hook.Add( "zamb_OnBecomeTorso", "zambies_reanim_handlezombietorso", function( di
     newTorso:SetNWBool( "IsZambReanim_Puppet", died:GetNWBool( "IsZambReanim_Puppet" ) )
     newTorso.ReferenceKey = died.ReferenceKey
 
-    spawnTable[died.ReferenceKey] = newTorso
-
 end )
 
 -- add zambs to revive tracker

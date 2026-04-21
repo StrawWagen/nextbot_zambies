@@ -378,13 +378,20 @@ function ENT:REANIM_GiveAneurysm()
 end
 
 function ENT:REANIM_KillAllPuppets()
-    local timeAdd = 0
     local ourPuppets = self:REANIM_GetSpawnedZambies()
 
-    for _, puppet in ipairs( ourPuppets ) do
-        timeAdd = timeAdd + 1
+    for index, puppet in ipairs( ourPuppets ) do
+        local delay = ( index - 1 ) * math.Rand( 0.5, 0.8 )
+        if math.random( 1, 3 ) == 1 then
+            timer.Simple( delay * 0.5, function()
+                if not IsValid( puppet ) then return end
+                puppet:Term_ClearStuffToSay()
+                puppet:ZAMB_AngeringCall()
 
-        timer.Simple( ( timeAdd - 1 ) * 0.1, function()
+            end )
+        end
+
+        timer.Simple( delay, function()
             if not IsValid( puppet ) then return end
 
             local damageInfo = DamageInfo()
@@ -588,20 +595,24 @@ ENT.MyClassTask = {
     Think = function( self )
         if self.zamb_NextPuppetCheck > CurTime() then return end
 
-        local nextResurrectTime
+        if IsValid( self.zamb_NecroMaster ) then return end
+        if self:IsControlledByPlayer() then return end
+
+        -- try and wait until we see an enemy before we revive
+        if not self.IsSeeEnemy and math.random( 0, 100 ) < 99 then return end
+
+        local nextResurrectDelay
 
         if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) then
-            nextResurrectTime = self.reanim_TryReviveInterval * 0.75
+            nextResurrectDelay = self.reanim_TryReviveInterval * 0.75
 
         else
-            nextResurrectTime = self.reanim_TryReviveInterval
+            nextResurrectDelay = self.reanim_TryReviveInterval
 
         end
 
-        self.zamb_NextPuppetCheck = CurTime() + nextResurrectTime
+        self.zamb_NextPuppetCheck = CurTime() + nextResurrectDelay
 
-        if IsValid( self.zamb_NecroMaster ) then return end
-        if self:IsControlledByPlayer() then return end
         self:REANIM_TrySpawnPuppets()
 
     end
