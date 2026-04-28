@@ -44,7 +44,7 @@ ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.FistDamageMul = 1.5
 ENT.FistForceMul = 1
-ENT.FistRangeMul = 2
+ENT.FistRangeMul = 1.2
 ENT.PrefersVehicleEnemies = false
 
 local REANIM_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
@@ -519,15 +519,23 @@ ENT.MyClassTask = {
 
         end
 
-        local coneDir = self:EyeAngles():Forward() * -1
+        local coneDir = self:EyeAngles():Forward() * -1 * ( self.TERM_MODELSCALE / 1.5 )
         local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir
-        local coneAngle = math.sin( math.rad( 135 * self.TERM_MODELSCALE / 1.4 ) )
+        local coneAngle = math.sin( math.rad( 135 ) )
         local coneLength = 1024 * 2
 
         local isBehind = util.IsPointInCone( position, coneOrigin, coneDir, coneAngle, coneLength )
 
         if not isBehind then
-            local damageScale = 1 / 4
+            local damageScale
+            
+            if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
+                damageScale = 1 / 2
+
+            else
+                damageScale = 1 / 4
+
+            end
 
             damage:ScaleDamage( damageScale )
             self:EmitSound( "physics/surfaces/tile_impact_bullet1.wav", 125 )
@@ -540,7 +548,7 @@ ENT.MyClassTask = {
 
             effectData:SetOrigin( backBonePos )
             effectData:SetNormal( backBoneDir )
-            effectData:SetMagnitude( 1 )
+            effectData:SetMagnitude( 1.5 )
             effectData:SetRadius( 1 )
             effectData:SetScale( 1 )
 
@@ -548,7 +556,8 @@ ENT.MyClassTask = {
 
         else
             local damageScale
-            if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then
+            
+            if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
                 damageScale = 1.5
 
             elseif isCrowbar then
@@ -603,7 +612,7 @@ ENT.MyClassTask = {
 
         local nextResurrectDelay
 
-        if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) then
+        if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
             nextResurrectDelay = self.reanim_TryReviveInterval * 0.75
 
         else

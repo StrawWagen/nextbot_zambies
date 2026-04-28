@@ -1,4 +1,3 @@
-AddCSLuaFile()
 
 function EFFECT:Init( effectData )
     self.origin = effectData:GetOrigin()
@@ -8,14 +7,15 @@ function EFFECT:Init( effectData )
     self.startTime = CurTime()
 
     self:SetModel( "models/hunter/misc/sphere2x2.mdl" )
-    self:SetRenderMode( RENDERMODE_TRANSADD )
+    self:SetRenderMode( RENDERMODE_TRANSCOLOR )
     self:SetMaterial( "nextbot_zambies/reanimator_orb" )
     self:SetModelScale( 0 )
 
     self:SetPos( self.origin )
 
-    self.matOverlay = Material( "reanimator/reanimator_orb" )
+    self.matOverlay = Material( "nextbot_zambies/reanimator_orb" )
     self.spinAngle = 0
+    
 end
 
 function EFFECT:Think()
@@ -34,9 +34,11 @@ function EFFECT:Think()
 
     if self:GetModelScale() > self.size / 128 then
         return false
-    else
-        return true
+
     end
+
+    return true
+
 end
 
 function EFFECT:Render()
@@ -58,4 +60,5 @@ function EFFECT:Render()
 
     render.MaterialOverride( nil )
     render.CullMode( MATERIAL_CULLMODE_CCW )
+
 end
