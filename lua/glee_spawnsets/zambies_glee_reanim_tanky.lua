@@ -10,8 +10,8 @@ local reanimatorSpawnSet = {
 	spawnCountPerDifficulty = "default",
 	startingSpawnCount = { 6, 8 },
 	maxSpawnCount = 30,
-	roundEndSound = "music/ravenholm_1.mp3",
-	roundStartSound = "music/stingers/industrial_suspense1.wav",
+	roundEndSound = "music/hl2_song28.mp3",
+	roundStartSound = "music/stingers/hl1_stinger_song8.mp3",
 	chanceToBeVotable = 4,
 	spawns = {
 		{
@@ -98,7 +98,7 @@ local reanimatorSpawnSet = {
 		{
 			hardRandomChance = { 15, 35 },
 			name = "zambie_tank_elite",
-			prettyName = "Zombie Tank",
+			prettyName = "Zombie Tank Elite",
 			class = "terminator_nextbot_zambietankelite",
 			spawnType = "hunter",
 			difficultyCost = { 350, 500 },

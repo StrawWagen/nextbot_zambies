@@ -10,8 +10,8 @@ local reanimatorSpawnSet = {
 	spawnCountPerDifficulty = "default",
 	startingSpawnCount = 10,
 	maxSpawnCount = 40,
-	roundEndSound = "music/ravenholm_1.mp3",
-	roundStartSound = "music/stingers/industrial_suspense1.wav",
+	roundEndSound = "music/hl2_song28.mp3",
+	roundStartSound = "music/stingers/hl1_stinger_song7.mp3",
 	chanceToBeVotable = 4,
 	spawns = {
 		{
