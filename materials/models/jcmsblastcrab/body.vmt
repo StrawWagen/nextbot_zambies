@@ -1,0 +1,7 @@
+"VertexLitGeneric"
+{
+    "$baseTexture"     "models/jcmsblastcrab/body"
+    "$selfillum" 1
+    "$selfillummask" "models/jcmsblastcrab/body_illum"
+    "$model" 1
+}
