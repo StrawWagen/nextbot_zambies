@@ -44,7 +44,7 @@ ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.FistDamageMul = 1.5
 ENT.FistForceMul = 1
-ENT.FistRangeMul = 1.2
+ENT.FistRangeMul = 1.35
 ENT.PrefersVehicleEnemies = false
 
 local REANIM_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
@@ -519,9 +519,9 @@ ENT.MyClassTask = {
 
         end
 
-        local coneDir = self:EyeAngles():Forward() * -1 * ( self.TERM_MODELSCALE / 1.5 )
-        local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir
-        local coneAngle = math.sin( math.rad( 135 ) )
+        local coneDir = self:EyeAngles():Forward() * -1 -- Obtains the direction that the cone volume will be pointing in, it can only yaw
+        local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir * ( self.TERM_MODELSCALE / 1.5 ) -- The actual offset origin of the cone
+        local coneAngle = math.sin( math.rad( 135 ) ) -- The FOV of the cone
         local coneLength = 1024 * 2
 
         local isBehind = util.IsPointInCone( position, coneOrigin, coneDir, coneAngle, coneLength )
