@@ -8,10 +8,13 @@ for i = 1, 9 do
     BLOOD_DECALS[i] = Material( "decals/blood" .. i )
 end
 
+local crossVec1 = Vector( 0, 0, 1 )
+local crossVec2 = Vector( 0, 1, 0 )
+
 local function DrawBeamRing( center, normal, radius, width, color, segments )
-    local tangent = normal:Cross( Vector( 0, 0, 1 ) )
+    local tangent = normal:Cross( crossVec1 )
     if tangent:LengthSqr() < 0.001 then
-        tangent = normal:Cross( Vector( 0, 1, 0 ) )
+        tangent = normal:Cross( crossVec2 )
     end
     tangent:Normalize()
     local bitangent = normal:Cross( tangent )
