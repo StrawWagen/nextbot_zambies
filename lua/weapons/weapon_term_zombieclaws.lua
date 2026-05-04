@@ -190,7 +190,7 @@ function SWEP:HandleDoor( tr, strength )
                 end
 
                 if isProperDoor then
-                    self:SoftBashProperDoor( door, owner )
+                    terminator_Extras.SoftBashDoorRotating( door, self )
 
                 end
             end
@@ -202,50 +202,6 @@ function SWEP:HandleDoor( tr, strength )
             end
         end
     end
-end
-
-function SWEP:SoftBashProperDoor( door, owner )
-    local newname = "TFABash" .. self:EntIndex()
-    self.term_PreBashName = self:GetName()
-    self:SetName( newname )
-
-    if not door.term_defaultsGrabbed then
-        door.term_defaultsGrabbed = true
-        local values = door:GetKeyValues()
-        door.term_oldBashSpeed = values["speed"]
-        door.term_oldOpenDir = values["opendir"]
-        door.term_oldOpenDmg = values["dmg"]
-
-    end
-
-    door:SetKeyValue( "speed", "500" )
-    door:SetKeyValue( "opendir", 0 )
-    door:SetKeyValue( "dmg", 100 )
-    door:Fire( "unlock", "", .01 )
-    door:Fire( "openawayfrom", newname, .01 )
-
-    timer.Simple( 0.02, function()
-        if not IsValid( owner ) or owner:GetName() ~= newname then return end
-
-        owner:SetName( owner.term_PreBashName )
-
-    end )
-
-    timer.Simple( 0.3, function()
-        if not IsValid( door ) then return end
-        if door.term_oldBashSpeed then
-            door:SetKeyValue( "speed", door.term_oldBashSpeed )
-
-        end
-        if door.term_oldOpenDir then
-            door:SetKeyValue( "opendir", door.term_oldOpenDir )
-
-        end
-        if door.term_oldOpenDmg then
-            door:SetKeyValue( "dmg", door.term_oldOpenDmg )
-
-        end
-    end )
 end
 
 function SWEP:Initialize()
@@ -280,12 +236,13 @@ function SWEP:PrimaryAttack()
         seq = owner:SelectWeightedSequence( act )
 
     end
-    local seqSpeed = owner.zamb_MeleeAttackSpeed
+    local seqSpeed = owner.zamb_MeleeAttackSpeed or 1
 
     local additionalDelay = owner.zamb_MeleeAttackAdditionalDelay or 0
     local meleeTime = owner:SequenceDuration( seq ) / seqSpeed
     local nextMeleeTime = CurTime() + ( ( meleeTime - 0.1 ) * seqSpeed ) + additionalDelay
     self:SetNextPrimaryFire( nextMeleeTime )
+    -- play anim next tick
     timer.Simple( 0, function()
         if not IsValid( self ) then return end
         if not IsValid( owner ) then return end
@@ -298,15 +255,17 @@ function SWEP:PrimaryAttack()
 
     local dmgTime = ( ( meleeTime - 0.7 ) / seqSpeed ) * hitframeMul
 
+    -- deal damage
     timer.Simple( dmgTime, function()
         if not IsValid( self ) then return end
         if not IsValid( owner ) then return end
         if not owner:IsSolid() then return end
-        if owner:RunTask( "BlockClawSwipe" ) then return end
+        if owner.RunTask and owner:RunTask( "BlockClawSwipe" ) then return end
         self:DealDamage()
 
         self:SetClip1( self:Clip1() - 1 )
         self:SetLastShootTime()
+
     end )
 end
 
@@ -334,9 +293,11 @@ function SWEP:DealDamage()
     local firstTirDist = tr.Fraction * range
     local hitEnts
 
+    -- traceLine hit, use that
     if IsValid( tr.Entity ) then
         hitEnts = { tr.Entity }
 
+    -- traceLine did not hit, find things to hit with ents.FindAlongRay
     else
         local startPos = ownersShoot
         local smallerDist = math.min( firstTirDist, range * 0.75 )
