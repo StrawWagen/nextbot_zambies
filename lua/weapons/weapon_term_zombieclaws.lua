@@ -190,7 +190,7 @@ function SWEP:HandleDoor( tr, strength )
                 end
 
                 if isProperDoor then
-                    terminator_Extras.SoftBashDoorRotating( door, self )
+                    terminator_Extras.OpenDoorQuicklyAwayFrom( door, self )
 
                 end
             end
