@@ -135,7 +135,7 @@ ENT.MyClassTask = {
 
 -- Shared drain logic used by all three Fear tiers.
 -- Slowly kills the NPC over time once drainStartTime has passed,
--- so Fear zombies can't linger indefinitely if the player ignores them.
+-- so Fears can't linger indefinitely if the player ignores them.
 function ENT:zamb_FearRunDrain( data )
     if not data.draining then
         if CurTime() < data.drainStartTime then return end

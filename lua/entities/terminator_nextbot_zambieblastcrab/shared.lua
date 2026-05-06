@@ -1,5 +1,3 @@
--- entities/terminator_nextbot_zambieblastcrab/shared.lua
-
 AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiecrabbaby"
@@ -27,8 +25,7 @@ local CONTACT_RADIUS = 96
 -- within the base's death sequence (OnKilled fires inside FinishDying, which
 -- is itself inside the base's damage handling). Without full deferral,
 -- util.BlastDamageInfo hits other blastcrabs in the radius, their OnKilled
--- fires synchronously inside the current FinishDying call stack, and the base
--- reports "tried to die twice" for each one caught in the chain.
+-- fires synchronously inside the current FinishDying call stack.
 local function DoExplosion( self, attacker, deferred )
     if self.zamb_BlastCrabDied then return end
     self.zamb_BlastCrabDied = true
@@ -70,7 +67,6 @@ local function DoExplosion( self, attacker, deferred )
     end
 end
 
--- NOTE: collision bounds have been tuned and verified with ent_bbox.
 ENT.SpawnHealth             = 10
 ENT.TERM_MODELSCALE         = 1.5
 ENT.CollisionBounds         = { Vector( -8, -8, 0 ),  Vector( 8, 8, 12 ) }

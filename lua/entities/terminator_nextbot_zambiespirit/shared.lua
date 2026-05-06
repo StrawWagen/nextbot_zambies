@@ -1,5 +1,3 @@
--- entities/terminator_nextbot_zambiespirit/shared.lua
-
 AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiefast"
@@ -25,7 +23,7 @@ local ZAMBIE_PREFIX     = "terminator_nextbot_zambie"
 local ZAMBIE_PREFIX_LEN = #ZAMBIE_PREFIX
 
 -- Maximum model scale a target zambie may have to be eligible for carrying.
--- Entities scaled above 1.15 (large or boss-tier zambies) are excluded so
+-- Entities scaled above 1.15 are excluded so
 -- the spirit targets only roughly human-scale or smaller zambies.
 local MAX_CARRY_SCALE  = 1.15
 
@@ -89,7 +87,6 @@ end
 -- handles the common case; pcall guards against the base's internal
 -- NearestPoint error when an area becomes invalid between the check and
 -- the call.
--- TODO: remove once the base provides a safe nav-validated navigation task.
 local function SafeGoto( bot, pos )
     if not isvector( pos ) then return end
     local area = navmesh.GetNearestNavArea( pos, false, 512 )
@@ -315,8 +312,6 @@ ENT.MyClassTask = {
 }
 
 ENT.MySpecialActions = {
-    -- Overrides the base zambie "call" action so IN_RELOAD is repurposed for
-    -- picking up a nearby eligible zambie instead of calling allies.
     [ "call" ] = {
         name      = "Pick Up Zambie",
         desc      = "Grabs a nearby eligible zambie and carries it",
@@ -362,8 +357,7 @@ ENT.MySpecialActions = {
 -- Returns true if `target` is a zambie the spirit may carry.
 -- Uses guard clauses (early returns) rather than a single nested condition.
 -- Exclusion of large/boss zambies is dynamic via scale and max-health checks
--- rather than a hardcoded class list, so new zambie types are handled
--- automatically.
+-- rather than a hardcoded class list cause straw didnt like it so new zambie types are handled automatically.
 function ENT:IsGoodGrabTarget( target )
     if not IsValid( target ) then return false end
     if string.sub( target:GetClass(), 1, ZAMBIE_PREFIX_LEN ) ~= ZAMBIE_PREFIX then return false end
@@ -376,11 +370,6 @@ function ENT:IsGoodGrabTarget( target )
     return true
 end
 
--- Lighter variant of IsGoodGrabTarget for BehaveUpdateMotion, where
--- FindByClass("terminator_nextbot_zambie*") already guarantees the class
--- prefix. Omits the string.sub prefix check and the MOVETYPE_NONE guard;
--- all other checks (validity, self-exclusion, health, parent, scale,
--- max-health) are retained.
 function ENT:IsGoodGrabTarget_Optimised( target )
     if not IsValid( target ) then return false end
     if target == self then return false end
@@ -410,8 +399,6 @@ function ENT:SpiritDeath( attacker, inflictor, forceVec )
 
     self:EmitSound( "npc/advisor/advisor_scream.wav", 100, 170, 1 )
 
-    -- Fire OnNPCKilled to fake a proper NPC death for the game mode / director,
-    -- since this entity never actually calls the engine's NPC death path.
     hook.Call( "OnNPCKilled", GAMEMODE, self, attacker, inflictor )
 
     self:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
@@ -506,7 +493,6 @@ function ENT:DeployNPCs( pos )
             ent:SetAngles( faceAngle )
         end
 
-        -- ReallyAnger makes the zambie immediately aggressive regardless of state
         ent:ReallyAnger( 30 )
 
         local filter = RecipientFilter()

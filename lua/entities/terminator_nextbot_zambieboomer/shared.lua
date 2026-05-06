@@ -1,5 +1,3 @@
--- entities/terminator_nextbot_zambieboomer/shared.lua
-
 AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambie"
@@ -300,10 +298,8 @@ ENT.MoveSpeed          = 115
 ENT.RunSpeed           = 350
 ENT.AccelerationSpeed  = 350
 ENT.DeccelerationSpeed = 900
-
 -- Distance at which the boomer begins its arming sequence.
--- Exposed as an ENT field so subclasses can tune it; set a larger value
--- for elite variants that should arm from further away.
+-- Exposed as an ENT field so subclasses can tune it
 ENT.zamb_BoomerArmDistance = 200
 
 ENT.FistDamageMul      = 0
