@@ -81,8 +81,7 @@ ENT.MyClassTask = {
         -- Randomise fist damage so individual fears feel distinct
         self.FistDamageMul = math.max( 0.1, 2.5 + math.Rand( -5, 5 ) )
 
-        -- Apply DMG_DISSOLVE resistance via OnDamaged rather than EFL_NO_DISSOLVE
-        -- so the resistance is a stat rather than a flag, making it easier to tune
+        -- Apply DMG_DISSOLVE resistance via OnDamaged rather than EFL_NO_DISSOLVE so the resistance is a stat rather than a flag, making it easier to tune
 
         for i = 0, self:GetNumBodyGroups() - 1 do
             self:SetSubMaterial( i, FEAR_MATERIALS[ math.random( #FEAR_MATERIALS ) ] )
@@ -111,9 +110,7 @@ ENT.MyClassTask = {
         end
     end,
 
-    -- NOTE: the GetClass check is currently necessary because MyClassTask callbacks
-    -- fire for all classes in the hierarchy. Once the base provides a way to make
-    -- tasks non-fungible this guard can be removed.
+    -- NOTE: the GetClass check is currently necessary because MyClassTask callbacks fire for all classes in the hierarchy. Once the base provides a way to make tasks non-fungible this guard can be removed.
     OnKilled = function( self, data, attacker, inflictor, ragdoll )
         if self:GetClass() ~= "terminator_nextbot_zambieonefear" then return end
         local pos   = self:GetPos()
@@ -133,9 +130,7 @@ ENT.MyClassTask = {
 
 }
 
--- Shared drain logic used by all three Fear tiers.
--- Slowly kills the NPC over time once drainStartTime has passed,
--- so Fears can't linger indefinitely if the player ignores them.
+-- Shared drain logic used by all three Fear tiers. Slowly kills the NPC over time once drainStartTime has passed so Fears can't linger indefinitely if the player ignores them.
 function ENT:zamb_FearRunDrain( data )
     if not data.draining then
         if CurTime() < data.drainStartTime then return end

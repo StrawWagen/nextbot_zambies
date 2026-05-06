@@ -16,16 +16,7 @@ local BLAST_MODEL    = "models/headcrab.mdl"
 local CONTACT_DAMAGE = 65
 local CONTACT_RADIUS = 96
 
--- Triggers the blastcrab's explosion. zamb_BlastCrabDied is set as the first
--- statement so that concurrent calls from OnKilled and the BehaveUpdatePriority
--- proximity check both see the flag immediately, before any damage, sound, or
--- removal logic runs.
---
--- The entire explosion is deferred via timer.Simple( 0 ) when called from
--- within the base's death sequence (OnKilled fires inside FinishDying, which
--- is itself inside the base's damage handling). Without full deferral,
--- util.BlastDamageInfo hits other blastcrabs in the radius, their OnKilled
--- fires synchronously inside the current FinishDying call stack.
+-- Triggers the blastcrab's explosion. zamb_BlastCrabDied is set as the first statement so that concurrent calls from OnKilled and the BehaveUpdatePriority proximity check both see the flag immediately, before any damage, sound, or removal logic runs. The entire explosion is deferred via timer.Simple( 0 ) when called from within the base's death sequence (OnKilled fires inside FinishDying, which is itself inside the base's damage handling). Without full deferral, util.BlastDamageInfo hits other blastcrabs in the radius, their OnKilled fires synchronously inside the current FinishDying call stack.
 local function DoExplosion( self, attacker, deferred )
     if self.zamb_BlastCrabDied then return end
     self.zamb_BlastCrabDied = true
@@ -75,9 +66,7 @@ ENT.CrouchCollisionBounds   = { Vector( -2, -2, 0 ),  Vector( 2, 2, 4  ) }
 ENT.FistDamageMul = 0
 
 ENT.MySpecialActions = {
-    -- Exposed to player control so a driver can detonate the crab on demand.
-    -- ratelimit = 0 is intentional: DoExplosion removes the entity before a
-    -- second trigger could fire, so no cooldown is needed.
+-- Exposed to player control so a driver can detonate the crab on demand. ratelimit = 0 is intentional: DoExplosion removes the entity before a second trigger could fire, so no cooldown is needed.
     [ "Detonate" ] = {
         name      = "Detonate",
         desc      = "Triggers the blastcrab explosion",
@@ -85,8 +74,7 @@ ENT.MySpecialActions = {
         drawHint  = true,
         ratelimit = 0,
         svAction  = function( driveController, driver, bot )
-            -- Player-triggered: not inside any base death stack, safe to run
-            -- with deferred = true (no extra timer wrapping needed).
+            -- Player-triggered: not inside any base death stack, safe to run with deferred = true (no extra timer wrapping needed).
             DoExplosion( bot, driver, true )
         end,
     },
@@ -104,16 +92,13 @@ ENT.MyClassTask = {
         local enemy = self:GetEnemy()
         if not IsValid( enemy ) then return end
         if self.DistToEnemy and self.DistToEnemy <= 48 then
-            -- BehaveUpdatePriority runs in a coroutine outside the damage
-            -- stack, so deferred = true is safe here.
+            -- BehaveUpdatePriority runs in a coroutine outside the damage stack, so deferred = true is safe here.
             DoExplosion( self, enemy, true )
         end
     end,
 
     OnKilled = function( self, data, attacker, inflictor, ragdoll )
-        -- OnKilled fires inside FinishDying, which is inside the base's damage
-        -- handling. Pass deferred = false so the explosion is pushed to the
-        -- next frame, fully outside the current call stack.
+        -- OnKilled fires inside FinishDying, which is inside the base's damage handling. Pass deferred = false so the explosion is pushed to the next frame, fully outside the current call stack.
         DoExplosion( self, attacker, false )
     end,
 

@@ -75,8 +75,7 @@ function ENT:OnRemove()
     BaseClass.OnRemove( self )
 end
 
--- Footsteps are suppressed entirely for this tier — they're tiny and numerous
--- enough that footstep audio would be overwhelming
+-- Footsteps are suppressed entirely for this tier — they're tiny and numerous enough that footstep audio would be annoying
 function ENT:AdditionalFootstep( pos, foot, sound, volume, filter )
     return true
 end

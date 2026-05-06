@@ -22,26 +22,16 @@ local ZOMBIE_COLOR      = Color( 100, 180, 100 )
 local ZAMBIE_PREFIX     = "terminator_nextbot_zambie"
 local ZAMBIE_PREFIX_LEN = #ZAMBIE_PREFIX
 
--- Maximum model scale a target zambie may have to be eligible for carrying.
--- Entities scaled above 1.15 are excluded so
--- the spirit targets only roughly human-scale or smaller zambies.
+-- Maximum model scale a target zambie may have to be eligible for carrying. Entities scaled above 1.15 are excluded so the spirit targets only roughly human-scale or smaller zambies.
 local MAX_CARRY_SCALE  = 1.15
 
--- Maximum *max* health a target may have to be eligible for carrying.
--- Checked via GetMaxHealth() rather than Health(), so a heavily damaged
--- elite is still excluded. Keeps the spirit from carrying boss-tier zambies.
+-- Maximum *max* health a target may have to be eligible for carrying. Checked via GetMaxHealth() rather than Health(), so a heavily damaged elite is still excluded. Keeps the spirit from carrying boss-tier zambies.
 local MAX_CARRY_HEALTH = 250
 
--- Finds up to `count` valid nav positions distributed around a circle of
--- `radius` units centred on `center`. Candidates are snapped to the nav mesh
--- and must be at least 40% of `radius` apart from any already accepted
--- position. Returns (positions, filled) where filled is true when `count`
--- positions were successfully placed (not a guarantee of good spread).
+-- Finds up to `count` valid nav positions distributed around a circle of `radius` units centred on `center`. Candidates are snapped to the nav mesh and must be at least 40% of `radius` apart from any already accepted position. Returns (positions, filled) where filled is true when `count` positions were successfully placed (not a guarantee of good spread).
 local function PackSquadVectors( center, count, radius )
     local results   = {}
-    -- Six attempts per slot provides slack for nav-mesh misses and spacing
-    -- rejections. On very sparse nav meshes fewer than `count` may still be
-    -- placed even with this headroom.
+    -- Six attempts per slot provides slack for nav-mesh misses and spacing rejections. On very sparse nav meshes fewer than `count` may still be placed even with this headroom.
     local attempts  = count * 6
     local angleStep = ( math.pi * 2 ) / attempts
 

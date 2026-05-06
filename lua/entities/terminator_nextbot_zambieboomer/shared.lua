@@ -25,9 +25,7 @@ local VECTOR_ONE         = Vector( 1, 1, 1 )
 if CLIENT then
     language.Add( "terminator_nextbot_zambieboomer", ENT.PrintName )
 
-    -- Creates (or returns cached) the blastcrab-head overlay model parented to
-    -- this boomer. Stored as self.zamb_BoomerHeadModel so the field's origin is
-    -- immediately clear in debugger output.
+    -- Creates (or returns cached) the blastcrab-head overlay model parented to the boomer. Stored as self.zamb_BoomerHeadModel so the field's origin is immediately clear in debugger output.
     local function GetOrCreateHead( self )
         if IsValid( self.zamb_BoomerHeadModel ) then return self.zamb_BoomerHeadModel end
 
@@ -75,9 +73,7 @@ if CLIENT then
                 self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 100, 1 )
             end
 
-            -- Random blood splatter (Think fires every 0.05 s). Probability equals
-            -- frac, so near arm-start almost nothing fires; near detonation roughly
-            -- one splatter fires per tick.
+            -- Random blood splatter (Think fires every 0.05 s). Probability equals frac, so near arm-start almost nothing fires; near detonation roughly one splatter fires per tick.
             if math.random() < frac then
                 local ed  = EffectData()
                 local pos = self:WorldSpaceCenter()
@@ -155,10 +151,7 @@ sound.Add( {
     },
 } )
 
--- Sets the NW2 variables that the client reads in Draw/Think for inflate FX.
--- Replaces the former net.Start/net.Broadcast approach; NW2 variables are
--- automatically included in the entity's network state, so late-joining
--- clients receive the current armed state without a dedicated resend.
+-- Sets the NW2 variables that the client reads in Draw/Think for inflate FX. Replaces the former net.Start/net.Broadcast approach; NW2 variables are automatically included in the entity's network state, so late-joining clients receive the current armed state without a dedicated resend.
 local function BroadcastArmed( self, armed )
     self:SetNW2Bool( "zamb_BoomerArmed", armed )
     self:SetNW2Float( "zamb_BoomerArmTime", self.zamb_BoomerArmTime )
@@ -179,12 +172,7 @@ local function ResetBones( self )
     end
 end
 
--- Executes the boomer burst. When deferred = true the call stack is clean and
--- all logic runs immediately. When deferred = false (called from OnKilled,
--- which fires inside the base's FinishDying / damage handling) the entire body
--- is pushed to the next frame via timer.Simple( 0 ) so that util.BlastDamageInfo
--- does not fire synchronously inside the base's death call stack, which would
--- cause the "tried to die twice" error on any entity caught in the blast radius.
+-- Executes the boomer burst. When deferred = true the call stack is clean and all logic runs immediately. When deferred = false (called from OnKilled which fires inside the base's FinishDying / damage handling) the entire body is pushed to the next frame via timer.Simple( 0 ) so that util.BlastDamageInfo does not fire synchronously inside the base's death call stack, which would cause the "tried to die twice" error on any entity caught in the blast radius.
 local function DoBurst( self, deferred )
     if self.zamb_BoomerBursting then return end
     self.zamb_BoomerBursting = true
@@ -235,9 +223,7 @@ local function DoBurst( self, deferred )
             if IsValid( self ) then self:Remove() end
         end )
     else
-        -- Called from within the base's death/damage call stack. Capture all
-        -- state we need now (pos, primed, obliterated) before deferring, since
-        -- self may be mid-removal by the time the timer fires.
+        -- Called from within the base's death/damage call stack. Capture all state we need now (pos, primed, obliterated) before deferring, since self may be mid-removal by the time the timer fires.
         local pos         = self:WorldSpaceCenter()
         local primed      = self.zamb_BoomerPrimed
         local obliterated = self.zamb_BoomerObliterated
@@ -253,8 +239,7 @@ local function DoBurst( self, deferred )
         self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 70, 1 )
 
         timer.Simple( 0, function()
-            -- Damage and crab spawning deferred to next frame so they occur
-            -- entirely outside the current FinishDying call stack.
+            -- Damage and crab spawning deferred to next frame so they occur entirely outside the current FinishDying call stack.
             local dmg = DamageInfo()
             dmg:SetAttacker( game.GetWorld() )
             dmg:SetInflictor( game.GetWorld() )
@@ -298,8 +283,7 @@ ENT.MoveSpeed          = 115
 ENT.RunSpeed           = 350
 ENT.AccelerationSpeed  = 350
 ENT.DeccelerationSpeed = 900
--- Distance at which the boomer begins its arming sequence.
--- Exposed as an ENT field so subclasses can tune it
+-- Distance at which the boomer begins its arming sequence. Exposed as an ENT field so subclasses can tune it
 ENT.zamb_BoomerArmDistance = 200
 
 ENT.FistDamageMul      = 0
@@ -329,9 +313,7 @@ ENT.Term_FootstepShake = {
     radius    = 300,
 }
 
--- Module-level Angle mutated in place by BehaveUpdatePriority (server-side,
--- runs every game frame per armed boomer). Avoids allocating a new Angle
--- on each tick during the arming sequence.
+-- Module-level Angle mutated in place by BehaveUpdatePriority (server-side runs every game frame per armed boomer). Avoids allocating a new Angle on each tick during the arming sequence.
 local zamb_JitterAngle = Angle( 0, 0, 0 )
 
 ENT.MySpecialActions = {}
@@ -407,9 +389,7 @@ ENT.MyClassTask = {
     end,
 
     OnKilled = function( self, data, attacker, inflictor, ragdoll )
-        -- OnKilled fires inside FinishDying, which is inside the base's damage
-        -- handling. Pass deferred = false so the explosion body is pushed to
-        -- the next frame, fully outside the current call stack.
+        -- OnKilled fires inside FinishDying, which is inside the base's damage handling. Pass deferred = false so the explosion body is pushed to the next frame, fully outside the current call stack.
         DoBurst( self, false )
     end,
 
