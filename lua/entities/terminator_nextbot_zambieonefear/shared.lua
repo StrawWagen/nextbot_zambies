@@ -7,9 +7,9 @@ ENT.Spawnable = true
 ENT.AdminOnly = false
 
 list.Set( "NPC", "terminator_nextbot_zambieonefear", {
-    Name      = "One Fear",
-    Class     = "terminator_nextbot_zambieonefear",
-    Category  = "Nextbot Zambies",
+    Name     = "One Fear",
+    Class    = "terminator_nextbot_zambieonefear",
+    Category = "Nextbot Zambies",
 } )
 
 if CLIENT then
@@ -26,17 +26,17 @@ local FEAR_MATERIALS = {
     "models/gibs/hgibs/spine",
 }
 
-ENT.IsFodder    = false
+ENT.IsFodder = false
 
 ENT.SpawnHealth               = 1000
 ENT.ExtraSpawnHealthPerPlayer = 0
 
-ENT.JumpHeight        = 300
-ENT.Term_Leaps        = true
-ENT.WalkSpeed         = 220
-ENT.MoveSpeed         = 350
-ENT.RunSpeed          = 700
-ENT.AccelerationSpeed = 400
+ENT.JumpHeight         = 300
+ENT.Term_Leaps         = true
+ENT.WalkSpeed          = 220
+ENT.MoveSpeed          = 350
+ENT.RunSpeed           = 700
+ENT.AccelerationSpeed  = 400
 ENT.DeccelerationSpeed = 1800
 
 ENT.TERM_MODELSCALE       = 3
@@ -60,17 +60,17 @@ ENT.necro_MinMinionCount    = 0
 ENT.necro_NormalMinionClass = {}
 
 local IdleActivity = "LookAround"
-ENT.IdleActivity = IdleActivity
+ENT.IdleActivity   = IdleActivity
 ENT.IdleActivityTranslations = {
-    [ACT_MP_STAND_IDLE]  = ACT_IDLE,
-    [ACT_MP_WALK]        = ACT_RUN,
-    [ACT_MP_RUN]         = ACT_RUN,
-    [ACT_MP_CROUCH_IDLE] = ACT_IDLE,
-    [ACT_MP_CROUCHWALK]  = ACT_RUN,
-    [ACT_MP_JUMP]        = ACT_JUMP,
-    [ACT_MP_JUMP_START]  = ACT_RANGE_ATTACK1,
-    [ACT_MP_SWIM]        = ACT_RUN,
-    [ACT_LAND]           = "ceiling_land",
+    [ ACT_MP_STAND_IDLE  ] = ACT_IDLE,
+    [ ACT_MP_WALK        ] = ACT_RUN,
+    [ ACT_MP_RUN         ] = ACT_RUN,
+    [ ACT_MP_CROUCH_IDLE ] = ACT_IDLE,
+    [ ACT_MP_CROUCHWALK  ] = ACT_RUN,
+    [ ACT_MP_JUMP        ] = ACT_JUMP,
+    [ ACT_MP_JUMP_START  ] = ACT_RANGE_ATTACK1,
+    [ ACT_MP_SWIM        ] = ACT_RUN,
+    [ ACT_LAND           ] = "ceiling_land",
 }
 
 ENT.MySpecialActions = {}
@@ -78,8 +78,11 @@ ENT.MySpecialActions = {}
 ENT.MyClassTask = {
 
     OnCreated = function( self, data )
+        -- Randomise fist damage so individual fears feel distinct
         self.FistDamageMul = math.max( 0.1, 2.5 + math.Rand( -5, 5 ) )
-        self:AddEFlags( EFL_NO_DISSOLVE )
+
+        -- Apply DMG_DISSOLVE resistance via OnDamaged rather than EFL_NO_DISSOLVE
+        -- so the resistance is a stat rather than a flag, making it easier to tune
 
         for i = 0, self:GetNumBodyGroups() - 1 do
             self:SetSubMaterial( i, FEAR_MATERIALS[ math.random( #FEAR_MATERIALS ) ] )
@@ -88,6 +91,14 @@ ENT.MyClassTask = {
         self.fearDead    = false
         data.nextBreath  = CurTime() + math.Rand( 1.1, 1.3 )
         data.breathPitch = math.random( 60, 200 )
+    end,
+
+    OnDamaged = function( self, data, dmg )
+        -- Resist dissolve damage heavily so the Fear can't be trivially removed
+        -- by disintegrator-type weapons
+        if bit.band( dmg:GetDamageType(), DMG_DISSOLVE ) > 0 then
+            dmg:ScaleDamage( 0.05 )
+        end
     end,
 
     Think = function( self, data )
@@ -100,6 +111,9 @@ ENT.MyClassTask = {
         end
     end,
 
+    -- NOTE: the GetClass check is currently necessary because MyClassTask callbacks
+    -- fire for all classes in the hierarchy. Once the base provides a way to make
+    -- tasks non-fungible this guard can be removed.
     OnKilled = function( self, data, attacker, inflictor, ragdoll )
         if self:GetClass() ~= "terminator_nextbot_zambieonefear" then return end
         local pos   = self:GetPos()
@@ -118,6 +132,26 @@ ENT.MyClassTask = {
     end,
 
 }
+
+-- Shared drain logic used by all three Fear tiers.
+-- Slowly kills the NPC over time once drainStartTime has passed,
+-- so Fear zombies can't linger indefinitely if the player ignores them.
+function ENT:zamb_FearRunDrain( data )
+    if not data.draining then
+        if CurTime() < data.drainStartTime then return end
+        data.draining      = true
+        data.lastDrainTick = CurTime()
+    end
+    local now   = CurTime()
+    local delta = now - data.lastDrainTick
+    data.lastDrainTick = now
+    local hp = self:Health() - 100 * delta
+    if hp <= 1 then
+        self:TakeDamage( self:Health(), self, self )
+    else
+        self:SetHealth( hp )
+    end
+end
 
 function ENT:OnRemove()
     self.fearDead = true
@@ -161,9 +195,16 @@ function ENT:AdditionalInitialize()
     self.term_DieSound       = "npc/headcrab/headcrab_die1.wav"
     self.term_JumpSound      = "npc/headcrab/headcrab_jump1.wav"
 
-    self.IdleLoopingSounds  = {}
-    self.AngryLoopingSounds = {}
-    self.AlwaysPlayLooping  = false
+    self.IdleLoopingSounds = {
+        "npc/headcrab/headcrab_alert2.wav",
+        "npc/headcrab/headcrab_idle1.wav",
+        "npc/headcrab/headcrab_idle2.wav",
+    }
+    self.AngryLoopingSounds = {
+        "npc/headcrab/headcrab_alert1.wav",
+        "npc/headcrab/headcrab_attack1.wav",
+    }
+    self.AlwaysPlayLooping = true
 
     self.HeightToStartTakingDamage = 600
     self.FallDamagePerHeight       = 0.05

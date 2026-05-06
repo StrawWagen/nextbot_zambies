@@ -13,23 +13,6 @@ end
 local FEAR_MODEL = "models/headcrab.mdl"
 local BREATH_SND = "npc/fast_zombie/breathe_loop1.wav"
 
-local function RunDrain( self, data )
-    if not data.draining then
-        if CurTime() < data.drainStartTime then return end
-        data.draining      = true
-        data.lastDrainTick = CurTime()
-    end
-    local now   = CurTime()
-    local delta = now - data.lastDrainTick
-    data.lastDrainTick = now
-    local hp = self:Health() - 100 * delta
-    if hp <= 1 then
-        self:TakeDamage( self:Health(), self, self )
-    else
-        self:SetHealth( hp )
-    end
-end
-
 ENT.IsFodder = true
 
 ENT.SpawnHealth               = 50
@@ -48,9 +31,9 @@ ENT.TERM_MODELSCALE       = 1
 ENT.CollisionBounds       = { Vector( -12.5, -12.5, 0 ), Vector( 12.5, 12.5, 20 ) }
 ENT.CrouchCollisionBounds = { Vector( -6, -6, 0 ), Vector( 6, 6, 10 ) }
 
-ENT.FistDamageMul  = 0.75
-ENT.FistForceMul   = 1
-ENT.FistRangeMul   = 0.9
+ENT.FistDamageMul = 0.75
+ENT.FistForceMul  = 1
+ENT.FistRangeMul  = 0.9
 
 ENT.MySpecialActions = {}
 
@@ -80,7 +63,8 @@ ENT.MyClassTask = {
             end
         end
 
-        RunDrain( self, data )
+        -- Drain is defined on zambieonefear to avoid duplication across tiers
+        self:zamb_FearRunDrain( data )
     end,
 
 }
@@ -91,6 +75,8 @@ function ENT:OnRemove()
     BaseClass.OnRemove( self )
 end
 
+-- Footsteps are suppressed entirely for this tier — they're tiny and numerous
+-- enough that footstep audio would be overwhelming
 function ENT:AdditionalFootstep( pos, foot, sound, volume, filter )
     return true
 end

@@ -12,24 +12,6 @@ end
 
 local FEAR_MODEL = "models/headcrab.mdl"
 local BREATH_SND = "npc/fast_zombie/breathe_loop1.wav"
-local sndFlags   = bit.bor( SND_CHANGE_VOL )
-
-local function RunDrain( self, data )
-    if not data.draining then
-        if CurTime() < data.drainStartTime then return end
-        data.draining      = true
-        data.lastDrainTick = CurTime()
-    end
-    local now   = CurTime()
-    local delta = now - data.lastDrainTick
-    data.lastDrainTick = now
-    local hp = self:Health() - 100 * delta
-    if hp <= 1 then
-        self:TakeDamage( self:Health(), self, self )
-    else
-        self:SetHealth( hp )
-    end
-end
 
 ENT.IsFodder = false
 
@@ -81,9 +63,11 @@ ENT.MyClassTask = {
             end
         end
 
-        RunDrain( self, data )
+        -- Drain is defined on zambieonefear to avoid duplication across tiers
+        self:zamb_FearRunDrain( data )
     end,
 
+    -- NOTE: the GetClass guard is currently necessary — see zambieonefear for explanation
     OnKilled = function( self, data, attacker, inflictor, ragdoll )
         if self:GetClass() ~= "terminator_nextbot_zambiemanyfears" then return end
         local pos   = self:GetPos()
@@ -107,12 +91,6 @@ function ENT:OnRemove()
     self.fearDead = true
     self:StopSound( BREATH_SND )
     BaseClass.OnRemove( self )
-end
-
-function ENT:AdditionalFootstep( pos, foot, _sound, volume, _filter )
-    local lvl = self:GetVelocity():LengthSqr() <= self.WalkSpeed ^ 2 and 55 or 62
-    self:EmitSound( foot and "NPC_AntlionGuard.StepLight" or "NPC_AntlionGuard.StepHeavy", lvl, 110, volume * 0.5, CHAN_BODY, sndFlags )
-    return true
 end
 
 function ENT:AdditionalInitialize()
