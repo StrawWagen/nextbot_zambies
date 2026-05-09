@@ -10,6 +10,9 @@ end
 
 local crossVec1 = Vector( 0, 0, 1 )
 local crossVec2 = Vector( 0, 1, 0 )
+local gravFire   = Vector( 0, 0, -40  )
+local gravFall   = Vector( 0, 0, -900 )
+local gravSmoke  = Vector( 0, 0,  20  )
 
 local function DrawBeamRing( center, normal, radius, width, color, segments )
     local tangent = normal:Cross( crossVec1 )
@@ -63,7 +66,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 p:SetStartSize( sz * 0.3 ); p:SetEndSize( sz )
                 p:SetRoll( math.Rand( 0, 360 ) )
                 p:SetRollDelta( math.Rand( -2, 2 ) )
-                p:SetGravity( Vector( 0, 0, -40 ) )
+                p:SetGravity( gravFire )
                 p:SetColor( r, g, b )
             end
         end
@@ -82,7 +85,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 local sz = math.Rand( 4, 10 ) * scale
                 p:SetStartSize( sz ); p:SetEndSize( sz * 0.1 )
                 p:SetRoll( math.Rand( 0, 360 ) ); p:SetRollDelta( 0 )
-                p:SetGravity( Vector( 0, 0, -900 ) )
+                p:SetGravity( gravFall )
                 p:SetColor( r, g, b )
                 p:SetCollide( true ); p:SetBounce( 0.1 )
             end
@@ -103,7 +106,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 p:SetStartAlpha( 210 ); p:SetEndAlpha( 0 )
                 p:SetStartSize( math.Rand( 3, 9 ) * scale ); p:SetEndSize( 0 )
                 p:SetRoll( math.Rand( 0, 360 ) )
-                p:SetGravity( Vector( 0, 0, -900 ) )
+                p:SetGravity( gravFall )
                 p:SetColor( r, g, b )
                 p:SetCollide( true ); p:SetBounce( 0.05 )
             end
@@ -126,7 +129,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 p:SetStartSize( sz ); p:SetEndSize( sz * 1.8 )
                 p:SetRoll( math.Rand( 0, 360 ) )
                 p:SetRollDelta( math.Rand( -1, 1 ) )
-                p:SetGravity( Vector( 0, 0, 20 ) )
+                p:SetGravity( gravSmoke )
                 p:SetColor( 25, 50, 25 )
                 p:SetCollide( false )
             end
@@ -155,18 +158,16 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
     end
 end
 
--- ─────────────────────────────────────────────────────────────────────────────
-
 function EFFECT:Init( data )
     self.pos    = data:GetOrigin()
     self.radius = data:GetRadius()
-    self.scale  = 0.6   -- smaller / weaker than the full explosion
+    self.scale  = 0.6
 
     self.normal1 = VectorRand(); self.normal1:Normalize()
     self.normal2 = VectorRand(); self.normal2:Normalize()
 
     self.t    = 0
-    self.tout = math.Rand( 0.52, 0.68 )   -- shorter lifetime than explosion
+    self.tout = math.Rand( 0.52, 0.68 )
 
     self.col_flash = Color( 255, 255, 255, 255 )
     self.col_ring1 = Color( 255, 255, 255, 255 )
@@ -206,7 +207,6 @@ function EFFECT:Render()
 
     render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
 
-        -- Central bile flash (same as explosion but smaller)
         local a_flash = math.max( 0, 1 - f * 4 )
         if a_flash > 0 then
             local a3 = a_flash * a_flash * a_flash
@@ -222,7 +222,6 @@ function EFFECT:Render()
 
         render.SetMaterial( self.mat_beam )
 
-        -- Ring 1 — inner
         local a1  = math.max( 0, 1 - f ) ^ 2
         local rs1 = Lerp( fEased, radius * 0.4 * scale, radius * 1.8 * scale )
         self.col_ring1.r = math.Round( 80  * a1 )
@@ -231,7 +230,6 @@ function EFFECT:Render()
         self.col_ring1.a = math.Round( 255 * a1 )
         DrawBeamRing( pos, self.normal1, rs1 / 2, 7 * a1 * scale, self.col_ring1, 32 )
 
-        -- Ring 2 — outer (blast only gets two rings, explosion gets three)
         local a2  = math.max( 0, 1 - f * 1.6 ) ^ 2
         local rs2 = Lerp( fEased, radius * 0.6 * scale, radius * 2.2 * scale )
         self.col_ring2.r = math.Round( 50  * a2 )

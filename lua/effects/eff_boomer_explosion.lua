@@ -3,17 +3,21 @@ EFFECT.mat_beam = Material( "trails/plasma" )
 
 EFFECT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
--- ── Shared decal table ────────────────────────────────────────────────────────
 local BLOOD_DECALS = {}
 for i = 1, 9 do
     BLOOD_DECALS[i] = Material( "decals/blood" .. i )
 end
 
--- ── Beam-ring helper (identical to the reference pattern) ─────────────────────
+local crossVec1 = Vector( 0, 0, 1 )
+local crossVec2 = Vector( 0, 1, 0 )
+local gravFire   = Vector( 0, 0, -40  )
+local gravFall   = Vector( 0, 0, -900 )
+local gravSmoke  = Vector( 0, 0,  20  )
+
 local function DrawBeamRing( center, normal, radius, width, color, segments )
-    local tangent = normal:Cross( Vector( 0, 0, 1 ) )
+    local tangent = normal:Cross( crossVec1 )
     if tangent:LengthSqr() < 0.001 then
-        tangent = normal:Cross( Vector( 0, 1, 0 ) )
+        tangent = normal:Cross( crossVec2 )
     end
     tangent:Normalize()
     local bitangent = normal:Cross( tangent )
@@ -30,10 +34,8 @@ local function DrawBeamRing( center, normal, radius, width, color, segments )
     render.EndBeam()
 end
 
--- ── One-shot particle burst (called once from Init) ───────────────────────────
 local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, scale )
 
-    -- Wet burst flash
     local emitterFlash = ParticleEmitter( pos )
     if emitterFlash then
         for i = 1, 2 do
@@ -51,7 +53,6 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         emitterFlash:Finish()
     end
 
-    -- Bile fireball
     local emitterFire = ParticleEmitter( pos )
     if emitterFire then
         for i = 1, math.floor( 26 * scale ) do
@@ -65,14 +66,13 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 p:SetStartSize( sz * 0.3 ); p:SetEndSize( sz )
                 p:SetRoll( math.Rand( 0, 360 ) )
                 p:SetRollDelta( math.Rand( -2, 2 ) )
-                p:SetGravity( Vector( 0, 0, -40 ) )
+                p:SetGravity( gravFire )
                 p:SetColor( r, g, b )
             end
         end
         emitterFire:Finish()
     end
 
-    -- Gore chunks
     local emitterChunks = ParticleEmitter( pos )
     if emitterChunks then
         for i = 1, math.floor( 24 * scale ) do
@@ -85,7 +85,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 local sz = math.Rand( 4, 10 ) * scale
                 p:SetStartSize( sz ); p:SetEndSize( sz * 0.1 )
                 p:SetRoll( math.Rand( 0, 360 ) ); p:SetRollDelta( 0 )
-                p:SetGravity( Vector( 0, 0, -900 ) )
+                p:SetGravity( gravFall )
                 p:SetColor( r, g, b )
                 p:SetCollide( true ); p:SetBounce( 0.1 )
             end
@@ -93,7 +93,6 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         emitterChunks:Finish()
     end
 
-    -- Bile drips
     local emitterDrips = ParticleEmitter( pos )
     if emitterDrips then
         for i = 1, math.floor( 28 * scale ) do
@@ -107,7 +106,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 p:SetStartAlpha( 210 ); p:SetEndAlpha( 0 )
                 p:SetStartSize( math.Rand( 3, 9 ) * scale ); p:SetEndSize( 0 )
                 p:SetRoll( math.Rand( 0, 360 ) )
-                p:SetGravity( Vector( 0, 0, -900 ) )
+                p:SetGravity( gravFall )
                 p:SetColor( r, g, b )
                 p:SetCollide( true ); p:SetBounce( 0.05 )
             end
@@ -115,7 +114,6 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         emitterDrips:Finish()
     end
 
-    -- Vapour wisps
     local emitterSmoke = ParticleEmitter( pos )
     if emitterSmoke then
         for i = 1, math.floor( 5 * scale ) do
@@ -131,7 +129,7 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
                 p:SetStartSize( sz ); p:SetEndSize( sz * 1.8 )
                 p:SetRoll( math.Rand( 0, 360 ) )
                 p:SetRollDelta( math.Rand( -1, 1 ) )
-                p:SetGravity( Vector( 0, 0, 20 ) )
+                p:SetGravity( gravSmoke )
                 p:SetColor( 25, 50, 25 )
                 p:SetCollide( false )
             end
@@ -139,7 +137,6 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         emitterSmoke:Finish()
     end
 
-    -- Blood decals on nearby surfaces
     for i = 1, decalCount do
         local dir = VectorRand(); dir:Normalize()
         local tr = util.TraceLine({
@@ -161,35 +158,27 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
     end
 end
 
--- ─────────────────────────────────────────────────────────────────────────────
-
 function EFFECT:Init( data )
     self.pos    = data:GetOrigin()
     self.radius = data:GetRadius()
     self.scale  = 1.0
 
-    -- Three randomly-oriented ring normals for visual variety
     self.normal1 = VectorRand(); self.normal1:Normalize()
     self.normal2 = VectorRand(); self.normal2:Normalize()
     self.normal3 = VectorRand(); self.normal3:Normalize()
 
-    -- Animation state
     self.t    = 0
     self.tout = math.Rand( 0.78, 0.96 )
 
-    -- Pre-allocate color tables (avoids per-frame garbage)
     self.col_flash = Color( 255, 255, 255, 255 )
     self.col_ring1 = Color( 255, 255, 255, 255 )
     self.col_ring2 = Color( 255, 255, 255, 255 )
     self.col_ring3 = Color( 255, 255, 255, 255 )
 
-    -- Burst particles immediately
     SpawnParticles( self.pos, self.radius, 40, 220, 50, BLOOD_DECALS, 12, self.scale )
 
-    -- Screen shake
     util.ScreenShake( self.pos, 12 * self.scale, 9 * self.scale, 0.8, self.radius * 2.2 )
 
-    -- Dynamic light (uses EntIndex so it is unique to this effect entity)
     local dl = DynamicLight( self:EntIndex() )
     if dl then
         dl.Pos        = self.pos
@@ -212,15 +201,14 @@ function EFFECT:Think()
 end
 
 function EFFECT:Render()
-    local f      = self.t / self.tout           -- 0 → 1 over the effect lifetime
-    local fEased = math.ease.OutQuart( f )      -- eased expansion, same as reference
+    local f      = self.t / self.tout
+    local fEased = math.ease.OutQuart( f )
     local scale  = self.scale
     local radius = self.radius
     local pos    = self.pos
 
     render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
 
-        -- ── Central bile-burst sprite (fades out very fast, first quarter) ────
         local a_flash = math.max( 0, 1 - f * 4 )
         if a_flash > 0 then
             local a3 = a_flash * a_flash * a_flash
@@ -236,7 +224,6 @@ function EFFECT:Render()
 
         render.SetMaterial( self.mat_beam )
 
-        -- ── Ring 1 — inner, tight, fast fade ─────────────────────────────────
         local a1  = math.max( 0, 1 - f ) ^ 2
         local rs1 = Lerp( fEased, radius * 0.4 * scale, radius * 1.8 * scale )
         self.col_ring1.r = math.Round( 80  * a1 )
@@ -245,7 +232,6 @@ function EFFECT:Render()
         self.col_ring1.a = math.Round( 255 * a1 )
         DrawBeamRing( pos, self.normal1, rs1 / 2, 10 * a1 * scale, self.col_ring1, 32 )
 
-        -- ── Ring 2 — mid, slightly slower ────────────────────────────────────
         local a2  = math.max( 0, 1 - f * 1.4 ) ^ 2
         local rs2 = Lerp( fEased, radius * 0.6 * scale, radius * 2.4 * scale )
         self.col_ring2.r = math.Round( 60  * a2 )
@@ -254,7 +240,6 @@ function EFFECT:Render()
         self.col_ring2.a = math.Round( 255 * a2 )
         DrawBeamRing( pos, self.normal2, rs2 / 2, 7 * a2 * scale, self.col_ring2, 32 )
 
-        -- ── Ring 3 — outer, wide, slowest fade ───────────────────────────────
         local a3  = math.max( 0, 1 - f * 2 )
         local rs3 = Lerp( fEased, radius * 0.8 * scale, radius * 3.0 * scale )
         self.col_ring3.r = math.Round( 40  * a3 )
