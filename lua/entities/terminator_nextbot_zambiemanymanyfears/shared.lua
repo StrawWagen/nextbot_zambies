@@ -67,17 +67,18 @@ ENT.MyClassTask = {
         self:zamb_FearRunDrain( data )
     end,
 
+    -- Suppress footsteps entirely for this tier — they're tiny and numerous
+    -- enough that footstep audio would be obnoxious
+    AdditionalFootstep = function( self, data, footPos, foot, stepSound, volume, filter )
+        return true
+    end,
+
 }
 
 function ENT:OnRemove()
     self.fearDead = true
     self:StopSound( BREATH_SND )
     BaseClass.OnRemove( self )
-end
-
--- Footsteps are suppressed entirely for this tier — they're tiny and numerous enough that footstep audio would be annoying
-function ENT:AdditionalFootstep( pos, foot, sound, volume, filter )
-    return true
 end
 
 function ENT:AdditionalInitialize()

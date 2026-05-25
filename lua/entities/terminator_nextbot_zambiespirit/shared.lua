@@ -25,7 +25,7 @@ local ZAMBIE_PREFIX_LEN = #ZAMBIE_PREFIX
 -- Maximum model scale a target zambie may have to be eligible for carrying. Entities scaled above 1.15 are excluded so the spirit targets only roughly human-scale or smaller zambies.
 local MAX_CARRY_SCALE  = 1.15
 
--- Maximum *max* health a target may have to be eligible for carrying. Checked via GetMaxHealth() rather than Health(), so a heavily damaged elite is still excluded. Keeps the spirit from carrying boss-tier zambies.
+-- Maximum *max* health a target may have to be eligible for carrying. Checked via GetMaxHealth() rather than Health(), so a heavily damaged elite is still excluded. Keeps the spirit from carrying boss-tier zambies (spirit with god crab 0_0).
 local MAX_CARRY_HEALTH = 250
 
 -- Finds up to `count` valid nav positions distributed around a circle of `radius` units centred on `center`. Candidates are snapped to the nav mesh and must be at least 40% of `radius` apart from any already accepted position. Returns (positions, filled) where filled is true when `count` positions were successfully placed (not a guarantee of good spread).
@@ -42,15 +42,13 @@ local function PackSquadVectors( center, count, radius )
         local angle     = i * angleStep
         local candidate = center + Vector( math.cos( angle ) * radius, math.sin( angle ) * radius, 0 )
 
-        -- Snap to the nearest nav area within 128 units; skip if none found.
-        -- The 128 unit radius limits how far a candidate can drift from the circle.
+        -- Snap to the nearest nav area within 128 units; skip if none found. The 128 unit radius limits how far a candidate can drift from the circle.
         local area = navmesh.GetNearestNavArea( candidate, false, 128 )
         if not area then continue end
 
         local snapped = area:GetClosestPointOnArea( candidate )
 
-        -- Reject positions that are too close to one already accepted,
-        -- so the squad spreads out rather than bunching at one spot
+        -- Reject positions that are too close to one already accepted, so the squad spreads out rather than bunching at one spot
         local tooClose = false
         for _, v in ipairs( results ) do
             if v:DistToSqr( snapped ) < ( radius * 0.4 ) ^ 2 then
@@ -73,10 +71,7 @@ local function GetFPSEstimate()
     return 1 / ft
 end
 
--- Wraps GotoPosSimple with a nav area pre-check and pcall. The pre-check
--- handles the common case; pcall guards against the base's internal
--- NearestPoint error when an area becomes invalid between the check and
--- the call.
+-- Wraps GotoPosSimple with a nav area pre-check and pcall. The pre-check handles the common case; pcall guards against the base's internal NearestPoint error when an area becomes invalid between the check and the call.
 local function SafeGoto( bot, pos )
     if not isvector( pos ) then return end
     local area = navmesh.GetNearestNavArea( pos, false, 512 )
@@ -202,8 +197,7 @@ ENT.MyClassTask = {
                 return
             end
 
-            -- Within deploy range, enemy visible (IsSeeEnemy encodes recency;
-            -- GetEnemyLastTimeSeen is not provided by the base): deploy carried zambies.
+            -- Within deploy range, enemy visible (IsSeeEnemy encodes recency GetEnemyLastTimeSeen is not provided by the base): deploy carried zambies.
             if self:GetCarriedNPCCount() > 0 then
                 if self.IsSeeEnemy and dist2 < self.DeployDistance ^ 2 then
                     if not data.carryCooldown or CurTime() > data.carryCooldown then
@@ -217,8 +211,7 @@ ENT.MyClassTask = {
 
         -- Grab nearby eligible zambies while under the carry goal
         if data.wantToCarry and ( not data.carryCooldown or CurTime() > data.carryCooldown ) then
-            -- GetNearbyAllies is assumed cheaper than ents.FindInSphere + faction
-            -- filter; the base maintains ally lists internally.
+            -- GetNearbyAllies is assumed cheaper than ents.FindInSphere + faction filter; the base maintains ally lists internally.
             for _, npc in ipairs( self:GetNearbyAllies( self.GrabDistance ) ) do
                 if not self:IsGoodGrabTarget( npc ) then continue end
                 if not self:Visible( npc ) then continue end
@@ -292,9 +285,7 @@ ENT.MyClassTask = {
         end
     end,
 
-    -- Called by DeployNPCs when all carried zambies are released. Re-randomises
-    -- the carry goal (3–6, vs. the initial 3–5) so subsequent carry runs vary
-    -- slightly in squad size.
+    -- Called by DeployNPCs when all carried zambies are released. Re-randomises the carry goal (3–6, vs. the initial 3–5) so subsequent carry runs vary slightly in squad size.
     OnDeployComplete = function( self, data )
         data.npcCarryGoal = math.random( 3, 6 )
     end,
@@ -329,8 +320,7 @@ ENT.MySpecialActions = {
         end,
     },
 
-    -- Releases all carried zambies toward the current enemy.
-    -- IN_ATTACK2 so it doesn't conflict with any inherited primary-fire action.
+    -- Releases all carried zambies toward the current enemy. IN_ATTACK2 so it doesn't conflict with the melee
     [ "Deploy" ] = {
         name      = "Deploy Carried",
         desc      = "Releases all carried zambies toward the current enemy",
@@ -344,10 +334,7 @@ ENT.MySpecialActions = {
     },
 }
 
--- Returns true if `target` is a zambie the spirit may carry.
--- Uses guard clauses (early returns) rather than a single nested condition.
--- Exclusion of large/boss zambies is dynamic via scale and max-health checks
--- rather than a hardcoded class list cause straw didnt like it so new zambie types are handled automatically.
+-- Returns true if `target` is a zambie the spirit may carry. Uses guard clauses rather than a single nested condition. Exclusion of large/boss zambies is dynamic via scale and max-health checks rather than a hardcoded class list cause Mr.Wagen didnt like it so new zambie types are handled automatically.
 function ENT:IsGoodGrabTarget( target )
     if not IsValid( target ) then return false end
     if string.sub( target:GetClass(), 1, ZAMBIE_PREFIX_LEN ) ~= ZAMBIE_PREFIX then return false end
@@ -389,6 +376,7 @@ function ENT:SpiritDeath( attacker, inflictor, forceVec )
 
     self:EmitSound( "npc/advisor/advisor_scream.wav", 100, 170, 1 )
 
+    -- The spirit doesn't truly "die" through the base's normal kill pipeline (PreventBecomeRagdollOnKilled returns true). We manually fire OnNPCKilled here so that kill-tracking systems (scoreboards, kill feeds, etc.) still register the death even though the entity never becomes a ragdoll.
     hook.Call( "OnNPCKilled", GAMEMODE, self, attacker, inflictor )
 
     self:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
@@ -413,10 +401,7 @@ function ENT:CarryNPC( npc )
     ed:SetOrigin( npc:WorldSpaceCenter() )
     util.Effect( "eff_zambspirit_rays", ed )
 
-    -- NOTE: parenting is load-bearing; DeployNPCs enumerates carried zambies
-    -- via self:GetChildren(), which only works because of this SetParent call.
-    -- CarriedNPCCount tracks the count separately for networking but is not
-    -- the source of truth for which entities to deploy.
+    -- NOTE: parenting is load-bearing; DeployNPCs enumerates carried zambies via self:GetChildren(), which only works because of this SetParent call. CarriedNPCCount tracks the count separately for networking but is not the source of truth for which entities to deploy.
     npc:SetParent( self )
     npc:SetPos( self:GetPos() )
     npc:SetNoDraw( true )
@@ -435,10 +420,7 @@ function ENT:DeployNPCs( pos )
 
     if #toDeploy == 0 then return end
 
-    -- When a target position is provided we try to find the best cluster of nav
-    -- positions along the path between us and that target. We attempt four
-    -- interpolation fractions and keep whichever attempt fits the most zambies.
-    -- When no position is given (spirit died away from combat) we scatter nearby.
+    -- When a target position is provided we try to find the best cluster of nav positions along the path between us and that target. We attempt four interpolation fractions and keep whichever attempt fits the most zambies. When no position is given (spirit died away from combat) we scatter nearby.
     local mostVectors
 
     if isvector( pos ) then
@@ -472,8 +454,7 @@ function ENT:DeployNPCs( pos )
         ent:SetPos( v + upVec )
         ent:SetNoDraw( false )
 
-        -- Face the deployed zambie toward the known enemy if we have one,
-        -- then anger it so it immediately starts pursuing on its own.
+        -- Face the deployed zambie toward the known enemy if we have one, then anger it so it immediately starts pursuing on its own.
         local foe = self:GetEnemy()
         if IsValid( foe ) then
             local foePos    = foe:GetPos()
@@ -582,8 +563,7 @@ if CLIENT then
 
         render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
 
-        -- Limb trails: four smoky plasma beams that follow the hands and feet.
-        -- Skipped on low-end hardware to save beam overhead.
+        -- Limb trails: four plasma beams that follow the hands and feet. Skipped on low-end hardware to save beam overhead.
         if GetFPSEstimate() > 30 then
             render.SetMaterial( self.mat_trail )
             for i, trailVectors in ipairs( self.trails ) do
@@ -598,8 +578,7 @@ if CLIENT then
             end
         end
 
-        -- Body: the spirit model with a colour-shift flicker to give it an ethereal feel.
-        -- Hidden once the dying animation begins since the body has already been SetNoDraw.
+        -- Body: the spirit model with a colour-shift flicker to give it an ethereal feel. Hidden once the dying animation begins since the body has already been SetNoDraw.
         if not dying then
             local colormod = math.sin( time * 4 + self:EntIndex() ) * 0.5 + 700
             render.SetColorModulation( colormod, 1, 1 )
@@ -607,8 +586,7 @@ if CLIENT then
             render.SetColorModulation( 1, 1, 1 )
         end
 
-        -- Energy rings: rotating sprite quads near the spirit, visible within ~3250 units.
-        -- Expand outward on death via blastfrac.
+        -- Energy rings: rotating sprite quads near the spirit, visible within ~3250 units. Expand outward on death via blastfrac.
         if distToEyes < 3250 ^ 2 then
             surface.SetMaterial( self.mat )
             surface.SetAlphaMultiplier( 1 )
@@ -624,8 +602,7 @@ if CLIENT then
             end
         end
 
-        -- Carried-NPC orbs: one glowing sprite per carried zambie, orbiting the spirit.
-        -- Visible within ~2000 units.
+        -- Carried-NPC orbs: one glowing sprite per carried zambie, orbiting the spirit. Visible within ~2000 units.
         if distToEyes < 2000 ^ 2 then
             local orbcount = self:GetCarriedNPCCount()
             if orbcount > 0 then

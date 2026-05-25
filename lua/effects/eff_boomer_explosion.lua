@@ -41,7 +41,8 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         for i = 1, 2 do
             local p = emitterFlash:Add( "sprites/light_glow02_add", pos )
             if p then
-                local dir = VectorRand(); dir:Normalize()
+                local dir = VectorRand()
+                dir:Normalize()
                 p:SetVelocity( dir * math.Rand( 5, 15 ) )
                 p:SetDieTime( math.Rand( 0.04, 0.09 ) )
                 p:SetStartAlpha( 180 ); p:SetEndAlpha( 0 )
@@ -58,7 +59,8 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         for i = 1, math.floor( 26 * scale ) do
             local p = emitterFire:Add( "particle/fire", pos )
             if p then
-                local dir = VectorRand(); dir:Normalize()
+                local dir = VectorRand()
+                dir:Normalize()
                 p:SetVelocity( dir * math.Rand( 20, 90 ) * scale )
                 p:SetDieTime( math.Rand( 0.25, 0.55 ) )
                 p:SetStartAlpha( 255 ); p:SetEndAlpha( 0 )
@@ -78,7 +80,8 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
         for i = 1, math.floor( 24 * scale ) do
             local p = emitterChunks:Add( "particle/fire", pos )
             if p then
-                local dir = VectorRand(); dir:Normalize()
+                local dir = VectorRand()
+                dir:Normalize()
                 p:SetVelocity( dir * math.Rand( 200, 620 ) * scale )
                 p:SetDieTime( math.Rand( 0.4, 1.2 ) )
                 p:SetStartAlpha( 255 ); p:SetEndAlpha( 0 )
@@ -138,12 +141,13 @@ local function SpawnParticles( pos, radius, r, g, b, decalTable, decalCount, sca
     end
 
     for i = 1, decalCount do
-        local dir = VectorRand(); dir:Normalize()
-        local tr = util.TraceLine({
+        local dir = VectorRand()
+        dir:Normalize()
+        local tr = util.TraceLine( {
             start  = pos,
             endpos = pos + dir * radius,
             mask   = MASK_SOLID_BRUSHONLY,
-        })
+        } )
         if tr.Hit then
             local mat = decalTable[ math.random( 1, #decalTable ) ]
             if mat and not mat:IsError() then
