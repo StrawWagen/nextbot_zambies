@@ -35,6 +35,6 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambieberserk",       diffAdded = 20, diffNeeded = 70, passChance = 96 },
 
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 98 },
-        { class = "terminator_nextbot_zambiephantom",       diffAdded = 30, diffNeeded = 90, passChance = 98 },
+        { class = "terminator_nextbot_zambiephantom",       diffAdded = 30, diffNeeded = 100, passChance = 98 },
     }
 end

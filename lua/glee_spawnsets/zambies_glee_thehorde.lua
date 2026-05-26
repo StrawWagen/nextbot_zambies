@@ -203,10 +203,10 @@ local zambieSpawnSet = {
             prettyName = "A Phantom",
             class = "terminator_nextbot_zambiephantom",
             spawnType = "hunter",
-            difficultyCost = { 10, 20 },
-            difficultyNeeded = { 10, 75 },
+            difficultyCost = { 40, 80 },
+            difficultyNeeded = { 50, 100 },
             countClass = "terminator_nextbot_zambiephantom",
-            maxCount = { 2, 4 },
+            maxCount = { 1, 2 },
             postSpawnedFuncs = nil,
         },
         {

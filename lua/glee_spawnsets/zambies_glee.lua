@@ -235,7 +235,7 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 2, 5 },
+            hardRandomChance = { 0, 1 },
             name = "zambie_wraith_elite", -- these are 1 hit kills at 100 hp, really strong
             prettyName = "An Elite Wraith",
             class = "terminator_nextbot_zambiewraithelite",
@@ -247,15 +247,15 @@ local zambieSpawnSet = {
             postSpawnedFuncs = nil,
         },
         {
-            hardRandomChance = { 0, 2 },
+            hardRandomChance = { 0, 1 },
             name = "zambie_phantom_rare",
             prettyName = "A Phantom",
             class = "terminator_nextbot_zambiephantom",
             spawnType = "hunter",
-            difficultyCost = { 10, 20 },
-            difficultyNeeded = { 10, 75 },
+            difficultyCost = { 30, 120 },
+            difficultyNeeded = { 100, 300 },
             countClass = "terminator_nextbot_zambiephantom",
-            maxCount = { 2, 4 },
+            maxCount = { 1, 2 },
             postSpawnedFuncs = nil,
         },
         {
@@ -340,6 +340,18 @@ local zambieSpawnSet = {
             difficultyNeeded = { 300, 400 },
             countClass = "terminator_nextbot_zambienecroelite",
             maxCount = { 1 },
+            postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = { 0, 6 },
+            name = "zambie_phantom_common",
+            prettyName = "A Phantom",
+            class = "terminator_nextbot_zambiephantom",
+            spawnType = "hunter",
+            difficultyCost = { 30, 60 },
+            difficultyNeeded = { 600, 800 },
+            countClass = "terminator_nextbot_zambiephantom",
+            maxCount = { 2, 6 },
             postSpawnedFuncs = nil,
         },
         {
