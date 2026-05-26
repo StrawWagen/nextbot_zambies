@@ -23,12 +23,18 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambie_slow",         diffAdded = 2, diffNeeded = 0, diffMax = 15, passChance = 50 },
 
         { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 0, passChance = 98 },
+        { class = "terminator_nextbot_zambieflamefast",     diffAdded = 12, diffNeeded = 0, passChance = 99 },
+
+        { class = "terminator_nextbot_zambieenergy",        diffAdded = 8, diffNeeded = 0, passChance = 99 },
+        { class = "terminator_nextbot_zambieenergyfast",    diffAdded = 16, diffNeeded = 0, passChance = 99.5 },
 
         { class = "terminator_nextbot_zambiefast",          diffAdded = 8, diffNeeded = 75, passChance = 50, randomSpawnAnyway = 5 },
         { class = "terminator_nextbot_zambietorsofast",     diffAdded = 5, diffNeeded = 35, passChance = 55, spawnSlot = "torsofast" },
 
         { class = "terminator_nextbot_zambiegrunt",         diffAdded = 10, diffNeeded = 70, passChance = 92 },
+        { class = "terminator_nextbot_zambieberserk",       diffAdded = 20, diffNeeded = 70, passChance = 96 },
 
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 90, passChance = 98 },
+        { class = "terminator_nextbot_zambiephantom",       diffAdded = 30, diffNeeded = 90, passChance = 98 },
     }
 end
