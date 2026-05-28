@@ -38,6 +38,7 @@ ENT.NoAnimLayering = nil -- this is what makes it stop moving forward when attac
 ENT.DuelEnemyDist = 450
 ENT.CloseEnemyDistance = 500
 
+ENT.CanFindWeaponsOnTheGround = false
 ENT.TERM_WEAPON_PROFICIENCY = WEAPON_PROFICIENCY_POOR
 
 ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
