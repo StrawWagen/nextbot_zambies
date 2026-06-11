@@ -15,7 +15,7 @@ list.Set( "NPC", "terminator_nextbot_zambieboomer", {
 
 local BOOMER_MODEL    = "models/player/zombie_soldier.mdl"
 local BOOMER_HEAD     = "models/Zombie/Fast.mdl"
-local BOOMER_HEAD_MAT = "models/jcms/explosiveheadcrab/body"
+local BOOMER_HEAD_MAT = "models/jcmsblastcrab/body"
 
 -- Static objects to avoid per-frame allocation in GetOrCreateHead
 local HEAD_CRAB_ANGLE    = Angle( -24, 3.3, 21.8 )
