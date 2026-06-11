@@ -10,7 +10,7 @@ if CLIENT then
     return
 end
 
-local BLAST_MATERIAL = "models/jcms/explosiveheadcrab/body"
+local BLAST_MATERIAL = "models/jcmsblastcrab/body"
 local BLAST_MODEL    = "models/headcrab.mdl"
 
 local CONTACT_DAMAGE = 65
