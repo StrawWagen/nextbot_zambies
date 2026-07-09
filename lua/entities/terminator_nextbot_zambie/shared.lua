@@ -768,7 +768,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
 
-                if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
+                if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder and myTbl.CanMoveRightUpToEnemy( self, enemy ) then
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask( self, "movement_duelenemy_near", "i gotta slash em" )
                     return
@@ -861,15 +861,17 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.TaskFail( self, "movement_followenemy" )
                     myTbl.StartTask( self, "movement_wander", "i cant get to them/no enemy" )
                     data.overridePos = nil
+
                 elseif IsValid( enemy ) and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask( self, "movement_duelenemy_near", "they're swimming and im in the water!" )
+
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
                     coroutine_yield()
                     data.overridePos = nil
                     local justDuel = myTbl.zamb_JustTryDuelingUnreachable or 0
                     if justDuel > CurTime() then
-                        if not myTbl.HasBrains or math.random( 0, 100 ) < 50 then
+                        if not myTbl.HasBrains or ( math.random( 0, 100 ) < 50 and myTbl.CanMoveRightUpToEnemy( self, myTbl ) ) then
                             myTbl.ReallyAnger( self, 25 )
                             myTbl.TaskComplete( self, "movement_followenemy" )
                             myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
