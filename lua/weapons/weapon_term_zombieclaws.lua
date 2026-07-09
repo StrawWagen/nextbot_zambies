@@ -579,5 +579,6 @@ end
 function SWEP:DrawWorldModel()
 end
 
+-- so our holdtype doesnt override the npc's anim translations
 function SWEP:TranslateActivity()
 end
