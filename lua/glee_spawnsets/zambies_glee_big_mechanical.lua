@@ -12,7 +12,9 @@ local set = {
     maxSpawnDist = { 2500, 4500 }, -- CLOSE!
     roundEndSound = "default",
     roundStartSound = "default",
-    chanceToBeVotable = 1,
+    roundEarlyStartSound = "nextbot_zambies/music/wmrs-metalmenace.ogg",
+    chanceToBeVotable = 0.5,
+    chanceToBeVotableWhenHard = 3,
     spawns = {
         {
             hardRandomChance = nil,

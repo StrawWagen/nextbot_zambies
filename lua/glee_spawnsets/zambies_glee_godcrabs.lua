@@ -26,7 +26,8 @@ local zambieSpawnSet = {
     maxSpawnCount = 8,
     maxSpawnDist = { 8500, 10500 },
     roundEndSound = "music/ravenholm_1.mp3",
-    roundStartSound = "music/hl2_song11.mp3",
+    roundStartSound = "",
+    roundEarlyStartSound = "nextbot_zambies/music/wmrs-godcrab.ogg",
     chanceToBeVotable = 10,
     spawns = {
         {
