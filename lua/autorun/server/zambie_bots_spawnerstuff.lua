@@ -9,7 +9,7 @@ terminator_Extras.zamb_PlayerParticipatingFor = terminator_Extras.zamb_PlayerPar
 terminator_Extras.zamb_EntsParticipatingFor = terminator_Extras.zamb_EntsParticipatingFor or nil
 terminator_Extras.zamb_OccupiedSpawnSlots = terminator_Extras.zamb_OccupiedSpawnSlots or nil
 
-maxDifficulty = 9999999 -- just a big number thats not math.huge
+maxDifficulty = 9999999 -- just a big number thats not math.huge, stops it from blowing up to infinity if theres a bug
 
 
 local defaultMaxZambs = 30
@@ -317,7 +317,9 @@ function terminator_Extras.zamb_HandleDifficultyDecay()
     difficultyBeingExperienced = math.Round( difficultyBeingExperienced, 2 )
     difference = targetDifficulty - difficultyBeingExperienced
 
-    debugPrint( difficultyBeingExperienced, targetDifficulty, currCurveType )
+    targetDifficultyWeighted = targetDifficulty + math.max( difference, 0 ) -- bigger number when you're cheesing it!
+
+    debugPrint( difficultyBeingExperienced, targetDifficultyWeighted, currCurveType )
 
 end
 
@@ -564,6 +566,7 @@ function terminator_Extras.zamb_SetupManager()
     participatingCount = 0
     gettingHandsDirty = CurTime() + 15
     targetDifficulty = 0
+    targetDifficultyWeighted = 0
 
     sameCurveChainLength = 0
     segmentStack = {}
@@ -612,6 +615,7 @@ function terminator_Extras.zamb_TearDownManager()
     difficultyBeingExperienced = nil
     gettingHandsDirty = nil
     targetDifficulty = nil
+    targetDifficultyWeighted = nil
 
     sameCurveChainLength = nil
     segmentStack = nil
@@ -627,7 +631,7 @@ function terminator_Extras.zamb_TearDownManager()
 
 end
 
-function terminator_Extras.zamb_GetSpawnData( spawner, targetDifficultyWeighted, _targetDifficultyInt, _differenceInt )
+function terminator_Extras.zamb_GetSpawnData( spawner )
     local spawnerConfig = spawner.zamb_SpawnerConfig
 
     local bestData
@@ -635,8 +639,11 @@ function terminator_Extras.zamb_GetSpawnData( spawner, targetDifficultyWeighted,
 
     for _, data in ipairs( myData ) do
         local diffMax = data.diffMax or maxDifficulty
-        local traditionallyGood = targetDifficultyWeighted >= data.diffNeeded and targetDifficultyWeighted < diffMax and ( data.passChance <= 0 or math.Rand( 0, 100 ) > data.passChance )
-        local passAnyway = data.randomSpawnAnyway and math.Rand( 0, 100 ) < data.randomSpawnAnyway
+        local goodDifficultyFit = targetDifficultyWeighted >= data.diffNeeded
+        local notTooEasy = targetDifficultyWeighted < diffMax
+        local enoughParticipants = not data.participantsNeeded or #participators > data.participantsNeeded
+        local traditionallyGood = goodDifficultyFit and notTooEasy and enoughParticipants and ( data.passChance <= 0 or math.Rand( 0, 100 ) > data.passChance )
+        local passAnyway = data.randomSpawnAnyway and math.Rand( 0, 100 ) < data.randomSpawnAnyway -- randomly just spawn this!
         local wouldBeTooMany = data.maxAtOnce and #ents.FindByClass( data.class ) >= data.maxAtOnce
         if not wouldBeTooMany and data.spawnSlot then
             wouldBeTooMany = IsValid( terminator_Extras.zamb_OccupiedSpawnSlots[data.spawnSlot] )
@@ -786,7 +793,7 @@ function terminator_Extras.zamb_HandleSpawning()
 end
 
 
-local offsetToSpawnAt = Vector( 0,0,5 )
+local offsetToSpawnAt = Vector( 0, 0, 5 )
 
 function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     local queue = terminator_Extras.zamb_SpawnOverrideQueue
@@ -796,10 +803,6 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
     local tooManySoftCutoff = zamCount >= 1 and math.max( difficultyBeingExperienced, zamCount ) > targetDifficulty
     if #queue <= 0 and tooManySoftCutoff then return end -- queue must be purged
 
-    difference = targetDifficulty - difficultyBeingExperienced
-
-    local targetDifficultyWeighted = targetDifficulty + ( math.max( difference, 0 ) * 0.5 ) -- bigger number when you're cheesing it!
-
     local class, data
 
     if #queue >= 1 then
@@ -807,15 +810,17 @@ function terminator_Extras.zamb_TryToSpawn( spawner, spawnPos )
         class = data.class
 
     else
-        class, data = terminator_Extras.zamb_GetSpawnData( spawner, targetDifficultyWeighted, targetDifficulty, difference )
+        class, data = terminator_Extras.zamb_GetSpawnData( spawner, targetDifficultyWeighted )
 
-        if data.batchSize and data.batchSize > 1 then
+        if data and data.batchSize and data.batchSize > 1 then
             for _ = 1, data.batchSize do
                 table.insert( terminator_Extras.zamb_SpawnOverrideQueue, table.Copy( data ) )
 
             end
         end
     end
+
+    if not class then debugPrint( "didn't find anything to spawn." ) return end
 
     local zamb = ents.Create( class )
     if not IsValid( zamb ) then return end

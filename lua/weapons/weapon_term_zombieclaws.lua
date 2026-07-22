@@ -18,11 +18,11 @@ SWEP.NPCDamageBonusMul = 1
 
 SWEP.SwingSound = Sound( "Zombie.AttackMiss" )
 SWEP.HitSound = Sound( "Zombie.AttackHit" )
+SWEP.ViewPunchMul = 4
 
 local className = "weapon_term_zombieclaws"
 if CLIENT then
     language.Add( className, SWEP.PrintName )
-    killicon.Add( className, "vgui/hud/killicon/weapon_terminatorfists_term.png", color_white )
 
 end
 

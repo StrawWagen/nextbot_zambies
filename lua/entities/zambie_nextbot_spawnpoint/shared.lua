@@ -32,13 +32,23 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambie_slow",         diffAdded = 3, diffNeeded = 0, diffMax = 5, passChance = 25 },
         { class = "terminator_nextbot_zambie_slow",         diffAdded = 3, diffNeeded = 0, diffMax = 15, passChance = 50 },
 
+        { class = "terminator_nextbot_zambietorso",         diffAdded = 2, diffNeeded = 0, passChance = 75, spawnSlot = "torso" },
+        { class = "terminator_nextbot_zambietorsowraith",   diffAdded = 5, diffNeeded = 15, passChance = 90, spawnSlot = "torso" },
+
         { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 0, passChance = 92 },
+        { class = "terminator_nextbot_zambieflamefast",     diffAdded = 8, diffNeeded = 20, passChance = 92 },
         { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 30 },
+        { class = "terminator_nextbot_zambieflamefast",     diffAdded = 14, diffNeeded = 90, passChance = 96 },
         { class = "terminator_nextbot_zambieflame",         diffAdded = 6, diffNeeded = 90, passChance = 99, batchSize = 8 },
 
         { class = "terminator_nextbot_zambieacid",         diffAdded = 6, diffNeeded = 0, passChance = 95 },
+        { class = "terminator_nextbot_zambieacidfast",     diffAdded = 12, diffNeeded = 40, passChance = 96 },
         { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 45 },
         { class = "terminator_nextbot_zambieacid",         diffAdded = 3, diffNeeded = 90, passChance = 99, batchSize = 8 },
+
+        { class = "terminator_nextbot_zambieenergy",        diffAdded = 6, diffNeeded = 0, passChance = 95 },
+        { class = "terminator_nextbot_zambieenergyfast",    diffAdded = 12, diffNeeded = 40, passChance = 96 },
+        { class = "terminator_nextbot_zambieenergy",        diffAdded = 3, diffNeeded = 90, passChance = 45 },
 
         { class = "terminator_nextbot_zambiefast",          diffAdded = 6, diffNeeded = 25, passChance = 25, randomSpawnAnyway = 5 },
         { class = "terminator_nextbot_zambietorsofast",     diffAdded = 3, diffNeeded = 25, passChance = 45, spawnSlot = "torsofast" },
@@ -54,8 +64,13 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 99, batchSize = 10 },
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 20, diffNeeded = 0, diffMax = 10, passChance = 95 },
 
-        { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
-        { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 75, spawnSlot = "miniboss" },
+        { class = "terminator_nextbot_zambiephantom",       diffAdded = 20, diffNeeded = 75, passChance = 95, maxAtOnce = 2 },
+
+        { class = "terminator_nextbot_zambiemecha",         diffAdded = 35, diffNeeded = 90, passChance = 88, spawnSlot = "miniboss" },
+        { class = "terminator_nextbot_zambietank",          diffAdded = 40, diffNeeded = 90, passChance = 50, spawnSlot = "miniboss" },
+        { class = "terminator_nextbot_zambienecro",         diffAdded = 40, diffNeeded = 90, passChance = 50, spawnSlot = "miniboss" },
+        { class = "terminator_nextbot_zambiephantomelite",  diffAdded = 70, diffNeeded = 90, passChance = 96, spawnSlot = "miniboss" },
+        { class = "terminator_nextbot_zambiereanimator",    diffAdded = 90, diffNeeded = 95, passChance = 96, spawnSlot = "miniboss" },
         { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 100, diffNeeded = 90, passChance = 99.5, spawnSlot = "miniboss" }, -- rare elite wraith duo
 
         { class = "terminator_nextbot_zambiewraith",        diffAdded = 25, diffNeeded = 99, passChance = 99, batchSize = 5, spawnSlot = "miniboss" }, -- smallish wraith wave
@@ -63,6 +78,17 @@ function ENT:DoSpawnPool()
         { class = "terminator_nextbot_zambiewraithelite",   diffAdded = 50, diffNeeded = 99, passChance = 99.8, batchSize = 4, spawnSlot = "miniboss" }, -- rare elite wraith quad
         { class = "terminator_nextbot_zambieberserk",       diffAdded = 30, diffNeeded = 99, passChance = 99.5, batchSize = 5, spawnSlot = "miniboss" }, -- rare berserk wave
         { class = "terminator_nextbot_zambietank",          diffAdded = 60, diffNeeded = 99, passChance = 99.5, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 tank spawn
+
+        { class = "terminator_nextbot_zambieglass",         diffAdded = 30, diffNeeded = 99, passChance = 99.97, batchSize = 12, spawnSlot = "miniboss" }, -- rare glass swarm
+        { class = "terminator_nextbot_zambieglasselite",    diffAdded = 40, diffNeeded = 99, passChance = 99.98, batchSize = 8, spawnSlot = "miniboss" }, -- rare elite glass swarm
+        { class = "terminator_nextbot_zambieglasstitan",    diffAdded = 80, diffNeeded = 99, passChance = 99.99, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 glass titan spawn
+
+        { class = "terminator_nextbot_zambienecroelite",      diffAdded = 100, diffNeeded = 150, participantsNeeded = 2, passChance = 99.8, spawnSlot = "boss" },
+        { class = "terminator_nextbot_zambietankelite",       diffAdded = 70, diffNeeded = 150, participantsNeeded = 2, passChance = 99.8, spawnSlot = "boss" },
+        { class = "terminator_nextbot_zambiereanimatorelite", diffAdded = 150, diffNeeded = 160, participantsNeeded = 2, passChance = 99.9, spawnSlot = "boss" },
+        { class = "terminator_nextbot_zambiebigheadcrab",     diffAdded = 150, diffNeeded = 160, participantsNeeded = 2, passChance = 99.5, spawnSlot = "boss" },
+        { class = "terminator_nextbot_zambiemechaelite",      diffAdded = 100, diffNeeded = 150, participantsNeeded = 4, passChance = 98.9, spawnSlot = "boss" },
+        { class = "terminator_nextbot_zambiebiggerheadcrab",  diffAdded = 200, diffNeeded = 190, participantsNeeded = 5, passChance = 99.99, spawnSlot = "boss" },
     }
 end
 
