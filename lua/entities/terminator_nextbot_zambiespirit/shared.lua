@@ -1,8 +1,9 @@
+-- Thanks to MerekiDor and JonahSoldier the creators of Map Sweepers for allowing this!
 AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambiefast"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Spirit"
-ENT.Author    = "Octantis Addons"
+ENT.Author    = "regunkyle"
 ENT.Category  = "Map Sweepers"
 ENT.Spawnable = false
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
