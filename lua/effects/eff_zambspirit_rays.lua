@@ -1,11 +1,13 @@
+AddCSLuaFile()
+
 EFFECT.mat_beam = Material( "trails/plasma" )
 EFFECT.mat_soul = Material( "effects/fluttercore_gmod" )
 
 EFFECT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
 function EFFECT:Init( data )
-    self.origin = data:GetOrigin()
-    self.ent = data:GetEntity()
+    self.targetpos = data:GetOrigin()
+    self.origin = data:GetStart()
 
     self.t = 0
     self.tout = 1.85
@@ -15,14 +17,12 @@ function EFFECT:Init( data )
     self:EmitSound( "ambient/levels/citadel/portal_beam_shoot5.wav", 100, 200, 1 )
     self:GenPoints()
 
-    if IsValid( self.ent ) then
-        self:SetRenderBoundsWS( self.origin, self.ent:WorldSpaceCenter() )
-    end
+    self:SetRenderBoundsWS( self.origin, self.targetpos )
 end
 
 function EFFECT:Think()
     local selfTbl = self:GetTable()
-    if selfTbl.t < selfTbl.tout and IsValid( selfTbl.ent ) then
+    if selfTbl.t < selfTbl.tout then
         selfTbl.t = selfTbl.t + FrameTime()
         self:GenPoints()
         return true
@@ -35,12 +35,9 @@ function EFFECT:GenPoints()
     if not selfTbl.origin then return end
 
     if not selfTbl.points then
-        if not IsValid( selfTbl.ent ) then return end
-
-        local targetpos = selfTbl.ent:WorldSpaceCenter()
+        local targetpos = selfTbl.targetpos
         local n = math.random( 25, 30 )
 
-        selfTbl.targetpos = targetpos
         selfTbl.points = { selfTbl.origin }
 
         for i = 1, n do
@@ -70,7 +67,7 @@ end
 
 function EFFECT:Render()
     local selfTbl = self:GetTable()
-    if not IsValid( selfTbl.ent ) or not selfTbl.points then return end
+    if not selfTbl.points then return end
 
     local n = #selfTbl.points
     local tf = 1 - ( selfTbl.t / selfTbl.tout )
