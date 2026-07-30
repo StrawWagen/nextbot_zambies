@@ -1,5 +1,4 @@
 AddCSLuaFile()
-
 ENT.Base = "terminator_nextbot_zambiefast"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Spirit"
@@ -7,48 +6,31 @@ ENT.Author    = "Octantis Addons"
 ENT.Category  = "Map Sweepers"
 ENT.Spawnable = false
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
-
 list.Set( "NPC", "terminator_nextbot_zambiespirit", {
     Name     = "Zombie Spirit",
     Class    = "terminator_nextbot_zambiespirit",
     Category = "Nextbot Zambies",
 } )
-
 if CLIENT then
     language.Add( "terminator_nextbot_zambiespirit", ENT.PrintName )
 end
-
 local ZOMBIE_COLOR      = Color( 100, 180, 100 )
 local ZAMBIE_PREFIX     = "terminator_nextbot_zambie"
 local ZAMBIE_PREFIX_LEN = #ZAMBIE_PREFIX
-
--- Maximum model scale a target zambie may have to be eligible for carrying. Entities scaled above 1.15 are excluded so the spirit targets only roughly human-scale or smaller zambies.
 local MAX_CARRY_SCALE  = 1.15
-
--- Maximum *max* health a target may have to be eligible for carrying. Checked via GetMaxHealth() rather than Health(), so a heavily damaged elite is still excluded. Keeps the spirit from carrying boss-tier zambies (spirit with god crab 0_0).
 local MAX_CARRY_HEALTH = 250
 
--- Finds up to `count` valid nav positions distributed around a circle of `radius` units centred on `center`. Candidates are snapped to the nav mesh and must be at least 40% of `radius` apart from any already accepted position. Returns (positions, filled) where filled is true when `count` positions were successfully placed (not a guarantee of good spread).
 local function PackSquadVectors( center, count, radius )
     local results   = {}
-    -- Six attempts per slot provides slack for nav-mesh misses and spacing rejections. On very sparse nav meshes fewer than `count` may still be placed even with this headroom.
     local attempts  = count * 6
     local angleStep = ( math.pi * 2 ) / attempts
-
     for i = 0, attempts - 1 do
         if #results >= count then break end
-
-        -- Candidate position on the perimeter of the circle
         local angle     = i * angleStep
         local candidate = center + Vector( math.cos( angle ) * radius, math.sin( angle ) * radius, 0 )
-
-        -- Snap to the nearest nav area within 128 units; skip if none found. The 128 unit radius limits how far a candidate can drift from the circle.
         local area = navmesh.GetNearestNavArea( candidate, false, 128 )
         if not area then continue end
-
         local snapped = area:GetClosestPointOnArea( candidate )
-
-        -- Reject positions that are too close to one already accepted, so the squad spreads out rather than bunching at one spot
         local tooClose = false
         for _, v in ipairs( results ) do
             if v:DistToSqr( snapped ) < ( radius * 0.4 ) ^ 2 then
@@ -56,12 +38,10 @@ local function PackSquadVectors( center, count, radius )
                 break
             end
         end
-
         if not tooClose then
             table.insert( results, snapped )
         end
     end
-
     return results, #results >= count
 end
 
@@ -71,7 +51,6 @@ local function GetFPSEstimate()
     return 1 / ft
 end
 
--- Wraps GotoPosSimple with a nav area pre-check and pcall. The pre-check handles the common case; pcall guards against the base's internal NearestPoint error when an area becomes invalid between the check and the call.
 local function SafeGoto( bot, pos )
     if not isvector( pos ) then return end
     local area = navmesh.GetNearestNavArea( pos, false, 512 )
@@ -81,13 +60,87 @@ local function SafeGoto( bot, pos )
     pcall( bot.GotoPosSimple, bot, snapped )
 end
 
+-- Network string for the summon origin effect (where the zambie WAS)
+if SERVER then
+    util.AddNetworkString( "zambspirit_summoneffect" )
+end
+
+-- Fires the shrinking red texture at the zambie's old position
+local function FireSummonEffectAt( ent )
+    if not SERVER then return end
+    if not IsValid( ent ) then return end
+
+    local pos = ent:WorldSpaceCenter()
+    local mins, maxs = ent:GetCollisionBounds()
+    local height = maxs.z - mins.z
+    local startSize = math.Clamp( height * 1.5, 40, 300 )
+
+    net.Start( "zambspirit_summoneffect" )
+        net.WriteVector( pos )
+        net.WriteFloat( startSize )
+    net.Broadcast()
+end
+
+-- Fires the rays beam effect from the spirit's chest to the target position
+local function FireDeployEffectAt( spirit, targetPos )
+    if not SERVER then return end
+    if not IsValid( spirit ) or not isvector( targetPos ) then return end
+
+    local chestBone = spirit:LookupBone( "ValveBiped.Bip01_Spine4" ) or spirit:LookupBone( "ValveBiped.Bip01_Spine2" )
+    local origin = spirit:WorldSpaceCenter()
+    if chestBone and chestBone ~= -1 then
+        origin = spirit:GetBonePosition( chestBone )
+    end
+
+    local ed = EffectData()
+    ed:SetOrigin( targetPos )
+    ed:SetStart( origin )
+    util.Effect( "eff_zambspirit_rays", ed, true, true )
+end
+
+-- Teleports a zambie from its current position to a target deploy position.
+local function TeleportZambieTo( ent, targetPos, enemy, spirit )
+    if not IsValid( ent ) then return end
+
+    -- Effect at where it WAS
+    FireSummonEffectAt( ent )
+
+    ent:SetVelocity( Vector( 0, 0, 0 ) )
+    ent.TakesFallDamage           = false
+    ent.HeightToStartTakingDamage = 99999
+    ent.FallDamagePerHeight       = 0
+    ent.DeathDropHeight           = 99999
+    ent:SetPos( targetPos )
+    if ent.loco and ent.loco.SetGroundEntity then
+        ent.loco:SetGroundEntity( Entity( 0 ) )
+    end
+    if IsValid( enemy ) then
+        local faceAngle = ( enemy:GetPos() - targetPos ):Angle()
+        faceAngle.p = 0
+        faceAngle.r = 0
+        ent:SetAngles( faceAngle )
+    end
+    ent:ReallyAnger( 60 )
+
+    -- Effect at where it WILL BE
+    FireDeployEffectAt( spirit, targetPos )
+
+    timer.Simple( 0.5, function()
+        if not IsValid( ent ) then return end
+        ent.TakesFallDamage           = true
+        ent.HeightToStartTakingDamage = 200
+        ent.FallDamagePerHeight       = 0.15
+        ent.DeathDropHeight           = 1000
+    end )
+end
+
 function ENT:SetupDataTables()
     if BaseClass.SetupDataTables then
         BaseClass.SetupDataTables( self )
     end
     self:NetworkVar( "Bool",  10, "IsDying" )
     self:NetworkVar( "Float", 10, "DeathTime" )
-    self:NetworkVar( "Int",   10, "CarriedNPCCount" )
+    self:NetworkVar( "Int",   10, "SummonCount" )
 end
 
 if SERVER then
@@ -97,244 +150,163 @@ if SERVER then
     end
 end
 
-ENT.GiveShieldRegen      = 7
-ENT.GiveShieldRegenDelay = 3
 ENT.DeployDistance       = 1000
 ENT.GrabDistance         = 666
-ENT.GiveShieldDistance   = 666
 ENT.MinGrabDist          = 1500
 
+-- Overriding the base zambie "call" action to trigger the spirit's summon logic
+ENT.MySpecialActions = {
+    ["call"] = {
+        inBind    = IN_RELOAD,
+        drawHint  = true,
+        name      = "Summon Zambies",
+        desc      = "Pull zambies from afar to deploy near you",
+        ratelimit = 5,
+        svAction  = function( _driveController, _driver, bot )
+            local enemy = bot:GetEnemy()
+            local enemyPos = IsValid( enemy ) and enemy:GetPos() or bot:GetPos()
+            bot:SummonZambies( enemyPos, { summonGoal = math.random( 3, 5 ), summonedThisWave = 0 } )
+        end,
+    },
+}
+
 ENT.MyClassTask = {
-
     OnCreated = function( self, data )
-        data.npcCarryGoal  = math.random( 3, 5 )
-        data.wantToCarry   = true
-        data.carryCooldown = 0
-        data.nextMove      = 0
+        data.summonGoal       = math.random( 3, 5 )
+        data.wantToSummon     = true
+        data.summonedThisWave = 0
     end,
-
     OnDamaged = function( self, data, dmg )
         if self:GetIsDying() then return true end
-
         local melee  = bit.band( dmg:GetDamageType(), bit.bor( DMG_SLASH, DMG_CLUB ) ) > 0
-        local damage = dmg:GetDamage()
-
         if melee then
-            damage = damage * 2.2
-        elseif damage < 25 then
-            damage = damage * 0.2
+            dmg:ScaleDamage( 2.2 )
+        elseif dmg:GetDamage() < 25 then
+            dmg:ScaleDamage( 0.2 )
         end
-
-        self:SetHealth( self:Health() - damage )
-
-        if self:Health() <= 0 then
-            self:SetHealth( 1 )
-            local v   = dmg:GetDamageForce()
+    end,
+    OnKilled = function( self, data, attacker, inflictor, ragdoll )
+        if IsValid( ragdoll ) then ragdoll:Remove() end
+    end,
+    PreventBecomeRagdollOnKilled = function( self, data, dmg )
+        if not self:GetIsDying() then
+            local attacker = dmg:GetAttacker()
+            local inflictor = dmg:GetInflictor()
+            local v = dmg:GetDamageForce()
             local len = v:Length()
             if len > 0 then
                 v:Div( len )
                 v:Mul( 120 )
             end
-            self:SpiritDeath( dmg:GetAttacker(), dmg:GetInflictor(), v )
-        else
-            local v = self:GetVelocity()
-            v.z = v.z + 2
-            v:Mul( 2.5 )
-            self:SetVelocity( v )
+            self:SpiritDeath( attacker, inflictor, v )
         end
-
-        return true
-    end,
-
-    OnKilled = function( self, data, attacker, inflictor, ragdoll )
-        if IsValid( ragdoll ) then ragdoll:Remove() end
-    end,
-
-    PreventBecomeRagdollOnKilled = function( self, data, dmg )
         return true, true
     end,
-
     DisableBehaviour = function( self, data )
         return self:GetIsDying()
     end,
-
     BehaveUpdatePriority = function( self, data )
         if self:GetIsDying() then return end
-
-        -- If carrying NPCs and close enough to the enemy, stop looking for more
-        if data.wantToCarry and self:GetCarriedNPCCount() > 0 then
-            local enemy = self:GetEnemy()
-            if IsValid( enemy ) then
-                local enemyPos = enemy:GetPos()
-                if isvector( enemyPos ) and enemyPos:DistToSqr( self:GetPos() ) < self.GrabDistance ^ 2 then
-                    data.wantToCarry = false
-                end
-            end
-        end
-
-        local enemy = self:GetEnemy()
-        if IsValid( enemy ) then
-            local selfPos  = self:GetPos()
-            local enemyPos = enemy:GetPos()
-
-            if not isvector( selfPos ) or not isvector( enemyPos ) then return end
-
-            local dist2 = enemyPos:DistToSqr( selfPos )
-
-            -- Too close to the enemy: flee rather than carry
-            if dist2 < ( self.DeployDistance / 2 ) ^ 2 then
-                local diff    = selfPos - enemyPos
-                local diffLen = diff:Length()
-                if diffLen > 1 then
-                    diff:Div( diffLen )
-                    diff:Mul( 512 )
-                    local fleeTarget = selfPos + diff
-                    local fleeArea   = navmesh.GetNearestNavArea( fleeTarget, false, 512 )
-                    if fleeArea then
-                        SafeGoto( self, fleeArea:GetClosestPointOnArea( fleeTarget ) )
-                    end
-                end
-                return
-            end
-
-            -- Within deploy range, enemy visible (IsSeeEnemy encodes recency GetEnemyLastTimeSeen is not provided by the base): deploy carried zambies.
-            if self:GetCarriedNPCCount() > 0 then
-                if self.IsSeeEnemy and dist2 < self.DeployDistance ^ 2 then
-                    if not data.carryCooldown or CurTime() > data.carryCooldown then
-                        self:DeployNPCs( enemyPos )
-                        data.carryCooldown = CurTime() + 5
-                        data.wantToCarry   = true
-                    end
-                end
-            end
-        end
-
-        -- Grab nearby eligible zambies while under the carry goal
-        if data.wantToCarry and ( not data.carryCooldown or CurTime() > data.carryCooldown ) then
-            -- GetNearbyAllies is assumed cheaper than ents.FindInSphere + faction filter; the base maintains ally lists internally.
-            for _, npc in ipairs( self:GetNearbyAllies( self.GrabDistance ) ) do
-                if not self:IsGoodGrabTarget( npc ) then continue end
-                if not self:Visible( npc ) then continue end
-
-                local npcEnemy     = npc:GetEnemy()
-                local farFromEnemy = not IsValid( npcEnemy )
-                    or npcEnemy:GetPos():DistToSqr( npc:GetPos() ) > self.MinGrabDist ^ 2
-                if not farFromEnemy then continue end
-
-                self:CarryNPC( npc )
-                data.carryCooldown = CurTime() + 0.25
-                break
-            end
-
-            if self:GetCarriedNPCCount() >= data.npcCarryGoal then
-                data.wantToCarry   = false
-                data.carryCooldown = CurTime() + 1
-            end
-        end
-    end,
-
-    BehaveUpdateMotion = function( self, data )
-        if self:GetIsDying() then return end
-
         local enemy = self:GetEnemy()
         if not IsValid( enemy ) then
-            data.wantToCarry = true
+            data.wantToSummon = true
+            return
+        end
+        local selfPos  = self:GetPos()
+        local enemyPos = enemy:GetPos()
+        if not isvector( selfPos ) or not isvector( enemyPos ) then return end
+        local dist2 = enemyPos:DistToSqr( selfPos )
+
+        -- Too close to the enemy: flee
+        if dist2 < ( self.DeployDistance / 2 ) ^ 2 then
+            local diff    = selfPos - enemyPos
+            local diffLen = diff:Length()
+            if diffLen > 1 then
+                diff:Div( diffLen )
+                diff:Mul( 512 )
+                local fleeTarget = selfPos + diff
+                local fleeArea   = navmesh.GetNearestNavArea( fleeTarget, false, 512 )
+                if fleeArea then
+                    SafeGoto( self, fleeArea:GetClosestPointOnArea( fleeTarget ) )
+                end
+            end
             return
         end
 
+        -- Within summon range and enemy visible: pull zambies from far away
+        if data.wantToSummon and self.IsSeeEnemy and dist2 < self.DeployDistance ^ 2 then
+            if self:CanTakeAction( "call" ) then
+                self:TakeAction( "call" )
+            end
+        end
+    end,
+    BehaveUpdateMotion = function( self, data )
+        if self:GetIsDying() then return end
+        local enemy = self:GetEnemy()
+        if not IsValid( enemy ) then
+            data.wantToSummon = true
+            return
+        end
         local enemyPos = enemy:GetPos()
         local selfPos  = self:GetPos()
-
         if not isvector( enemyPos ) or not isvector( selfPos ) then return end
         if selfPos:DistToSqr( enemyPos ) < ( self.DeployDistance / 2 ) ^ 2 then return end
-
-        if not data.wantToCarry then
-            if self:GetCarriedNPCCount() <= 0 then
-                data.wantToCarry = true
-            end
-            return
-        end
-
-        local canMove   = CurTime() > ( data.nextMove or 0 )
-        local bestDist2 = self.MinGrabDist ^ 2
-        local furthest
-        local furthestPos
-
-        for _, npc in ipairs( ents.FindByClass( "terminator_nextbot_zambie*" ) ) do
-            if not self:IsGoodGrabTarget_Optimised( npc ) then continue end
-            local npcPos = npc:GetPos()
-            if not isvector( npcPos ) then continue end
-            local dist2 = npcPos:DistToSqr( enemyPos )
-            if dist2 > bestDist2 then
-                furthest    = npc
-                furthestPos = npcPos
-                bestDist2   = dist2
-            end
-        end
-
-        if IsValid( furthest ) and isvector( furthestPos ) then
-            if canMove or furthestPos:DistToSqr( selfPos ) >= ( self.GrabDistance / 2 ) ^ 2 then
-                local gotoPos = furthest:GetPos()
-                if isvector( gotoPos ) then
-                    SafeGoto( self, gotoPos )
-                    data.nextMove = CurTime() + 5
-                end
-            end
-        else
-            data.wantToCarry = false
-        end
     end,
-
-    -- Called by DeployNPCs when all carried zambies are released. Re-randomises the carry goal (3–6, vs. the initial 3–5) so subsequent carry runs vary slightly in squad size.
-    OnDeployComplete = function( self, data )
-        data.npcCarryGoal = math.random( 3, 6 )
-    end,
-
 }
 
-ENT.MySpecialActions = {
-    [ "call" ] = {
-        name      = "Pick Up Zambie",
-        desc      = "Grabs a nearby eligible zambie and carries it",
-        inBind    = IN_RELOAD,
-        drawHint  = true,
-        ratelimit = 0.5,
-        svAction  = function( driveController, driver, bot )
-            -- Search for the closest eligible zambie within grab range
-            local bestNPC  = nil
-            local bestDist = bot.GrabDistance ^ 2
-            local botPos   = bot:GetPos()
-
-            for _, npc in ipairs( bot:GetNearbyAllies( bot.GrabDistance ) ) do
-                if not bot:IsGoodGrabTarget( npc ) then continue end
-                local d = npc:GetPos():DistToSqr( botPos )
-                if d < bestDist then
-                    bestDist = d
-                    bestNPC  = npc
-                end
+-- Finds eligible zambies far from the enemy and teleports them to deploy
+-- positions near the spirit.
+function ENT:SummonZambies( enemyPos, data )
+    local searchRadius = self.MinGrabDist
+    local summoned = 0
+    local targetCount = data.summonGoal or math.random( 3, 5 )
+    local positions = {}
+    if isvector( enemyPos ) then
+        for i = 1, 4 do
+            local lerpFrac = 0.5 - ( ( i - 1 ) / 3 ) * 0.3
+            local deployCenter = LerpVector( lerpFrac, self:WorldSpaceCenter(), enemyPos )
+            local radius       = math.random( 75, 125 )
+            local vectors, fully = PackSquadVectors( deployCenter, targetCount, radius )
+            if fully or #vectors > #positions then
+                positions = vectors
+                if fully then break end
             end
+        end
+    else
+        positions = PackSquadVectors( self:WorldSpaceCenter(), targetCount, math.random( 150, 200 ) )
+    end
+    if #positions == 0 then return end
+    local enemy = self:GetEnemy()
+    local upVec = Vector( 0, 0, 10 )
 
-            if IsValid( bestNPC ) then
-                bot:CarryNPC( bestNPC )
-            end
-        end,
-    },
+    -- Find zambies far from the enemy
+    local candidates = {}
+    for _, npc in ipairs( ents.FindByClass( "terminator_nextbot_zambie*" ) ) do
+        if not self:IsGoodGrabTarget_Optimised( npc ) then continue end
+        if not isvector( npc:GetPos() ) then continue end
+        if isvector( enemyPos ) and npc:GetPos():DistToSqr( enemyPos ) < searchRadius ^ 2 then continue end
+        table.insert( candidates, npc )
+        if #candidates >= targetCount then break end
+    end
+    if #candidates == 0 then return end
 
-    -- Releases all carried zambies toward the current enemy. IN_ATTACK2 so it doesn't conflict with the melee
-    [ "Deploy" ] = {
-        name      = "Deploy Carried",
-        desc      = "Releases all carried zambies toward the current enemy",
-        inBind    = IN_ATTACK2,
-        drawHint  = true,
-        ratelimit = 3,
-        svAction  = function( driveController, driver, bot )
-            local enemy = bot:GetEnemy()
-            bot:DeployNPCs( IsValid( enemy ) and enemy:GetPos() or nil )
-        end,
-    },
-}
+    local toSummon = math.min( #candidates, #positions )
+    self:SetSummonCount( toSummon )
+    for i = 1, toSummon do
+        local npc = candidates[i]
+        local pos = positions[i] + upVec
+        TeleportZambieTo( npc, pos, enemy, self )
+        summoned = summoned + 1
+    end
 
--- Returns true if `target` is a zambie the spirit may carry. Uses guard clauses rather than a single nested condition. Exclusion of large/boss zambies is dynamic via scale and max-health checks rather than a hardcoded class list cause Mr.Wagen didnt like it so new zambie types are handled automatically.
+    data.summonedThisWave = ( data.summonedThisWave or 0 ) + summoned
+    data.summonGoal = math.random( 3, 5 )
+
+    if summoned > 0 then
+        self:EmitSound( "npc/advisor/advisor_blast6.wav", 100, 100, 1 )
+    end
+end
+
 function ENT:IsGoodGrabTarget( target )
     if not IsValid( target ) then return false end
     if string.sub( target:GetClass(), 1, ZAMBIE_PREFIX_LEN ) ~= ZAMBIE_PREFIX then return false end
@@ -359,12 +331,22 @@ end
 
 function ENT:SpiritDeath( attacker, inflictor, forceVec )
     if self:GetIsDying() then return end
-
-    -- Set dying immediately so nothing else can re-trigger this
     self:SetIsDying( true )
     self:SetDeathTime( CurTime() )
+    
+    -- Stop moving and become non-solid immediately
+    self:StopMoving()
+    self:SetSolid( SOLID_NONE )
+    self:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
+    self:SetMoveType( MOVETYPE_FLY )
+    self:SetVelocity( Vector( 0, 0, 0 ) )
+    self:SetNoDraw( true )
 
-    self:DeployNPCs()
+    -- On death, do a final summon burst from far away
+    local enemy = self:GetEnemy()
+    local summonPos = IsValid( enemy ) and enemy:GetPos() or self:GetPos()
+    local fakeData = { summonGoal = math.random( 2, 4 ), summonedThisWave = 0 }
+    self:SummonZambies( summonPos, fakeData )
 
     local ed = EffectData()
     ed:SetMagnitude( 1.5 )
@@ -373,131 +355,76 @@ function ENT:SpiritDeath( attacker, inflictor, forceVec )
     ed:SetNormal( self:GetAngles():Up() )
     ed:SetFlags( 2 )
     util.Effect( "eff_zambspirit_blast", ed )
-
     self:EmitSound( "npc/advisor/advisor_scream.wav", 100, 170, 1 )
-
-    -- The spirit doesn't truly "die" through the base's normal kill pipeline (PreventBecomeRagdollOnKilled returns true). We manually fire OnNPCKilled here so that kill-tracking systems (scoreboards, kill feeds, etc.) still register the death even though the entity never becomes a ragdoll.
-    hook.Call( "OnNPCKilled", GAMEMODE, self, attacker, inflictor )
-
-    self:SetCollisionGroup( COLLISION_GROUP_DEBRIS )
-    self:SetMoveType( MOVETYPE_FLY )
-    self:SetVelocity( Vector( 0, 0, 0 ) )
-    self:SetNoDraw( true )
 
     if isvector( forceVec ) then
         self:SetVelocity( forceVec )
     end
 
-    local ent = self
-    timer.Simple( 0.1, function()
-        if IsValid( ent ) then ent:Remove() end
-    end )
-end
-
-function ENT:CarryNPC( npc )
-    local ed = EffectData()
-    ed:SetFlags( 2 )
-    ed:SetEntity( self )
-    ed:SetOrigin( npc:WorldSpaceCenter() )
-    util.Effect( "eff_zambspirit_rays", ed )
-
-    -- NOTE: parenting is load-bearing; DeployNPCs enumerates carried zambies via self:GetChildren(), which only works because of this SetParent call. CarriedNPCCount tracks the count separately for networking but is not the source of truth for which entities to deploy.
-    npc:SetParent( self )
-    npc:SetPos( self:GetPos() )
-    npc:SetNoDraw( true )
-    self:SetCarriedNPCCount( self:GetCarriedNPCCount() + 1 )
-    self:EmitSound( "npc/advisor/advisor_blast1.wav", 100, 100, 1 )
-end
-
-function ENT:DeployNPCs( pos )
-    -- Collect all valid children (the carried zambies)
-    local toDeploy = {}
-    for _, ent in ipairs( self:GetChildren() ) do
-        if IsValid( ent ) and ent:Health() > 0 then
-            table.insert( toDeploy, ent )
-        end
-    end
-
-    if #toDeploy == 0 then return end
-
-    -- When a target position is provided we try to find the best cluster of nav positions along the path between us and that target. We attempt four interpolation fractions and keep whichever attempt fits the most zambies. When no position is given (spirit died away from combat) we scatter nearby.
-    local mostVectors
-
-    if isvector( pos ) then
-        for i = 1, 4 do
-            local lerpFrac     = math.Remap( i, 1, 4, 0.5, 0.2 )
-            local deployCenter = LerpVector( lerpFrac, self:WorldSpaceCenter(), pos )
-            local radius       = math.random( 75, 125 )
-
-            local vectors, fully = PackSquadVectors( deployCenter, #toDeploy, radius )
-
-            if fully or not mostVectors or #vectors > #mostVectors then
-                mostVectors = vectors
-                if fully then break end
-            end
-        end
-    else
-        local vectors = PackSquadVectors( self:WorldSpaceCenter(), #toDeploy, math.random( 150, 200 ) )
-        mostVectors   = vectors
-    end
-
-    if not mostVectors or #mostVectors == 0 then return end
-
-    local upVec    = Vector( 0, 0, 10 )
-    local deployed = 0
-
-    for i, v in ipairs( mostVectors ) do
-        deployed = deployed + 1
-
-        local ent = toDeploy[ i ]
-        ent:SetParent()
-        ent:SetPos( v + upVec )
-        ent:SetNoDraw( false )
-
-        -- Face the deployed zambie toward the known enemy if we have one, then anger it so it immediately starts pursuing on its own.
-        local foe = self:GetEnemy()
-        if IsValid( foe ) then
-            local foePos    = foe:GetPos()
-            local faceAngle = ( foePos - v ):Angle()
-            faceAngle.p = 0
-            faceAngle.r = 0
-            ent:SetAngles( faceAngle )
-        end
-
-        ent:ReallyAnger( 30 )
-
-        local filter = RecipientFilter()
-        filter:AddPVS( self:WorldSpaceCenter() )
-        filter:AddPVS( ent:WorldSpaceCenter() )
-
-        local ed = EffectData()
-        ed:SetFlags( 2 )
-        ed:SetEntity( self )
-        ed:SetOrigin( ent:WorldSpaceCenter() )
-        util.Effect( "eff_zambspirit_rays", ed, true, filter )
-    end
-
-    self:EmitSound( "npc/advisor/advisor_blast6.wav", 100, 100, 1 )
-
-    local remaining = #toDeploy - deployed
-    self:SetCarriedNPCCount( remaining )
-
-    -- Notify the class task so it can reset the carry goal for the next run
-    if remaining == 0 then
-        local taskData = self:GetTable().MyClassTask
-        if taskData and taskData.OnDeployComplete then
-            taskData.OnDeployComplete( self, taskData )
-        end
-    end
+    SafeRemoveEntityDelayed( self, 0.1 )
 end
 
 if CLIENT then
     ENT.mat       = Material( "effects/strider_muzzle" )
     ENT.mat_trail = Material( "trails/plasma" )
 
+    -- Summon origin effect: stores positions received from the server
+    -- and renders a shrinking, rotating red texture at each one (where the zambie WAS)
+    local summonEffects = {}
+    local summonMat = ENT.mat
+
+    net.Receive( "zambspirit_summoneffect", function()
+        local pos = net.ReadVector()
+        local startSize = net.ReadFloat()
+        table.insert( summonEffects, {
+            pos       = pos,
+            startTime = CurTime(),
+            startSize = startSize,
+        } )
+    end )
+
+    hook.Add( "PostDrawTranslucentRenderables", "zambspirit_summoneffects", function( _depth, skybox )
+        if skybox then return end
+        if render.GetRenderTarget() then return end
+
+        local time       = CurTime()
+        local eyePos     = EyePos()
+        local maxDuration = 1.0
+
+        for i = #summonEffects, 1, -1 do
+            local effect  = summonEffects[i]
+            local elapsed = time - effect.startTime
+
+            if elapsed >= maxDuration then
+                table.remove( summonEffects, i )
+                continue
+            end
+
+            local frac = 1 - ( elapsed / maxDuration )
+            local pos  = effect.pos
+            local a    = ( pos - eyePos ):Angle()
+            a:RotateAroundAxis( a:Right(), 90 )
+
+            render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
+            surface.SetMaterial( summonMat )
+            surface.SetDrawColor( 255 * frac, 0, 0, 255 * frac )
+
+            local startSize = effect.startSize or 72
+
+            for j = 1, 4 do
+                cam.Start3D2D( pos, a, 1 )
+                local ti   = ( elapsed + j / 4 ) % 1
+                local size = ( startSize - ti * ( startSize * 0.5 ) ) * frac
+                surface.DrawTexturedRectRotated( 0, 0, size, size, ti / 4 * j * 360 )
+                cam.End3D2D()
+            end
+
+            render.OverrideBlend( false )
+        end
+    end )
+
     function ENT:Initialize()
         BaseClass.Initialize( self )
-
         self.trailLength = 16
         self.trailBones  = {
             self:LookupBone( "ValveBiped.Bip01_L_Calf" ),
@@ -505,7 +432,6 @@ if CLIENT then
             self:LookupBone( "ValveBiped.Bip01_L_Hand" ),
             self:LookupBone( "ValveBiped.Bip01_R_Hand" ),
         }
-
         self.trails = {}
         for i = 1, #self.trailBones do
             self.trails[ i ] = {}
@@ -514,47 +440,37 @@ if CLIENT then
 
     function ENT:Think()
         BaseClass.Think( self )
-
-        -- Keep the entity clean; decals accumulate on translucent models
         self:RemoveAllDecals()
-
         if FrameTime() > 0 then
             local mypos     = self:WorldSpaceCenter()
             local dying     = self:GetIsDying()
             local elapsed   = CurTime() - self:GetDeathTime()
-            -- deathfrac drives the trail collapse animation when dying
             local deathfrac = dying and math.ease.InCubic( math.max( 0, 1 - elapsed / 1.5 ) ) or 1
             local myX, myY, myZ = mypos:Unpack()
-
             for i, bid in ipairs( self.trailBones ) do
                 local tt      = self.trails[ i ]
                 local bonePos = self:GetBonePosition( bid )
                 local bx, by, bz = bonePos:Unpack()
-                -- Lerp the trail point toward the body centre when dying
                 bonePos:SetUnpacked(
                     Lerp( 1 - deathfrac, bx, myX ),
                     Lerp( 1 - deathfrac, by, myY ),
                     Lerp( 1 - deathfrac, bz, myZ )
                 )
-
                 table.insert( tt, 1, bonePos )
                 if tt[ self.trailLength ] then
                     tt[ self.trailLength ] = nil
                 end
             end
         end
-
         self:SetNextClientThink( CurTime() + 1 / self.trailLength )
         return true
     end
 
     function ENT:DrawTranslucent( flags )
         if render.GetRenderTarget() then return end
-
         local mypos      = self:WorldSpaceCenter()
         local eyePos     = EyePos()
         local distToEyes = eyePos:DistToSqr( mypos )
-
         local time      = CurTime()
         local dying     = self:GetIsDying()
         local elapsed   = time - self:GetDeathTime()
@@ -562,8 +478,6 @@ if CLIENT then
         local blastfrac = dying and math.max( 0, 1 - elapsed * 5 ) or 0
 
         render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
-
-        -- Limb trails: four plasma beams that follow the hands and feet. Skipped on low-end hardware to save beam overhead.
         if GetFPSEstimate() > 30 then
             render.SetMaterial( self.mat_trail )
             for i, trailVectors in ipairs( self.trails ) do
@@ -578,7 +492,6 @@ if CLIENT then
             end
         end
 
-        -- Body: the spirit model with a colour-shift flicker to give it an ethereal feel. Hidden once the dying animation begins since the body has already been SetNoDraw.
         if not dying then
             local colormod = math.sin( time * 4 + self:EntIndex() ) * 0.5 + 700
             render.SetColorModulation( colormod, 1, 1 )
@@ -586,7 +499,6 @@ if CLIENT then
             render.SetColorModulation( 1, 1, 1 )
         end
 
-        -- Energy rings: rotating sprite quads near the spirit, visible within ~3250 units. Expand outward on death via blastfrac.
         if distToEyes < 3250 ^ 2 then
             surface.SetMaterial( self.mat )
             surface.SetAlphaMultiplier( 1 )
@@ -599,20 +511,6 @@ if CLIENT then
                 local size = ( 72 - ti * 32 ) * deathfrac
                 surface.DrawTexturedRectRotated( 0, 0, size, size, ti / 4 * i * 360 )
                 cam.End3D2D()
-            end
-        end
-
-        -- Carried-NPC orbs: one glowing sprite per carried zambie, orbiting the spirit. Visible within ~2000 units.
-        if distToEyes < 2000 ^ 2 then
-            local orbcount = self:GetCarriedNPCCount()
-            if orbcount > 0 then
-                local angShift = math.pi * 2 / orbcount
-                for i = 1, orbcount do
-                    local a    = ( i + time % 1 ) * angShift
-                    local orbV = mypos + Vector( math.cos( a ) * 32, math.sin( a ) * 32, -8 )
-                    local size = 64 * deathfrac + blastfrac * 4
-                    render.DrawSprite( orbV, size, size, ZOMBIE_COLOR )
-                end
             end
         end
 
