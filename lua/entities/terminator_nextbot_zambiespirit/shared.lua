@@ -3,8 +3,7 @@ AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambiefast"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Spirit"
-ENT.Author    = "regunkyle"
-ENT.Category  = "Map Sweepers"
+ENT.Author    = "Map Sweepers + regunkyle"
 ENT.Spawnable = false
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 list.Set( "NPC", "terminator_nextbot_zambiespirit", {
