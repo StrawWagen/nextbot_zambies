@@ -4,9 +4,8 @@ AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Boomer"
-ENT.Author    = "regunkyle"
+ENT.Author    = "Map Sweepers + regunkyle"
 ENT.Spawnable = false
-ENT.AdminOnly = true
 
 list.Set( "NPC", "terminator_nextbot_zambieboomer", {
     Name      = "Zombie Boomer",
