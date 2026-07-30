@@ -3,6 +3,7 @@ AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambiecrabbaby"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Blastcrab"
+ENT.Author    = "regunkyle"
 ENT.Spawnable = false
 
 list.Set( "NPC", "terminator_nextbot_zambieblastcrab", {
