@@ -1,3 +1,4 @@
+-- Thanks to MerekiDor and JonahSoldier the creators of Map Sweepers for allowing this!
 AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambiecrabbaby"
@@ -5,12 +6,6 @@ DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Blastcrab"
 ENT.Author    = "regunkyle"
 ENT.Spawnable = false
-
-list.Set( "NPC", "terminator_nextbot_zambieblastcrab", {
-    Name     = "Blastcrab",
-    Class    = "terminator_nextbot_zambieblastcrab",
-    Category = "Nextbot Zambies",
-} )
 
 if CLIENT then
     language.Add( "terminator_nextbot_zambieblastcrab", ENT.PrintName )
