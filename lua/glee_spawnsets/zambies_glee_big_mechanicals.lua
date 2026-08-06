@@ -12,7 +12,7 @@ local zambieSpawnSet = {
     maxSpawnDist = "default",
     roundEndSound = "ambient/materials/shipgroan3.wav",
     roundStartSound = "ambient/machines/floodgate_move_short1.wav",
-    chanceToBeVotable = 15,
+    chanceToBeVotable = 1,
     spawns = {
         {
             hardRandomChance = nil,
