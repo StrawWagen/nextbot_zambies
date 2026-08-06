@@ -1,7 +1,7 @@
 -- credit to https://steamcommunity.com/id/TakeTheBeansIDontCare/
 
 local zambieSpawnSet = {
-    name = "zambies_glee_elitenecro", -- unique name
+    name = "zambies_glee_theelitenecro", -- unique name
     prettyName = "The Necromancer",
     description = "They, they won't stop coming!",
     difficultyPerMin = "default", -- difficulty per minute
@@ -26,7 +26,6 @@ local zambieSpawnSet = {
             difficultyCost = 1,
             countClass = "terminator_nextbot_zambienecroelite",
             maxCount = { 1 },
-            postSpawnedFuncs = { screamAfterSpawning },
         },
     }
 }
