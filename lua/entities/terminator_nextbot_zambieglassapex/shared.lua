@@ -2,11 +2,11 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambieglasselite"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Zombie Glass Titan"
+ENT.PrintName = "Apex Glass Zombie"
 ENT.Spawnable = false
-list.Set( "NPC", "terminator_nextbot_zambieglasstitan", {
-    Name = "Zombie Glass Titan",
-    Class = "terminator_nextbot_zambieglasstitan",
+list.Set( "NPC", "terminator_nextbot_zambieglassapex", {
+    Name = ENT.PrintName,
+    Class = "terminator_nextbot_zambieglassapex",
     Category = "Nextbot Zambies",
 } )
 
@@ -58,7 +58,7 @@ ENT.MySpecialActions = {
 }
 
 if CLIENT then
-    language.Add( "terminator_nextbot_zambieglasstitan", ENT.PrintName )
+    language.Add( "terminator_nextbot_zambieglassapex", ENT.PrintName )
 
     function ENT:Draw()
         render.SetColorModulation( 0.3, 0.5, 1.0 )
@@ -90,7 +90,7 @@ function ENT:HandleFlinching()
 end
 
 sound.Add {
-    name = "nextbotZambies_GlassBreakTitanA",
+    name = "nextbotZambies_GlassBreakApexA",
     level = 100,
     pitch = 80,
     sound = {
@@ -100,7 +100,7 @@ sound.Add {
     }
 }
 sound.Add {
-    name = "nextbotZambies_GlassBreakTitanB",
+    name = "nextbotZambies_GlassBreakApexB",
     level = 95,
     pitch = 90,
     sound = {
@@ -205,8 +205,8 @@ end
 function ENT:GlassZambDie()
     local pos = self:WorldSpaceCenter()
 
-    self:EmitSound( "nextbotZambies_GlassBreakTitanA" )
-    self:EmitSound( "nextbotZambies_GlassBreakTitanB" )
+    self:EmitSound( "nextbotZambies_GlassBreakApexA" )
+    self:EmitSound( "nextbotZambies_GlassBreakApexB" )
 
     local effectdata = EffectData()
     effectdata:SetOrigin( pos )

@@ -81,7 +81,7 @@ function ENT:DoSpawnPool()
 
         { class = "terminator_nextbot_zambieglass",         diffAdded = 30, diffNeeded = 99, passChance = 99.97, batchSize = 12, spawnSlot = "miniboss" }, -- rare glass swarm
         { class = "terminator_nextbot_zambieglasselite",    diffAdded = 40, diffNeeded = 99, passChance = 99.98, batchSize = 8, spawnSlot = "miniboss" }, -- rare elite glass swarm
-        { class = "terminator_nextbot_zambieglasstitan",    diffAdded = 80, diffNeeded = 99, passChance = 99.99, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 glass titan spawn
+        { class = "terminator_nextbot_zambieglassapex",    diffAdded = 80, diffNeeded = 99, passChance = 99.99, batchSize = 2, spawnSlot = "miniboss" }, -- rare 2 apex glass spawn
 
         { class = "terminator_nextbot_zambienecroelite",      diffAdded = 100, diffNeeded = 150, participantsNeeded = 2, passChance = 99.8, spawnSlot = "boss" },
         { class = "terminator_nextbot_zambietankelite",       diffAdded = 70, diffNeeded = 150, participantsNeeded = 2, passChance = 99.8, spawnSlot = "boss" },

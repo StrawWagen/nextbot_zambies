@@ -117,13 +117,13 @@ local reanimatorSpawnSet = {
 		},
 		{
 			hardRandomChance = { 3 },
-			name = "zambie_glass_titan",
-			prettyName = "Glass Zombie Titan",
-			class = "terminator_nextbot_zambieglasstitan",
+			name = "zambie_glass_apex",
+			prettyName = "Apex Glass Zombie",
+			class = "terminator_nextbot_zambieglassapex",
 			spawnType = "hunter",
 			difficultyCost = { 250, 300 },
 			difficultyRequired = { 500, 600 },
-			countClass = "terminator_nextbot_zambieglasstitan",
+			countClass = "terminator_nextbot_zambieglassapex",
 			maxCount = { 1, 2 },			
 		},
 		{
