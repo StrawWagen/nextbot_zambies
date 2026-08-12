@@ -60,6 +60,7 @@ local set = {
             prettyName = "A Barely Armed American",
             class = "terminator_nextbot_zambie_slow", -- class spawned
             spawnType = "hunter",
+            spawnSameZ = true,
             difficultyCost = 1,
             countClass = genericZambieCounter, -- class COUNTED, uses findbyclass
             minCount = { 1 }, -- will ALWAYS maintain this count
