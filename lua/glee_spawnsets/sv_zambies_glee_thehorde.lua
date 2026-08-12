@@ -12,6 +12,7 @@ local zambieSpawnSet = {
     spawnCountPerDifficulty = { 1 }, -- go up fast pls
     startingSpawnCount = 40,
     maxSpawnCount = 50,
+    maxSpawnDist = { 2500, 4500 }, -- CLOSE!
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "ambient/creatures/town_zombie_call1.wav",
     chanceToBeVotable = 35,
