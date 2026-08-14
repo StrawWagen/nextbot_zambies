@@ -2,7 +2,7 @@ AddCSLuaFile()
 
 ENT.Base = "terminator_nextbot_zambieglasselite"
 DEFINE_BASECLASS( ENT.Base )
-ENT.PrintName = "Apex Glass Zombie"
+ENT.PrintName = "Glass Zombie Apex"
 ENT.Spawnable = false
 list.Set( "NPC", "terminator_nextbot_zambieglassapex", {
     Name = ENT.PrintName,
