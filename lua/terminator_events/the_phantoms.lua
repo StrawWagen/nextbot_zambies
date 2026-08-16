@@ -92,4 +92,4 @@ local newEvent = {
     },
 }
 
-terminator_Extras.RegisterEvent( newEvent, "paparazzi_sighting" )
+terminator_Extras.RegisterEvent( newEvent, "zambie_wraiths_invasion" )
