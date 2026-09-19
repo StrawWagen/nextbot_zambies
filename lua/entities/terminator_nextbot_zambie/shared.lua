@@ -1243,6 +1243,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local validEnemy = IsValid( enemy )
                 local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
                 local goodEnemy = validEnemy and aliveOrHp
+                coroutine_yield()
 
                 local enemyIsReachable
                 if goodEnemy then
@@ -1478,6 +1479,9 @@ function ENT:DoCustomTasks( defaultTasks )
                     data.toPos = nil
                     myTbl.zamb_NextPathAttempt = CurTime() + 1
                     coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
+
+                else
+                    coroutine_yield()
 
                 end
             end,
