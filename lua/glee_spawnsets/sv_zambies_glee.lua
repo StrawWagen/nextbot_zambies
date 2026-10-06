@@ -443,7 +443,6 @@ local zambieSpawnSet = {
             difficultyNeeded = { 3000, 5000 },
             countClass = "terminator_nextbot_zambiebiggerheadcrab",
             maxCount = { 1 },
-            postSpawnedFuncs = { screamAfterSpawning },
         },
     }
 }
