@@ -322,6 +322,7 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
 
                 minion:SetSubMaterial( 0, "models/flesh" )
                 minion.zambGrunt_HasArmor = false
+                minion.isTerminatorHunterChummy = self.isTerminatorHunterChummy
 
                 local timerId = "zambie_minionmaintain_" .. minion:GetCreationID()
                 timer.Create( timerId, math.Rand( 3, 6 ), 0, function()

@@ -64,6 +64,8 @@ ENT.IsStupid = true
 ENT.CanSpeak = true -- enable speaking thinker
 ENT.HasBrains = false -- default to no brains
 
+ENT.FriendlyFireMul = 0.01
+
 local ZAMBIE_MODEL = "models/player/zombie_classic.mdl"
 ENT.ARNOLD_MODEL = ZAMBIE_MODEL
 ENT.TERM_MODELSCALE = function() return math.Rand( 0.95, 1.05 ) end

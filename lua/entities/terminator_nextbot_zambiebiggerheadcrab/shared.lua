@@ -234,7 +234,7 @@ ENT.MyClassTask = {
 
     end,
 
-    DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
+    DealtGoombaDamage = function( self, data, damage, fallHeight, _dealtTo )
         if fallHeight <= 250 then return end
         local myPos = self:GetPos()
         local scale = fallHeight / 1500

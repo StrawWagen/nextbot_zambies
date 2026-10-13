@@ -258,11 +258,11 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
     }
 
     for _, statData in ipairs( statsToChange ) do
-        local key = statData.key
+        local currKey = statData.key
         local fallback = statData.fallback or nil
 
-        local currentValue = newZamb[key] or fallback
-        newZamb[key] = currentValue * calculatedDebuff
+        local currentValue = newZamb[currKey] or fallback
+        newZamb[currKey] = currentValue * calculatedDebuff
 
     end
 
@@ -278,8 +278,9 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
     -- if playermodel zombie, play slumprise
     newZamb:DoGesture( "ACT_HL2MP_ZOMBIE_SLUMP_RISE", math.Rand( 1.5, 2.5 ), true )
     newZamb.zambGrunt_HasArmor = false -- disable grunt armor, it's all flesh!
+    newZamb.isTerminatorHunterChummy = self.isTerminatorHunterChummy
 
-    local soundPath = self.reanim_PuppetFormationSounds[ math.random( 1, 2 ) ]
+    local soundPath = self.reanim_PuppetFormationSounds[math.random( 1, 2 )]
 
     newZamb:EmitSound( soundPath, 125, math.Rand( 75, 150 ), 1, CHAN_AUTO, 2 )
 
@@ -528,7 +529,7 @@ ENT.MyClassTask = {
 
         if not isBehind then
             local damageScale
-            
+
             if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
                 damageScale = 1 / 2
 
