@@ -1,7 +1,7 @@
 
 local zambieSpawnSet = {
     name = "zambies_glee_thecrawlers", -- unique name
-    prettyName = "The Crawlers",
+    prettyName = "Crawling Zambies",
     description = "Oh god, they're coming for our ankles!!",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
