@@ -192,7 +192,14 @@ ENT.Term_FootstepSound = { -- running sounds
     },
 }
 
-local flattener = Vector( 1,1,0.1 )
+local flattener = Vector( 1, 1, 0.1 )
+local function isLagging()
+    local idealTickrate = 1 / FrameTime()
+    local currTickrate = 1 / engine.AbsoluteFrameTime()
+    local threshold = math.max( 2.5, idealTickrate * 0.65 )
+    return currTickrate <= threshold
+
+end
 
 function ENT:NECRO_TrySpawnMinions( maxCountNow )
     local aliveCount = 0
@@ -206,6 +213,7 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
     self.ZAMBIE_MINIONS = newTbl
 
     local nearDeath = false -- used for ai spawning
+    local reachable
 
     local desiredAliveCount
     if maxCountNow then
@@ -214,7 +222,6 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
     else
         desiredAliveCount = 1
         local myEnem = self:GetEnemy()
-        local reachable
         if IsValid( myEnem ) then
             desiredAliveCount = 2
 
@@ -276,18 +283,27 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
                 if not IsValid( self ) then return end
                 if self:Health() <= 0 then return end
 
+                local lagging = isLagging()
+                if lagging then -- lagging? don't spawn
+                    self.necro_WasLagging = CurTime() + 1
+                    return
+
+                end
+
+                local wasLagging = ( self.necro_WasLagging or 0 ) > CurTime()
+
                 local class = self.necro_NormalMinionClass
                 local fastChance = reachable and self.necro_ReachableFastMinionChance or self.necro_UnReachableFastMinionChance
                 if math.random( 1, 100 ) < fastChance then
                     class = self.necro_FastMinionClass
 
                 end
-                if nearDeath and math.random( 1, 100 ) < self.necro_NearDeathClassChance then
+                if ( nearDeath or wasLagging ) and math.random( 1, 100 ) < self.necro_NearDeathClassChance then
                     class = self.necro_NearDeathMinionClass
 
                 end
                 if istable( class ) then
-                    class = class[ math.random( 1, #class ) ]
+                    class = class[math.random( 1, #class )]
                 end
                 local minion = ents.Create( class )
 

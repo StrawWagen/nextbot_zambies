@@ -28,7 +28,7 @@ local zambieSpawnSet = {
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "",
     roundEarlyStartSound = "nextbot_zambies/music/wmrs-godcrab.ogg",
-    chanceToBeVotable = 10,
+    chanceToBeVotable = 5,
     spawns = {
         {
             hardRandomChance = nil,
