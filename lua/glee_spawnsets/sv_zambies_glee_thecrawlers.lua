@@ -13,7 +13,7 @@ local zambieSpawnSet = {
     roundEndSound = "music/hl2_song7.mp3",
     roundStartSound = "ambient/creatures/town_zombie_call1.wav",
     chanceToBeVotable = 0.5,
-    chanceToBeVotableIfHard = 15,
+    chanceToBeVotableWhenHard = 15,
     easy = true,
     spawns = {
         {
