@@ -43,7 +43,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 450, 600 },
 			countClass = "terminator_nexbot_zambiereanimatorelite",
-			maxCount = { 1, 2 },			
+			maxCount = { 1, 2 },
 		},
 		{
 			hardRandomChance = { 75 },
@@ -53,7 +53,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 3 },
 			countClass = "terminator_nextbot_zambieflame*",
-			maxCount = { 9, 11 },			
+			maxCount = { 9, 11 },
 		},
 		{
 			hardRandomChance = { 25, 30 },
@@ -63,7 +63,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 5, 8 },
 			countClass = "terminator_nextbot_zambieflame*",
-			maxCount = 4,			
+			maxCount = 4,
 		},
 		{
 			hardRandomChance = { 75 },
@@ -73,7 +73,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 3 },
 			countClass = "terminator_nextbot_zambieacid*",
-			maxCount = { 9, 11 },			
+			maxCount = { 9, 11 },
 		},
 		{
 			hardRandomChance = { 25, 30 },
@@ -83,7 +83,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 5, 8 },
 			countClass = "terminator_nextbot_zambieacid*",
-			maxCount = 4,			
+			maxCount = 4,
 		},
 		{
 			hardRandomChance = { 50, 60 },
@@ -93,7 +93,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 3, 4 },
 			countClass = "terminator_nextbot_zambieenergy*",
-			maxCount = { 6, 8 },			
+			maxCount = { 6, 8 },
 		},
 		{
 			hardRandomChance = { 20, 25 },
@@ -103,7 +103,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 8, 10 },
 			countClass = "terminator_nextbot_zambieenergy*",
-			maxCount = 3,			
+			maxCount = 3,
 		},
 		{
 			hardRandomChance = { 10, 15 },
@@ -113,7 +113,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 25, 35 },
 			countClass = "terminator_nextbot_zambieglasselite",
-			maxCount = { 3, 5 },			
+			maxCount = { 3, 5 },
 		},
 		{
 			hardRandomChance = { 3 },
@@ -124,7 +124,7 @@ local reanimatorSpawnSet = {
 			difficultyCost = { 250, 300 },
 			difficultyNeeded = { 500, 600 },
 			countClass = "terminator_nextbot_zambieglassapex",
-			maxCount = { 1, 2 },			
+			maxCount = { 1, 2 },
 		},
 		{
 			hardRandomChance = { 20 },

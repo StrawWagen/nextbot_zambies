@@ -2,18 +2,19 @@
 
 local zambieSpawnSet = {
     name = "zambies_glee_wraiths", -- unique name
-    prettyName = "Zambie Wraithmageddon",
-    description = "Zombie Wraiths only.",
+    prettyName = "Zambie Wraiths",
+    description = "Zombie Wraiths.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
     startingBudget = "default", -- so budget isnt 0
-    spawnCountPerDifficulty = { 2 },
+    spawnCountPerDifficulty = "default*2",
     startingSpawnCount = "default",
     maxSpawnCount = 30,
+    hordeSpawn = true,
     maxSpawnDist = "default",
     roundEndSound = "music/ravenholm_1.mp3",
-    roundStartSound = "npc/fast_zombie/fz_alert_far1.wav",
+    roundEarlyStartSound = "nextbot_zambies/music/MICHGORGEOUS/gleehinormal.wav",
     chanceToBeVotable = 10,
     spawns = {
         {

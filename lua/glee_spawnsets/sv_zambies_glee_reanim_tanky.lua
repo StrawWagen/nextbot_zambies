@@ -12,7 +12,7 @@ local reanimatorSpawnSet = {
 	maxSpawnCount = 30,
 	roundEndSound = "music/hl2_song28.mp3",
 	roundStartSound = "music/stingers/hl1_stinger_song8.mp3",
-	chanceToBeVotable = 4,
+	chanceToBeVotable = 2,
 	spawns = {
 		{
 			hardRandomChance = { 10, 25 },
@@ -43,7 +43,7 @@ local reanimatorSpawnSet = {
 			spawnType = "hunter",
 			difficultyCost = { 400, 600 },
 			countClass = "terminator_nexbot_zambiereanimatorelite",
-			maxCount = { 1, 2 },			
+			maxCount = { 1, 2 },
 		},
 		{
 			hardRandomChance = { 50, 75 },

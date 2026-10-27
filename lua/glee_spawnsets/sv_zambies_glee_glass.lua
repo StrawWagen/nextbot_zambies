@@ -30,6 +30,7 @@ local zambieSpawnSet = {
     spawnCountPerDifficulty = "default*3",
     startingSpawnCount = 8,
     maxSpawnCount = 60,
+    hordeSpawn = true,
     maxSpawnDist = "default",
     roundEndSound = "music/hl2_song6.mp3",
     roundStartSound = "music/stingers/industrial_suspense1.wav",

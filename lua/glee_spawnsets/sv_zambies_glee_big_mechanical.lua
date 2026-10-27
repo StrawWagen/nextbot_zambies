@@ -1,7 +1,7 @@
 local set = {
     name = "zambies_glee_big_mechanical", -- unique name
     prettyName = "The Metal Menace",
-    description = "One elite mechanical zombie. Just one.",
+    description = "A towering creature made of solid metal. It will not outsmart you, just crush you.",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount
@@ -12,7 +12,7 @@ local set = {
     maxSpawnDist = { 2500, 4500 }, -- CLOSE!
     roundEndSound = "default",
     roundStartSound = "default",
-    roundEarlyStartSound = "nextbot_zambies/music/wmrs-metalmenace.ogg",
+    roundEarlyStartSound = "nextbot_zambies/music/VACANT/wmrs-metalmenace.ogg",
     chanceToBeVotable = 0.5,
     chanceToBeVotableWhenHard = 3,
     spawns = {

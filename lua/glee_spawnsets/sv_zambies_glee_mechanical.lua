@@ -23,7 +23,7 @@ end
 local zambieSpawnSet = {
     name = "zambies_glee_mechanical", -- unique name
     prettyName = "Zambie Mechageddon",
-    description = "Mechanical zombies only.",
+    description = "They attack, like clockwork...",
     difficultyPerMin = "default", -- difficulty per minute
     waveInterval = "default", -- time between spawn waves
     diffBumpWhenWaveKilled = "default", -- when there's <= 1 hunter left, the difficulty is permanently bumped by this amount

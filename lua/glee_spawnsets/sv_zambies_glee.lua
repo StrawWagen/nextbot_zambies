@@ -13,6 +13,7 @@ local zambieSpawnSet = {
     spawnCountPerDifficulty = { 1 }, -- go up to 20 fast pls
     startingSpawnCount = { 10, 15 },
     maxSpawnCount = 40,
+    hordeSpawn = true,
     roundEndSound = "music/ravenholm_1.mp3",
     roundStartSound = "ambient/creatures/town_zombie_call1.wav",
     spawns = {

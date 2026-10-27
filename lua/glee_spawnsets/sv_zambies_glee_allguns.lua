@@ -49,6 +49,7 @@ local set = {
     spawnCountPerDifficulty = { 1 }, -- go up to 20 fast pls
     startingSpawnCount = { 4, 7 },
     maxSpawnCount = { 30 }, -- hard cap on count
+    hordeSpawn = true,
     maxSpawnDist = "default",
     roundEndSound = "music/hl1_song25_remix3.mp3",
     roundStartSound = "music/hl2_song32.mp3",
