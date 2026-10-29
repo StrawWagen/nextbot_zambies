@@ -14,7 +14,7 @@ local zambieSpawnSet = {
     hordeSpawn = true,
     maxSpawnDist = "default",
     roundEndSound = "music/ravenholm_1.mp3",
-    roundEarlyStartSound = "nextbot_zambies/music/MICHGORGEOUS/gleehinormal.wav",
+    roundEarlyStartSound = "nextbot_zambies/music/MICHGORGEOUS/wraith_wmrs.wav",
     chanceToBeVotable = 10,
     spawns = {
         {
