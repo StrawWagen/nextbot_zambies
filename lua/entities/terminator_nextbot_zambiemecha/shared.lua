@@ -17,6 +17,7 @@ ENT.IsFodder = true
 
 ENT.SpawnHealth = 500
 ENT.ExtraSpawnHealthPerPlayer = 50
+ENT.Term_BloodColor = BLOOD_COLOR_MECH
 ENT.WalkSpeed = 120
 ENT.MoveSpeed = 350
 ENT.RunSpeed = 550

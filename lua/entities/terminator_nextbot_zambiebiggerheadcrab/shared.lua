@@ -24,9 +24,9 @@ ENT.IsFodder = false
 ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh * 1.25
 
 ENT.JumpHeight = 3000
-ENT.DefaultStepHeight = 50
-ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
-ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
+ENT.DefaultStepHeight = 18
+ENT.StandingStepHeight = ENT.DefaultStepHeight * 4 -- used in crouch toggle in motionoverrides
+ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 1.5
 ENT.StepHeight = ENT.StandingStepHeight
 ENT.PathGoalToleranceFinal = 175
 ENT.SpawnHealth = 100000
@@ -234,7 +234,7 @@ ENT.MyClassTask = {
 
     end,
 
-    DealtGoobmaDamage = function( self, data, damage, fallHeight, _dealtTo )
+    DealtGoombaDamage = function( self, data, damage, fallHeight, _dealtTo )
         if fallHeight <= 250 then return end
         local myPos = self:GetPos()
         local scale = fallHeight / 1500
