@@ -44,7 +44,7 @@ ENT.zamb_MeleeAttackSpeed = 1
 
 ENT.FistDamageMul = 1.5
 ENT.FistForceMul = 1
-ENT.FistRangeMul = 2
+ENT.FistRangeMul = 1.35
 ENT.PrefersVehicleEnemies = false
 
 local REANIM_ZAMBIE_MODEL = "models/Zombie/Fast.mdl"
@@ -258,11 +258,11 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
     }
 
     for _, statData in ipairs( statsToChange ) do
-        local key = statData.key
+        local currKey = statData.key
         local fallback = statData.fallback or nil
 
-        local currentValue = newZamb[key] or fallback
-        newZamb[key] = currentValue * calculatedDebuff
+        local currentValue = newZamb[currKey] or fallback
+        newZamb[currKey] = currentValue * calculatedDebuff
 
     end
 
@@ -278,8 +278,9 @@ function ENT:REANIM_SpawnPuppetedZamb( class, pos, key )
     -- if playermodel zombie, play slumprise
     newZamb:DoGesture( "ACT_HL2MP_ZOMBIE_SLUMP_RISE", math.Rand( 1.5, 2.5 ), true )
     newZamb.zambGrunt_HasArmor = false -- disable grunt armor, it's all flesh!
+    newZamb.isTerminatorHunterChummy = self.isTerminatorHunterChummy
 
-    local soundPath = self.reanim_PuppetFormationSounds[ math.random( 1, 2 ) ]
+    local soundPath = self.reanim_PuppetFormationSounds[math.random( 1, 2 )]
 
     newZamb:EmitSound( soundPath, 125, math.Rand( 75, 150 ), 1, CHAN_AUTO, 2 )
 
@@ -519,15 +520,23 @@ ENT.MyClassTask = {
 
         end
 
-        local coneDir = self:EyeAngles():Forward() * -1
-        local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir
-        local coneAngle = math.sin( math.rad( 135 * self.TERM_MODELSCALE / 1.4 ) )
+        local coneDir = self:EyeAngles():Forward() * -1 -- Obtains the direction that the cone volume will be pointing in, it can only yaw
+        local coneOrigin = self:WorldSpaceCenter() + vector_up * 18 + coneDir * ( self.TERM_MODELSCALE / 1.5 ) -- The actual offset origin of the cone
+        local coneAngle = math.sin( math.rad( 135 ) ) -- The FOV of the cone
         local coneLength = 1024 * 2
 
         local isBehind = util.IsPointInCone( position, coneOrigin, coneDir, coneAngle, coneLength )
 
         if not isBehind then
-            local damageScale = 1 / 4
+            local damageScale
+
+            if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
+                damageScale = 1 / 2
+
+            else
+                damageScale = 1 / 4
+
+            end
 
             damage:ScaleDamage( damageScale )
             self:EmitSound( "physics/surfaces/tile_impact_bullet1.wav", 125 )
@@ -540,7 +549,7 @@ ENT.MyClassTask = {
 
             effectData:SetOrigin( backBonePos )
             effectData:SetNormal( backBoneDir )
-            effectData:SetMagnitude( 1 )
+            effectData:SetMagnitude( 1.5 )
             effectData:SetRadius( 1 )
             effectData:SetScale( 1 )
 
@@ -548,7 +557,8 @@ ENT.MyClassTask = {
 
         else
             local damageScale
-            if self:Health() < self:GetMaxHealth() * self.zamb_LoseCoolRatio then
+            
+            if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
                 damageScale = 1.5
 
             elseif isCrowbar then
@@ -603,7 +613,7 @@ ENT.MyClassTask = {
 
         local nextResurrectDelay
 
-        if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) then
+        if self:Health() < self.zamb_LoseCoolRatio / 2 * self:GetMaxHealth() then
             nextResurrectDelay = self.reanim_TryReviveInterval * 0.75
 
         else

@@ -38,9 +38,9 @@ ENT.CoroutineThresh = terminator_Extras.baseCoroutineThresh / 2
 
 ENT.JumpHeight = 500
 ENT.Term_Leaps = true
-ENT.DefaultStepHeight = 25
-ENT.StandingStepHeight = ENT.DefaultStepHeight * 1 -- used in crouch toggle in motionoverrides
-ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 0.9
+ENT.DefaultStepHeight = 18
+ENT.StandingStepHeight = ENT.DefaultStepHeight * 1.75 -- used in crouch toggle in motionoverrides
+ENT.CrouchingStepHeight = ENT.DefaultStepHeight * 1
 ENT.StepHeight = ENT.StandingStepHeight
 ENT.PathGoalToleranceFinal = 75
 ENT.SpawnHealth = 5000

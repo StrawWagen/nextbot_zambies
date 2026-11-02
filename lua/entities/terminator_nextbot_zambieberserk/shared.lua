@@ -20,8 +20,8 @@ ENT.MaxPathingIterations = 25000
 
 ENT.JumpHeight = 300
 ENT.Term_Leaps = true
-ENT.SpawnHealth = 650
-ENT.ExtraSpawnHealthPerPlayer = 100
+ENT.SpawnHealth = 550
+ENT.ExtraSpawnHealthPerPlayer = 75
 ENT.HealthRegen = 1
 ENT.HealthRegenInterval = 0.75
 ENT.WalkSpeed = 50

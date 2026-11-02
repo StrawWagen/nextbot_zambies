@@ -15,7 +15,7 @@ if CLIENT then
 
 end
 
-ENT.SpawnHealth = 2000
+ENT.SpawnHealth = 1200
 ENT.ExtraSpawnHealthPerPlayer = 50
 ENT.HealthRegen = 5
 ENT.HealthRegenInterval = 1

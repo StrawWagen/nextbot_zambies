@@ -38,6 +38,7 @@ ENT.NoAnimLayering = nil -- this is what makes it stop moving forward when attac
 ENT.DuelEnemyDist = 450
 ENT.CloseEnemyDistance = 500
 
+ENT.CanFindWeaponsOnTheGround = false
 ENT.TERM_WEAPON_PROFICIENCY = WEAPON_PROFICIENCY_POOR
 
 ENT.DoMetallicDamage = false -- metallic fx like bullet ricochet sounds
@@ -62,6 +63,8 @@ ENT.IsFodder = true
 ENT.IsStupid = true
 ENT.CanSpeak = true -- enable speaking thinker
 ENT.HasBrains = false -- default to no brains
+
+ENT.FriendlyFireMul = 0.01
 
 local ZAMBIE_MODEL = "models/player/zombie_classic.mdl"
 ENT.ARNOLD_MODEL = ZAMBIE_MODEL
@@ -767,7 +770,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 end
 
-                if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder then
+                if goodEnemy and myTbl.NothingOrBreakableBetweenEnemy and myTbl.DistToEnemy < distToExit and not myTbl.terminator_HandlingLadder and myTbl.CanMoveRightUpToEnemy( self, enemy ) then
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask( self, "movement_duelenemy_near", "i gotta slash em" )
                     return
@@ -860,15 +863,17 @@ function ENT:DoCustomTasks( defaultTasks )
                     myTbl.TaskFail( self, "movement_followenemy" )
                     myTbl.StartTask( self, "movement_wander", "i cant get to them/no enemy" )
                     data.overridePos = nil
+
                 elseif IsValid( enemy ) and enemy:WaterLevel() >= 1 and not enemy:OnGround() and self:WaterLevel() >= 2 then
                     myTbl.TaskComplete( self, "movement_followenemy" )
                     myTbl.StartTask( self, "movement_duelenemy_near", "they're swimming and im in the water!" )
+
                 elseif not myTbl.primaryPathIsValid( self ) and data.Unreachable then
                     coroutine_yield()
                     data.overridePos = nil
                     local justDuel = myTbl.zamb_JustTryDuelingUnreachable or 0
                     if justDuel > CurTime() then
-                        if not myTbl.HasBrains or math.random( 0, 100 ) < 50 then
+                        if not myTbl.HasBrains or ( math.random( 0, 100 ) < 50 and myTbl.CanMoveRightUpToEnemy( self, myTbl ) ) then
                             myTbl.ReallyAnger( self, 25 )
                             myTbl.TaskComplete( self, "movement_followenemy" )
                             myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
@@ -1240,6 +1245,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local validEnemy = IsValid( enemy )
                 local aliveOrHp = ( validEnemy and enemy.Alive and enemy:Alive() ) or ( validEnemy and enemy.Health and enemy:Health() > 0 )
                 local goodEnemy = validEnemy and aliveOrHp
+                coroutine_yield()
 
                 local enemyIsReachable
                 if goodEnemy then
@@ -1475,6 +1481,9 @@ function ENT:DoCustomTasks( defaultTasks )
                     data.toPos = nil
                     myTbl.zamb_NextPathAttempt = CurTime() + 1
                     coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
+
+                else
+                    coroutine_yield()
 
                 end
             end,

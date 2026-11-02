@@ -33,6 +33,7 @@ local zambieSpawnSet = {
             prettyName = "An Elite Phantom",
             class = "terminator_nextbot_zambiephantomelite",
             spawnType = "hunter",
+            spawnAbove = true,
             difficultyCost = { 50, 75 },
             countClass = "terminator_nextbot_zambiephantomelite",
             postSpawnedFuncs = nil,

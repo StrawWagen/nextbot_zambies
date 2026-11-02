@@ -140,7 +140,7 @@ end
 
 function ENT:PostTookBulletDamage( dmg, hitGroup )
     if hitGroup == HEAD then
-        dmg:ScaleDamage( 4 )
+        dmg:ScaleDamage( 5 )
         local pos = dmg:GetDamagePosition()
         timer.Simple( 0, function()
             local normal = VectorRand()
@@ -149,11 +149,11 @@ function ENT:PostTookBulletDamage( dmg, hitGroup )
             local Data = EffectData()
             Data:SetOrigin( pos )
             Data:SetColor( 0 )
-            Data:SetScale( math.random( 8, 12 ) )
+            Data:SetScale( math.random( 12, 16 ) )
             Data:SetFlags( 3 )
             Data:SetNormal( normal )
             util.Effect( "bloodspray", Data )
-            self:EmitSound( "npc/antlion_grub/squashed.wav", 72, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
+            self:EmitSound( "npc/antlion_grub/squashed.wav", 78, math.random( 150, 200 ), 1, CHAN_STATIC ) -- play in static so it doesnt get overriden
 
         end )
     else
@@ -164,7 +164,7 @@ function ENT:PostTookBulletDamage( dmg, hitGroup )
             local Data = EffectData()
             Data:SetOrigin( pos )
             Data:SetColor( 1 )
-            Data:SetScale( 1 )
+            Data:SetScale( 2 )
             Data:SetRadius( 1 )
             Data:SetMagnitude( 1 )
             Data:SetNormal( VectorRand() )
