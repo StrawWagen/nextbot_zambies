@@ -1,3 +1,11 @@
+-- Red shockwave played when a spirit dies.
+--
+-- Effect data:
+--   origin    = where it goes off
+--   radius    = size of the flash and rings
+--   normal    = axis of the first ring
+--   magnitude = duration multiplier
+
 EFFECT.mat_fire = Material( "particle/smokesprites_0002" )
 EFFECT.mat_beam = Material( "trails/plasma" )
 
@@ -6,20 +14,40 @@ EFFECT.RenderGroup = RENDERGROUP_TRANSLUCENT
 local crossVec1 = Vector( 0, 0, 1 )
 local crossVec2 = Vector( 0, 1, 0 )
 
+-- Reused for every ring point, so drawing a ring allocates no vectors per segment, per frame.
+local ringPoint = Vector()
+
+-- Draws a flat ring of beam segments.
+-- Call render.SetMaterial first, the caller picks the beam material.
 local function DrawBeamRing( center, normal, radius, width, color, segments )
+    -- Build two vectors that lie flat on the ring's plane.
     local tangent = normal:Cross( crossVec1 )
     if tangent:LengthSqr() < 0.001 then
+        -- normal was parallel to crossVec1, use the other axis instead.
         tangent = normal:Cross( crossVec2 )
     end
     tangent:Normalize()
+
     local bitangent = normal:Cross( tangent )
     bitangent:Normalize()
 
+    local centerX, centerY, centerZ = center:Unpack()
+    local tangentX, tangentY, tangentZ = tangent:Unpack()
+    local bitangentX, bitangentY, bitangentZ = bitangent:Unpack()
+
     render.StartBeam( segments + 1 )
     for i = 0, segments do
-        local angle = ( i / segments ) * math.pi * 2
-        local v = center + tangent * ( math.cos( angle ) * radius ) + bitangent * ( math.sin( angle ) * radius )
-        render.AddBeam( v, width, i / segments, color )
+        local fraction = i / segments
+        local angle = fraction * math.pi * 2
+        local alongTangent = math.cos( angle ) * radius
+        local alongBitangent = math.sin( angle ) * radius
+
+        ringPoint:SetUnpacked(
+            centerX + tangentX * alongTangent + bitangentX * alongBitangent,
+            centerY + tangentY * alongTangent + bitangentY * alongBitangent,
+            centerZ + tangentZ * alongTangent + bitangentZ * alongBitangent
+        )
+        render.AddBeam( ringPoint, width, fraction, color )
     end
     render.EndBeam()
 end
@@ -28,9 +56,11 @@ function EFFECT:Init( data )
     self.pos = data:GetOrigin()
     self.size = data:GetRadius()
 
+    -- Tilt the first ring a little so repeated blasts don't look identical
     self.normal = data:GetNormal()
     self.normal:Rotate( AngleRand( -16, 16 ) )
 
+    -- VectorRand() isn't a unit vector, so normalize it
     self.normal2 = VectorRand()
     self.normal2:Normalize()
 
@@ -42,64 +72,67 @@ function EFFECT:Init( data )
     self.color_ring = Color( 255, 255, 255, 255 )
     self.color_ring2 = Color( 255, 255, 255, 255 )
 
-    local dl = DynamicLight( self:EntIndex() )
-    if dl then
-        dl.pos = self.pos
-        dl.r = 255
-        dl.g = 0
-        dl.b = 32
-        dl.brightness = 5
-        dl.decay = 1000
-        dl.size = self.size * 1.2
-        dl.dietime = CurTime() + 1
+    local dynamicLight = DynamicLight( self:EntIndex() )
+    if dynamicLight then
+        dynamicLight.pos = self.pos
+        dynamicLight.r = 255
+        dynamicLight.g = 0
+        dynamicLight.b = 32
+        dynamicLight.brightness = 5
+        dynamicLight.decay = 1000
+        dynamicLight.size = self.size * 1.2
+        dynamicLight.dietime = CurTime() + 1
     end
 end
 
 function EFFECT:Think()
-    if self.t < self.tout then
-        self.t = math.min( self.tout, self.t + FrameTime() )
-        return true
-    end
-    return false
+    if self.t >= self.tout then return false end
+
+    self.t = math.min( self.tout, self.t + FrameTime() )
+    return true
 end
 
 function EFFECT:Render()
-    local f = self.t / self.tout
+    local fraction = self.t / self.tout
 
-    local a_flash = math.max( 0, 1 - f * 4 )
-    local e_flash = math.max( 0, 1 - f * 3 )
+    local flashAlpha = math.max( 0, 1 - fraction * 4 )
+    local flashShrink = math.max( 0, 1 - fraction * 3 )
 
     render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
 
-        if a_flash > 0 then
-            local a3 = a_flash * a_flash * a_flash
-            self.color.r = 255 * a_flash
-            self.color.g = 150 * a3
-            self.color.b = 150 * a3
+    if flashAlpha > 0 then
+        local flashAlphaCubed = flashAlpha * flashAlpha * flashAlpha
+        local flashSize = self.size * flashShrink * 2
 
-            render.SetMaterial( self.mat_fire )
-            render.DrawSprite( self.pos, self.size * e_flash * 2, self.size * e_flash * 2, self.color )
-        end
+        self.color.r = 255 * flashAlpha
+        self.color.g = 150 * flashAlphaCubed
+        self.color.b = 150 * flashAlphaCubed
 
-        local fEased = math.ease.OutQuart( f )
+        render.SetMaterial( self.mat_fire )
+        render.DrawSprite( self.pos, flashSize, flashSize, self.color )
+    end
 
-        local a_ring = math.max( 0, 1 - f ) ^ 2
-        local ringsize = Lerp( fEased, self.size * 0.5, self.size * 2 + 8 )
-        self.color_ring.r = 255 * a_ring
-        self.color_ring.g = 255 * a_ring * a_ring
-        self.color_ring.b = 255 * a_ring * a_ring
-        self.color_ring.a = 255 * a_ring
+    local eased = math.ease.OutQuart( fraction )
 
-        local a_ring2 = math.max( 0, 1 - f * 2 )
-        local ringsize2 = Lerp( fEased, self.size * 0.75, self.size * 3 + 16 )
-        self.color_ring2.r = 255 * a_ring2
-        self.color_ring2.g = 255 * a_ring2 * a_ring2
-        self.color_ring2.b = 255 * a_ring2 * a_ring2
-        self.color_ring2.a = 255 * a_ring2
+    -- Ring 1
+    local ringAlpha = math.max( 0, 1 - fraction ) ^ 2
+    local ringSize = Lerp( eased, self.size * 0.5, self.size * 2 + 8 )
+    self.color_ring.r = 255 * ringAlpha
+    self.color_ring.g = 255 * ringAlpha * ringAlpha
+    self.color_ring.b = 255 * ringAlpha * ringAlpha
+    self.color_ring.a = 255 * ringAlpha
 
-        render.SetMaterial( self.mat_beam )
-        DrawBeamRing( self.pos, self.normal, ringsize / 2, 8 * a_ring, self.color_ring, 32 )
-        DrawBeamRing( self.pos, self.normal2, ringsize2 / 2, 6 * a_ring2, self.color_ring2, 32 )
+    -- Ring 2, fades out twice as fast
+    local ringAlpha2 = math.max( 0, 1 - fraction * 2 )
+    local ringSize2 = Lerp( eased, self.size * 0.75, self.size * 3 + 16 )
+    self.color_ring2.r = 255 * ringAlpha2
+    self.color_ring2.g = 255 * ringAlpha2 * ringAlpha2
+    self.color_ring2.b = 255 * ringAlpha2 * ringAlpha2
+    self.color_ring2.a = 255 * ringAlpha2
+
+    render.SetMaterial( self.mat_beam )
+    DrawBeamRing( self.pos, self.normal, ringSize / 2, 8 * ringAlpha, self.color_ring, 32 )
+    DrawBeamRing( self.pos, self.normal2, ringSize2 / 2, 6 * ringAlpha2, self.color_ring2, 32 )
 
     render.OverrideBlend( false )
 end
