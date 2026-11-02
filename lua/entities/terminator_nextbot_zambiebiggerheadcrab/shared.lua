@@ -41,7 +41,7 @@ ENT.RunSpeed = 4000
 ENT.AccelerationSpeed = 850
 ENT.neverManiac = true
 
-ENT.TERM_FOV = 120
+ENT.Term_FOV = 120
 
 ENT.zamb_MeleeAttackSpeed = 2
 ENT.zamb_MeleeAttackHitFrameMul = 40
