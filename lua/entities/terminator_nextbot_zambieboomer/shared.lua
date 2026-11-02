@@ -24,6 +24,15 @@ local HEAD_CRAB_POSITION = Vector( 0.9, 4.3, -3 )
 local VECTOR_ONE         = Vector( 1, 1, 1 )
 local zamb_BoomerScaleVec = Vector( 1, 1, 1 )
 
+ENT.zamb_BoomerArmDistance = 200 -- starts the fuse when an enemy it can see gets this close
+ENT.zamb_BoomerFuseTime    = 2.5 -- seconds from arming to bursting, damage shortens it
+
+-- 0 when the fuse is lit, 1 when it bursts
+local function FuseFrac( self, burstTime )
+    local fuseTime = self.zamb_BoomerFuseTime
+    return math.Clamp( ( CurTime() - ( burstTime - fuseTime ) ) / fuseTime, 0, 1 )
+end
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambieboomer", ENT.PrintName )
 
@@ -59,7 +68,7 @@ if CLIENT then
         local isArmed = self:GetNW2Bool( "zamb_BoomerArmed", false )
         local armTime = self:GetNW2Float( "zamb_BoomerArmTime", 0 )
         if isArmed then
-            local frac = math.Clamp( ( CurTime() - ( armTime - 2.5 ) ) / 2.5, 0, 1 )
+            local frac = FuseFrac( self, armTime )
             -- Play the inflate sound once per arm cycle.
             if not self.zamb_BoomerInflateSoundPlayed then
                 self.zamb_BoomerInflateSoundPlayed = true
@@ -97,7 +106,7 @@ if CLIENT then
         local headmdl = GetOrCreateHead( self )
         headmdl:SetParent( self )
         if isArmed then
-            local frac = math.Clamp( ( CurTime() - ( armTime - 2.5 ) ) / 2.5, 0, 1 )
+            local frac = FuseFrac( self, armTime )
             render.SetColorModulation( 3 + frac * 5, 2 + frac ^ 2 * 4, 1 )
             self:DrawModel()
             headmdl:DrawModel()
@@ -147,6 +156,13 @@ local function BroadcastArmed( self, armed )
     self:SetNW2Float( "zamb_BoomerArmTime", self.zamb_BoomerArmTime )
 end
 
+local function ArmFuse( self )
+    if self.zamb_BoomerArmed or self.zamb_BoomerBursting then return end
+    self.zamb_BoomerArmed   = true
+    self.zamb_BoomerArmTime = CurTime() + self.zamb_BoomerFuseTime
+    BroadcastArmed( self, true )
+end
+
 local function ScaleBones( self, sc )
     zamb_BoomerScaleVec.x = sc
     zamb_BoomerScaleVec.y = sc
@@ -157,107 +173,61 @@ local function ScaleBones( self, sc )
     end
 end
 
-local function ResetBones( self )
-    local count = self:GetBoneCount()
-    for i = 0, count - 1 do
-        self:ManipulateBoneScale( i, VECTOR_ONE )
+local function SpawnCrabs( pos )
+    for _ = 1, 7 do
+        local crab = ents.Create( "terminator_nextbot_zambieblastcrab" )
+        if not IsValid( crab ) then continue end
+        crab:SetPos( pos + VectorRand( -25, 25 ) )
+        crab:Spawn()
+        crab:Activate()
+
+        local a = math.random() * math.pi * 2
+        crab.loco:Jump()
+        crab.loco:SetVelocity( Vector(
+            math.cos( a ) * math.random() * 320,
+            math.sin( a ) * math.random() * 320,
+            math.Rand( -150, 420 )
+        ) )
     end
 end
 
--- Executes the boomer burst. Uses deferred timer.Simple(0) when called inside the base's death/damage call stack.
-local function DoBurst( self, deferred )
+-- Only called from OnKilled, the fuse kills the boomer rather than bursting it directly.
+-- We're still inside the damage call stack here, so the blast and crabs wait a tick.
+local function DoBurst( self )
     if self.zamb_BoomerBursting then return end
     self.zamb_BoomerBursting = true
     BroadcastArmed( self, false )
 
-    if deferred then
-        -- Clean call stack: safe to run immediately.
-        local pos    = self:WorldSpaceCenter()
-        local primed = self.zamb_BoomerPrimed
+    local pos         = self:WorldSpaceCenter()
+    local primed      = self.zamb_BoomerPrimed
+    local obliterated = self.zamb_BoomerObliterated
 
-        local ed = EffectData()
-        ed:SetOrigin( pos )
-        ed:SetRadius( 350 )
-        ed:SetNormal( vector_up )
-        ed:SetMagnitude( primed and 1.4 or 0.6 )
-        util.Effect( "eff_boomer_explosion", ed, true, true )
+    local ed = EffectData()
+    ed:SetOrigin( pos )
+    ed:SetRadius( 350 )
+    ed:SetMagnitude( primed and 1.4 or 1 )
+    util.Effect( "eff_boomer_blast", ed, true, true )
 
-        self:EmitSound( "npc/zombie/zombie_die1.wav", 100, 80, 1 )
-        self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 70, 1 )
+    self:EmitSound( "npc/zombie/zombie_die1.wav", 100, 80, 1 )
+    self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 70, 1 )
+
+    timer.Simple( 0, function()
+        if not IsValid( self ) then return end
 
         local dmg = DamageInfo()
-        dmg:SetAttacker( game.GetWorld() )
-        dmg:SetInflictor( game.GetWorld() )
+        dmg:SetAttacker( self )
+        dmg:SetInflictor( self )
         dmg:SetReportedPosition( pos )
         dmg:SetDamageType( DMG_CRUSH )
-        dmg:SetDamage( primed and 150 or 1 )
+        dmg:SetDamage( primed and 150 or 1 ) -- unprimed, the crabs are the real threat
         util.BlastDamageInfo( dmg, pos, 350 )
 
-        if not self.zamb_BoomerObliterated then
-            for i = 1, 7 do
-                local crab = ents.Create( "terminator_nextbot_zambieblastcrab" )
-                if not IsValid( crab ) then continue end
-                crab:SetPos( pos + VectorRand( -25, 25 ) )
-                crab:Spawn()
-                crab:Activate()
-                local a = math.random() * math.pi * 2
-                crab:SetVelocity( Vector(
-                    math.cos( a ) * math.random() * 320,
-                    math.sin( a ) * math.random() * 320,
-                    math.Rand( -150, 420 )
-                ) )
-            end
+        if not obliterated then
+            SpawnCrabs( pos )
         end
 
-        timer.Simple( 0, function()
-            if IsValid( self ) then self:Remove() end
-        end )
-    else
-        -- Called from within the base's death/damage call stack. Capture all state we need now before deferring.
-        local pos         = self:WorldSpaceCenter()
-        local primed      = self.zamb_BoomerPrimed
-        local obliterated = self.zamb_BoomerObliterated
-
-        local ed = EffectData()
-        ed:SetOrigin( pos )
-        ed:SetRadius( 350 )
-        ed:SetNormal( vector_up )
-        ed:SetMagnitude( primed and 1.4 or 0.6 )
-        util.Effect( "eff_boomer_explosion", ed, true, true )
-
-        self:EmitSound( "npc/zombie/zombie_die1.wav", 100, 80, 1 )
-        self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 70, 1 )
-
-        timer.Simple( 0, function()
-            local dmg = DamageInfo()
-            dmg:SetAttacker( game.GetWorld() )
-            dmg:SetInflictor( game.GetWorld() )
-            dmg:SetReportedPosition( pos )
-            dmg:SetDamageType( DMG_CRUSH )
-            dmg:SetDamage( primed and 150 or 1 )
-            util.BlastDamageInfo( dmg, pos, 350 )
-
-            if not obliterated then
-                for i = 1, 7 do
-                    local crab = ents.Create( "terminator_nextbot_zambieblastcrab" )
-                    if not IsValid( crab ) then continue end
-                    crab:SetPos( pos + VectorRand( -25, 25 ) )
-                    crab:Spawn()
-                    crab:Activate()
-                    local a = math.random() * math.pi * 2
-                    crab:SetVelocity( Vector(
-                        math.cos( a ) * math.random() * 320,
-                        math.sin( a ) * math.random() * 320,
-                        math.Rand( -150, 420 )
-                    ) )
-                end
-            end
-        end )
-
-        timer.Simple( 0, function()
-            if IsValid( self ) then self:Remove() end
-        end )
-    end
+        self:Remove()
+    end )
 end
 
 ENT.IsFodder    = true
@@ -272,8 +242,6 @@ ENT.MoveSpeed          = 115
 ENT.RunSpeed           = 350
 ENT.AccelerationSpeed  = 350
 ENT.DeccelerationSpeed = 900
-
-ENT.zamb_BoomerArmDistance = 200
 
 ENT.FistDamageMul      = 0
 ENT.DuelEnemyDist      = 200
@@ -305,53 +273,68 @@ ENT.Term_FootstepShake = {
     radius    = 300,
 }
 
--- Module-level Angle mutated in place by BehaveUpdatePriority
+-- Module-level Angle mutated in place by the fuse Think
 local zamb_JitterAngle = Angle( 0, 0, 0 )
 
-ENT.MySpecialActions = {}
+ENT.MySpecialActions = {
+    ["Detonate"] = {
+        name      = "Detonate",
+        desc      = "Lights the fuse",
+        inBind    = IN_ATTACK,
+        drawHint  = true,
+        ratelimit = 0,
+        svAction  = function( _driveController, _driver, bot )
+            ArmFuse( bot )
+        end,
+    },
+}
 
 ENT.MyClassTask = {
     OnCreated = function( self, data )
-        self.zamb_BoomerBursting    = false
-        self.zamb_BoomerPrimed      = false
-        self.zamb_BoomerObliterated = false
-        self.zamb_BoomerArmed       = false
-        self.zamb_BoomerArmTime     = 0
+        self.zamb_BoomerArmTime = 0
+    end,
+
+    -- Think runs under playercontrol too, BehaveUpdatePriority doesn't
+    Think = function( self, data )
+        if not self.zamb_BoomerArmed or self.zamb_BoomerBursting then return end
+
+        local frac = FuseFrac( self, self.zamb_BoomerArmTime )
+        ScaleBones( self, 1 + frac ^ 6 * 0.9 )
+
+        local spineBone = self.zamb_BoomerSpineBone
+        if spineBone and spineBone >= 0 then
+            local jitter = frac * 25
+            zamb_JitterAngle.p = math.Rand( -jitter, jitter )
+            zamb_JitterAngle.y = math.Rand( -jitter, jitter )
+            zamb_JitterAngle.r = math.Rand( -jitter, jitter )
+            self:ManipulateBoneAngles( spineBone, zamb_JitterAngle )
+        end
+
+        if CurTime() < self.zamb_BoomerArmTime then return end
+        if self:Health() <= 0 then return end
+
+        -- die properly, so OnKilled does the burst and death hooks still run
+        local dmg = DamageInfo()
+        dmg:SetAttacker( self )
+        dmg:SetInflictor( self )
+        dmg:SetDamageType( DMG_GENERIC )
+        dmg:SetDamage( self:Health() )
+        self:TakeDamageInfo( dmg )
     end,
 
     BehaveUpdatePriority = function( self, data )
-        if self.zamb_BoomerBursting then return end
-        local t = CurTime()
-        if self.zamb_BoomerArmed then
-            local frac   = math.Clamp( ( t - ( self.zamb_BoomerArmTime - 2.5 ) ) / 2.5, 0, 1 )
-            local curved = frac ^ 6
-            local sc     = 1 + curved * 0.9
-            ScaleBones( self, sc )
-            local spineBone = self.zamb_BoomerSpineBone
-            if spineBone and spineBone >= 0 then
-                local jitter = frac * 25
-                zamb_JitterAngle.p = math.Rand( -jitter, jitter )
-                zamb_JitterAngle.y = math.Rand( -jitter, jitter )
-                zamb_JitterAngle.r = math.Rand( -jitter, jitter )
-                self:ManipulateBoneAngles( spineBone, zamb_JitterAngle )
-            end
-            if t >= self.zamb_BoomerArmTime then
-                DoBurst( self, true )
-            end
-            return
-        end
-        ResetBones( self )
-        local enemy = self:GetEnemy()
-        if IsValid( enemy ) and self.IsSeeEnemy and self.DistToEnemy
-                and self.DistToEnemy <= self.zamb_BoomerArmDistance then
-            self.zamb_BoomerArmed   = true
-            self.zamb_BoomerArmTime = t + 2.5
-            BroadcastArmed( self, true )
-        end
+        if self.zamb_BoomerArmed then return end
+        if not self.IsSeeEnemy then return end
+        if not IsValid( self:GetEnemy() ) then return end
+        if self.DistToEnemy > self.zamb_BoomerArmDistance then return end
+
+        ArmFuse( self )
     end,
 
     OnDamaged = function( self, data, dmg )
         if self.zamb_BoomerBursting then return end
+        if dmg:GetAttacker() == self then return end -- the fuse finishing us off
+
         local dtype  = dmg:GetDamageType()
         local amount = dmg:GetDamage()
         local isObliterating = bit.band( dtype, bit.bor( DMG_BLAST, DMG_RADIATION, DMG_DISSOLVE ) ) > 0
@@ -363,11 +346,12 @@ ENT.MyClassTask = {
         end
         if self.zamb_BoomerArmed then
             self.zamb_BoomerArmTime = self.zamb_BoomerArmTime - amount / 60
+            BroadcastArmed( self, true )
         end
     end,
 
     OnKilled = function( self, data, attacker, inflictor, ragdoll )
-        DoBurst( self, false )
+        DoBurst( self )
     end,
 
     PreventBecomeRagdollOnKilled = function( self, data, dmg )
@@ -384,12 +368,6 @@ function ENT:AdditionalInitialize()
         spine = self:LookupBone( "ValveBiped.Bip01_Spine" )
     end
     self.zamb_BoomerSpineBone = spine
-
-    self.zamb_BoomerBursting    = false
-    self.zamb_BoomerPrimed      = false
-    self.zamb_BoomerObliterated = false
-    self.zamb_BoomerArmed       = false
-    self.zamb_BoomerArmTime     = 0
 
     self.isTerminatorHunterChummy = "zambies"
     self.HasBrains                = false

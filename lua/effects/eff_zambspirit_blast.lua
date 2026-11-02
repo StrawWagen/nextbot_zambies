@@ -1,40 +1,23 @@
+-- red flash and two rings, when a spirit dies
+-- magnitude stretches how long it lasts
 EFFECT.mat_fire = Material( "particle/smokesprites_0002" )
 EFFECT.mat_beam = Material( "trails/plasma" )
 
 EFFECT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
-local crossVec1 = Vector( 0, 0, 1 )
-local crossVec2 = Vector( 0, 1, 0 )
-
-local function DrawBeamRing( center, normal, radius, width, color, segments )
-    local tangent = normal:Cross( crossVec1 )
-    if tangent:LengthSqr() < 0.001 then
-        tangent = normal:Cross( crossVec2 )
-    end
-    tangent:Normalize()
-    local bitangent = normal:Cross( tangent )
-    bitangent:Normalize()
-
-    render.StartBeam( segments + 1 )
-    for i = 0, segments do
-        local angle = ( i / segments ) * math.pi * 2
-        local v = center + tangent * ( math.cos( angle ) * radius ) + bitangent * ( math.sin( angle ) * radius )
-        render.AddBeam( v, width, i / segments, color )
-    end
-    render.EndBeam()
-end
-
 function EFFECT:Init( data )
     self.pos = data:GetOrigin()
     self.size = data:GetRadius()
 
-    self.normal = data:GetNormal()
-    self.normal:Rotate( AngleRand( -16, 16 ) )
+    local normal = data:GetNormal()
+    normal:Rotate( AngleRand( -16, 16 ) )
+    self.tangent, self.bitangent = terminator_Extras.zamb_RingBasis( normal )
 
-    self.normal2 = VectorRand()
-    self.normal2:Normalize()
+    local normal2 = VectorRand() -- not unit length, VectorRand samples a cube
+    normal2:Normalize()
+    self.tangent2, self.bitangent2 = terminator_Extras.zamb_RingBasis( normal2 )
 
-    local durationMul = data:GetMagnitude() or 1
+    local durationMul = data:GetMagnitude()
     self.t = 0
     self.tout = math.Rand( 0.85, 1.12 ) * durationMul
 
@@ -98,8 +81,8 @@ function EFFECT:Render()
         self.color_ring2.a = 255 * a_ring2
 
         render.SetMaterial( self.mat_beam )
-        DrawBeamRing( self.pos, self.normal, ringsize / 2, 8 * a_ring, self.color_ring, 32 )
-        DrawBeamRing( self.pos, self.normal2, ringsize2 / 2, 6 * a_ring2, self.color_ring2, 32 )
+        terminator_Extras.zamb_DrawBeamRing( self.pos, self.tangent, self.bitangent, ringsize / 2, 8 * a_ring, self.color_ring, 32 )
+        terminator_Extras.zamb_DrawBeamRing( self.pos, self.tangent2, self.bitangent2, ringsize2 / 2, 6 * a_ring2, self.color_ring2, 32 )
 
     render.OverrideBlend( false )
 end
