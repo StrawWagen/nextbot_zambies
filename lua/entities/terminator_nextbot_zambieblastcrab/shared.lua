@@ -4,7 +4,7 @@ AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambiecrabbaby"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Blastcrab"
-ENT.Author    = "regunkyle"
+ENT.Author    = "Octantis Addons + regunkyle"
 ENT.Spawnable = false
 
 if CLIENT then
@@ -72,13 +72,13 @@ ENT.MySpecialActions = {
 }
 
 ENT.MyClassTask = {
-    OnCreated = function( self, data )
+    OnCreated = function( self )
         self.zamb_BlastCrabDied = false
         self:SetMaterial( BLAST_MATERIAL )
     end,
 
     -- Explode on any damage at all, unless the damage is coming from another blastcrab's explosion.
-    OnDamaged = function( self, data, dmg )
+    OnDamaged = function( self, _data, dmg )
         if self.zamb_BlastCrabDied then return true end
 
         local inflictor = dmg:GetInflictor()
@@ -89,7 +89,7 @@ ENT.MyClassTask = {
         DoExplosion( self )
     end,
 
-    BehaveUpdatePriority = function( self, data )
+    BehaveUpdatePriority = function( self )
         if self.zamb_BlastCrabDied then return end
         local enemy = self:GetEnemy()
         if not IsValid( enemy ) then return end
@@ -98,11 +98,11 @@ ENT.MyClassTask = {
         end
     end,
 
-    OnKilled = function( self, data, attacker, inflictor, ragdoll )
+    OnKilled = function( self )
         DoExplosion( self )
     end,
 
-    PreventBecomeRagdollOnKilled = function( self, data, dmg )
+    PreventBecomeRagdollOnKilled = function()
         return true, true
     end,
 }

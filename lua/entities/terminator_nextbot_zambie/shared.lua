@@ -430,6 +430,7 @@ local nextZombieCall = 0
 local nextLoneZombieCall = 0
 
 ENT.zamb_LookAheadWhenRunning = true
+ENT.zamb_StayOutOfMeleeRange = nil -- never duels, and leapers never leap at enemies
 ENT.zamb_MeleeAttackSpeed = 1.1
 ENT.term_SoundPitchShift = 0
 ENT.term_SoundLevelShift = 0
@@ -844,7 +845,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local result = self:ControlPath2( lookAtGoal )
                 coroutine_yield()
 
-                if myTbl.Term_Leaps then
+                if myTbl.Term_Leaps and not myTbl.zamb_StayOutOfMeleeRange then
                     local leapPreparing = myTbl.TryAndLeapTo( self, myTbl, enemyPos )
                     if leapPreparing then
                         return
@@ -873,7 +874,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     data.overridePos = nil
                     local justDuel = myTbl.zamb_JustTryDuelingUnreachable or 0
                     if justDuel > CurTime() then
-                        if not myTbl.HasBrains or ( math.random( 0, 100 ) < 50 and myTbl.CanMoveRightUpToEnemy( self, myTbl ) ) then
+                        if not myTbl.HasBrains or ( math.random( 0, 100 ) < 50 and myTbl.CanMoveRightUpToEnemy( self, enemy ) ) then
                             myTbl.ReallyAnger( self, 25 )
                             myTbl.TaskComplete( self, "movement_followenemy" )
                             myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
@@ -911,6 +912,14 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = entMeta.GetTable( self )
+                -- checked here, not at the many places that start dueling
+                if myTbl.zamb_StayOutOfMeleeRange then
+                    myTbl.TaskComplete( self, "movement_duelenemy_near" )
+                    myTbl.StartTask( self, "movement_handler", "i stay out of melee range" )
+                    return
+
+                end
+
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
                 local enemyPos = myTbl.EnemyLastPos
@@ -1170,7 +1179,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 local enemyIsReachable
                 if goodEnemy then
-                    local result = terminator_Extras.getNearestPosOnNav( enemyPos )
+                    local result = terminator_Extras.getNearestPosOnNav( enemy:GetPos() )
                     enemyIsReachable = myTbl.areaIsReachable( self, result.area )
                 end
 
@@ -1405,7 +1414,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                         if splitUpResult and myTbl.areaIsReachable( self, splitUpResult.area ) then
                             -- flank em!
-                            myTbl.SetupFlankingPath( self, enemyPos, splitUpResult.area, splitUpBubble )
+                            myTbl.SetupFlankingPath( self, result.pos, splitUpResult.area, splitUpBubble )
                             coroutine_yield()
 
                         end

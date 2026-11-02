@@ -4,14 +4,14 @@ AddCSLuaFile()
 ENT.Base = "terminator_nextbot_zambie"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Boomer"
-ENT.Author    = "Map Sweepers + regunkyle"
+ENT.Author    = "Octantis Addons + regunkyle"
 ENT.Spawnable = false
 
 list.Set( "NPC", "terminator_nextbot_zambieboomer", {
     Name      = "Zombie Boomer",
     Class     = "terminator_nextbot_zambieboomer",
     Category  = "Nextbot Zambies",
-    AdminOnly = true,
+    AdminOnly = false,
 } )
 
 local BOOMER_MODEL    = "models/player/zombie_soldier.mdl"
@@ -219,7 +219,7 @@ local function DoBurst( self )
         dmg:SetInflictor( self )
         dmg:SetReportedPosition( pos )
         dmg:SetDamageType( DMG_CRUSH )
-        dmg:SetDamage( primed and 150 or 1 ) -- unprimed, the crabs are the real threat
+        dmg:SetDamage( primed and 125 or 1 ) -- unprimed, the crabs are the real threat
         util.BlastDamageInfo( dmg, pos, 350 )
 
         if not obliterated then
