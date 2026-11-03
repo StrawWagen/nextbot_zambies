@@ -11,6 +11,14 @@ local table_count = table.Count
 
 terminator_Extras = terminator_Extras or {}
 
+-- is the server ticking slower than tickFrac of its ideal rate, eg 0.5 for half speed
+function terminator_Extras.zamb_IsLagging( tickFrac )
+    local idealTickrate = 1 / FrameTime()
+    local currTickrate = 1 / engine.AbsoluteFrameTime()
+    return currTickrate <= math.max( 2.5, idealTickrate * tickFrac )
+
+end
+
 terminator_Extras.zamb_AreasLastRot = terminator_Extras.zamb_AreasLastRot or {}
 terminator_Extras.zamb_RottingAreas = terminator_Extras.zamb_RottingAreas or {}
 terminator_Extras.zamb_SmelliestRottingArea = nil

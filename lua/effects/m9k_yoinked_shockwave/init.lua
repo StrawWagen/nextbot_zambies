@@ -1,5 +1,14 @@
 -- yoinked because m9k is the goat
 
+-- dust that hits a wall stops dead, without this it piles up at ground zero for the whole lifetime
+local function FadeOnHit( particle )
+    local fadeAt = particle:GetLifeTime() + math.Rand( 0.3, 0.6 )
+    if fadeAt < particle:GetDieTime() then
+        particle:SetDieTime( fadeAt )
+
+    end
+end
+
 function EFFECT:Init( data )
     local pos = data:GetOrigin()
     local scale = data:GetScale()
@@ -24,6 +33,7 @@ function EFFECT:Init( data )
             particle:SetAirResistance( 50 )
             particle:SetCollide( true )
             particle:SetBounce( 0 )
+            particle:SetCollideCallback( FadeOnHit )
         end
     end
 end
@@ -33,6 +43,5 @@ function EFFECT:Think()
     return false
 end
 
-function EFFECT:Render()
-
+function EFFECT:Render() -- dont draw the ERROR model of mystery and power
 end

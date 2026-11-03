@@ -61,6 +61,10 @@ ENT.CrouchCollisionBounds = { Vector( -0.75, -0.75, 0 ), Vector( 0.75, 0.75, 1.7
 ENT.MyPhysicsMass = 50000
 ENT.ReallyHeavy = true
 
+ENT.ChargeCrushes = true
+ENT.ChargeCrushDmgPerSpeed = 1
+ENT.ChargeCrushDmgMinSpeed = 500
+
 ENT.Term_BaseMsBetweenSteps = 1100
 ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
 

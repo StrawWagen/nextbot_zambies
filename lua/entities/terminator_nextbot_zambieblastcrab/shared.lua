@@ -16,7 +16,12 @@ local BLAST_MATERIAL = "models/jcmsblastcrab/body"
 local BLAST_MODEL    = "models/headcrab.mdl"
 local CONTACT_DAMAGE = 65
 local CONTACT_RADIUS = 96
-local BlastCrabClass = "terminator_nextbot_zambieblastcrab"
+-- set off by an explosion, it goes off a moment later, so a pile of crabs ripples instead of popping at once
+local CHAIN_DELAY_MIN = 0.1
+local CHAIN_DELAY_MAX = 0.35
+local LAG_CHECK_INTERVAL = 0.5
+local LAG_POP_CHANCE = 0.2 -- per check, so a lagging pile pops over a few seconds, not all at once
+local FRIENDLY_BLAST_GRACE = 3 -- seconds a fresh crab shrugs off its own side's blasts, so a burst of them scatters before it chains
 
 -- Triggers the blastcrab's explosion. Defers the actual explosion to the next frame
 -- to avoid "tried to die twice" errors when called from within the base's death/damage call stack.
@@ -39,11 +44,13 @@ local function DoExplosion( self )
 
         local dmg = DamageInfo()
         dmg:SetAttacker( self )
-        dmg:SetInflictor( self ) -- Set inflictor to self so other blastcrabs can filter it out
+        dmg:SetInflictor( self )
         dmg:SetReportedPosition( pos )
         dmg:SetDamageType( DMG_BLAST )
         dmg:SetDamage( CONTACT_DAMAGE )
+        self.term_BypassFriendlyFire = true -- same as boomers, popping one in the horde should hurt the horde
         util.BlastDamageInfo( dmg, pos, CONTACT_RADIUS )
+        self.term_BypassFriendlyFire = nil
 
         self:Remove()
     end )
@@ -77,15 +84,36 @@ ENT.MyClassTask = {
         self:SetMaterial( BLAST_MATERIAL )
     end,
 
-    -- Explode on any damage at all, unless the damage is coming from another blastcrab's explosion.
+    -- Explode on any damage at all, explosions just take a moment to set us off.
     OnDamaged = function( self, _data, dmg )
         if self.zamb_BlastCrabDied then return true end
 
-        local inflictor = dmg:GetInflictor()
-        if IsValid( inflictor ) and inflictor:GetClass() == BlastCrabClass then
+        if dmg:IsExplosionDamage() then
+            local attacker = dmg:GetAttacker()
+            local friendly = IsValid( attacker ) and attacker.isTerminatorHunterChummy == self.isTerminatorHunterChummy
+            if friendly and CurTime() - self:GetCreationTime() < FRIENDLY_BLAST_GRACE then return true end
+
+            self.zamb_BlastCrabChainAt = self.zamb_BlastCrabChainAt or CurTime() + math.Rand( CHAIN_DELAY_MIN, CHAIN_DELAY_MAX )
             return true
         end
 
+        DoExplosion( self )
+    end,
+
+    Think = function( self )
+        local cur = CurTime()
+        local chainAt = self.zamb_BlastCrabChainAt
+        if chainAt and chainAt <= cur then
+            DoExplosion( self )
+            return
+        end
+
+        -- boomer crabs thin themselves out a few at a time while the server's struggling
+        local lagFrac = self.zamb_BlastCrabLagFrac
+        if not lagFrac or ( self.zamb_BlastCrabNextLagCheck or 0 ) > cur then return end
+        self.zamb_BlastCrabNextLagCheck = cur + LAG_CHECK_INTERVAL
+        if math.random() > LAG_POP_CHANCE then return end
+        if not terminator_Extras.zamb_IsLagging( lagFrac ) then return end
         DoExplosion( self )
     end,
 

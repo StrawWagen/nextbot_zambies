@@ -34,6 +34,8 @@ ENT.MaxCarryHealth = 250
 ENT.SummonCountMin = 3
 ENT.SummonCountMax = 5
 ENT.SummonCountBehindWalls = 1 -- squads dropped deep behind walls shrink down to this
+ENT.SummonMinPlayerDist = 550 -- never drops a zambie this close to a player, a squad landing on top of you is a cheap hit
+ENT.SummonGuardDist = 0 -- except players this close to us, then it's guarding itself
 ENT.SummonsOnDeath = true
 ENT.OneHitFreebie = false -- the first hit worth half its health or more only does a tenth, once per life
 
@@ -48,16 +50,32 @@ local SUMMON_ARRIVE_DELAY  = 0.5 -- the call gets a moment to play before they a
 
 ENT.HeartbeatPitch = 50
 
--- the base uses DT slots directly, low slot numbers are taken
-function ENT:SetupDataTables()
-    self:NetworkVar( "Bool",  10, "IsDying" )
-    self:NetworkVar( "Float", 10, "DeathTime" )
+-- NW2, not NetworkVar, DT vars misbehave on this base. Set with MarkDying.
+
+-- When SpiritDeath ran, 0 if it hasn't.
+function ENT:GetDeathTime()
+    return self:GetNW2Float( "zamb_SpiritDeathTime", 0 )
+
+end
+
+function ENT:GetIsDying()
+    return self:GetDeathTime() > 0
 
 end
 
 ENT.DeployDistance = 2000 -- summons when its enemy is closer than this, backs off when they're closer than half
+-- the eff_zambspirit_blast it bursts into as it dies, visuals only, it deals no damage
+ENT.DeathFxSize = 78
+ENT.DeathFxDuration = 1.5 -- the effect's magnitude, stretches how long it lasts
 
 if SERVER then
+    util.AddNetworkString( "zamb_SpiritIncoming" )
+
+    function ENT:MarkDying()
+        self:SetNW2Float( "zamb_SpiritDeathTime", CurTime() )
+
+    end
+
     local HIDE_RANGE_MUL  = 1.5 -- hiding spots stay within this many DeployDistances of the enemy, so peeking out is quick
     local HIDE_RETRY_TIME = 4
     local LURK_MIN_TIME   = 2 -- stays hidden at least this long before peeking out again
@@ -139,23 +157,48 @@ if SERVER then
 
     end
 
-    function ENT:TeleportZambieTo( ent, targetPos, faceTowards )
+    -- Hidden a moment before it moves and a moment after, so clients never see it slide across the map.
+    -- The move happens later, anything that needs it there goes in onArrived( ent ), the teleport stops its movement.
+    function ENT:TeleportZambieTo( ent, targetPos, faceTowards, onArrived )
         FireSummonEffectAt( ent )
+        local wasHidden = ent:GetNoDraw()
+        local fromPos = ent:GetPos()
+        local arrived
+        ent:SetNoDraw( true )
 
-        terminator_Extras.TeleportTermTo( ent, targetPos )
+        timer.Simple( 0.1, function()
+            if not IsValid( ent ) then return end
+            if ent:Health() > 0 then
+                terminator_Extras.TeleportTermTo( ent, targetPos )
+                ent:SetNW2Vector( "zamb_SpiritDepartPos", fromPos )
+                arrived = true
 
-        if faceTowards then
-            local faceAngle = ( faceTowards - targetPos ):Angle()
-            faceAngle.p = 0
-            faceAngle.r = 0
-            ent:SetAngles( faceAngle )
-        end
-        ent:ReallyAnger( 60 )
-        ent.zamb_ScoutFor = self -- see SpiritInformReceive
-        ent:SetNW2Entity( "zamb_PulseSpirit", self ) -- glows in time with our heartbeat
+                if faceTowards then
+                    local faceAngle = ( faceTowards - targetPos ):Angle()
+                    faceAngle.p = 0
+                    faceAngle.r = 0
+                    ent:SetAngles( faceAngle )
+                end
+                ent:ReallyAnger( 60 )
+                if IsValid( self ) then
+                    ent.zamb_ScoutFor = self -- see SpiritInformReceive
+                    ent:SetNW2Entity( "zamb_PulseSpirit", self ) -- glows in time with our heartbeat
+                    FireDeployEffectAt( self, targetPos )
+                    if onArrived then onArrived( ent ) end
 
-        FireDeployEffectAt( self, targetPos )
+                end
+            end
 
+            timer.Simple( 0.1, function()
+                if not IsValid( ent ) then return end
+                ent:SetNoDraw( wasHidden )
+                -- clients draw the arrival off this and zamb_SpiritDepartPos, from the moment it's seen, see the pulse link hook
+                if arrived then
+                    ent:SetNW2Float( "zamb_SpiritArrivedAt", CurTime() )
+
+                end
+            end )
+        end )
     end
 
     function ENT:CanSummon( ally )
@@ -213,18 +256,51 @@ if SERVER then
 
     end
 
+    -- Drops the spots within SummonMinPlayerDist of any living player, but players inside SummonGuardDist of us don't count.
+    function ENT:SpotsAwayFromPlayers( spots )
+        local minDistSqr = self.SummonMinPlayerDist ^ 2
+        local myPos = self:GetPos()
+        local guardDistSqr = self.SummonGuardDist ^ 2
+        local players = {}
+        for _, ply in ipairs( player.GetAll() ) do
+            if ply:Alive() and ply:GetPos():DistToSqr( myPos ) >= guardDistSqr then
+                table.insert( players, ply )
+
+            end
+        end
+
+        local kept = {}
+        for _, spot in ipairs( spots ) do
+            local tooClose = false
+            for _, ply in ipairs( players ) do
+                if ply:GetPos():DistToSqr( spot ) < minDistSqr then
+                    tooClose = true
+                    break
+
+                end
+            end
+            if not tooClose then
+                table.insert( kept, spot )
+
+            end
+        end
+        return kept
+
+    end
+
     -- Spots between us and targetPos, and the far off allies to drop on them, paired by index.
     -- Returns nil and why, if there's no room, or nobody to summon.
     function ENT:PlanSummon( targetPos, count )
         local myCenter = self:WorldSpaceCenter()
 
-        -- deploy spots start halfway to the target, and creep back towards us if there's no room there
+        -- deploy spots start halfway to the target, and creep back towards us if there's no room there, or it's too near a player
         local positions = {}
         local deployCenter
         for i = 1, 4 do
             local lerpFrac = 0.5 - ( ( i - 1 ) / 3 ) * 0.3
             local center = LerpVector( lerpFrac, myCenter, targetPos )
-            local spots, gotAll = PackSquadVectors( center, count, math.random( 75, 125 ) )
+            local spots = self:SpotsAwayFromPlayers( PackSquadVectors( center, count, math.random( 75, 125 ) ) )
+            local gotAll = #spots >= count
             if #spots > #positions then
                 positions = spots
                 deployCenter = center
@@ -233,7 +309,7 @@ if SERVER then
             if gotAll then break end
 
         end
-        if #positions == 0 then return nil, "no room on the navmesh between us" end
+        if #positions == 0 then return nil, "no room on the navmesh between us, away from players" end
 
         local size, maxHealth = self:SquadLimitsThrough( deployCenter, #positions )
         for i = #positions, size + 1, -1 do
@@ -299,6 +375,31 @@ if SERVER then
 
     end
 
+    -- When the plan's index'th ally lands, subclasses that stagger them override it.
+    function ENT:SummonArriveTime( plan, _index )
+        return plan.at
+
+    end
+
+    local MAX_WARNINGS = 31 -- fits the 5 bit count
+
+    -- One message for the whole squad, clients mark where each will land until it does.
+    function ENT:WarnIncoming( plan )
+        local count = math.min( #plan.positions, #plan.candidates, MAX_WARNINGS )
+        if count <= 0 then return end
+
+        net.Start( "zamb_SpiritIncoming" )
+        net.WriteEntity( self )
+        net.WriteUInt( count, 5 )
+        for i = 1, count do
+            net.WriteVector( plan.positions[i] )
+            net.WriteFloat( self:SummonArriveTime( plan, i ) )
+
+        end
+        net.Broadcast()
+
+    end
+
     -- Plans and sends right away, no call. Returns true if anyone was sent.
     function ENT:SummonZambies( targetPos, count )
         local positions, candidates, extra = self:PlanSummon( targetPos, count )
@@ -318,6 +419,7 @@ if SERVER then
         plan.at = CurTime() + SUMMON_ARRIVE_DELAY
         self.zamb_SummonRequest = plan
         self:SetNW2Float( "zamb_SummonAt", plan.at )
+        self:WarnIncoming( plan )
         self:RunTask( "ZambOnGrumpy" )
         return true
 
@@ -506,50 +608,6 @@ if SERVER then
 
     end
 
-    -- straight away first, then angled off if that's a wall
-    local FLEE_YAWS = { 0, 45, -45, 90, -90 }
-
-    -- Paths to an area farther from the enemy than we are.
-    -- Returns true if we're fleeing, false if there was nowhere better to go.
-    function ENT:KeepDistanceFrom( enemyPos )
-        if self:IsTaskActive( "movement_gotoarea" ) then return true end
-        if ( self.zamb_NextFleeCheck or 0 ) > CurTime() then return false end
-        self.zamb_NextFleeCheck = CurTime() + 0.5
-
-        local myPos = self:GetPos()
-        local myDistSqr = myPos:DistToSqr( enemyPos )
-        local away = myPos - enemyPos
-        away.z = 0
-        away:Normalize()
-        local fleeDist = self.DeployDistance * 0.5
-
-        for _, yaw in ipairs( FLEE_YAWS ) do
-            local dir = Vector( away )
-            dir:Rotate( Angle( 0, yaw, 0 ) )
-
-            -- the nearest area to a spot behind us can be on the enemy's side of a wall
-            local fleeArea = navmesh.GetNearestNavArea( myPos + dir * fleeDist, false, 512 )
-            local drowns = fleeArea and self.BreathesAir and fleeArea:IsUnderwater()
-            if fleeArea and not drowns and fleeArea:GetCenter():DistToSqr( enemyPos ) > myDistSqr and self:areaIsReachable( fleeArea ) then
-                self:KillAllTasksWith( "movement" )
-                self:StartTask( "movement_gotoarea", { Area = fleeArea, GiveUpAfter = 5, LookAhead = true, LeapAlongPath = true }, "they're too close, i need to keep my distance" )
-                self:RestartMotionCoroutine()
-                return true
-
-            end
-        end
-        return false
-
-    end
-
-    function ENT:ShouldHoldDistance()
-        if not self.zamb_StayOutOfMeleeRange then return false end
-        if not self.IsSeeEnemy then return false end
-        if not IsValid( self:GetEnemy() ) then return false end
-        return self.DistToEnemy < self.DeployDistance
-
-    end
-
     local ESCAPE_YAWS = { 0, 45, -45, 90, -90 }
 
     -- Leaps somewhere farther from threat than we are, then goes looking for somewhere to hide.
@@ -631,20 +689,6 @@ if SERVER then
         local taskList = self.TaskList
         taskList["movement_gotoarea"] = defaultTasks["movement_gotoarea"]
 
-        -- stand back and let the summons do the fighting
-        taskList["movement_spirit_hold"] = {
-            OnStart = function( self )
-                self:InvalidatePath( "holding my distance" )
-
-            end,
-            BehaveUpdateMotion = function( self )
-                if self:ShouldHoldDistance() then return end
-                self:TaskComplete( "movement_spirit_hold" )
-                self:StartTask( "movement_handler", "they're out of range" )
-
-            end,
-        }
-
         taskList["movement_spirit_hide"] = {
             OnStart = function( self )
                 self.zamb_NextHideAttempt = CurTime() + HIDE_RETRY_TIME
@@ -654,7 +698,7 @@ if SERVER then
                 local area = self:FindHidingArea( data.EnemyPos, data.EnemyEyes )
                 if not area then
                     self:TaskFail( "movement_spirit_hide" )
-                    self:StartTask( "movement_spirit_hold", "nowhere to hide" )
+                    self:StartTask( "movement_holdrange", "nowhere to hide" )
                     return
 
                 end
@@ -698,7 +742,7 @@ if SERVER then
 
                 end
                 if self.IsSeeEnemy then
-                    if self:ShouldHoldDistance() then return end -- BehaveUpdatePriority finds us a new spot
+                    if self.zamb_StayOutOfMeleeRange and self:ZAMB_CanHoldRangeHere() then return end -- BehaveUpdatePriority finds us a new spot
                     self:TaskComplete( "movement_spirit_lurk" )
                     self:StartTask( "movement_handler", "i can see them, but they're too far" )
                     return
@@ -708,7 +752,7 @@ if SERVER then
                 if not self:SummonOffCooldown() then return end
 
                 self:TaskComplete( "movement_spirit_lurk" )
-                self:StartTask( "movement_followenemy", "peeking out to summon" )
+                self:StartTask( "movement_holdrange", "peeking out to summon" )
 
             end,
         }
@@ -717,13 +761,6 @@ if SERVER then
         taskList["movement_handler"] = {
             StartsOnInitialize = baseHandler.StartsOnInitialize,
             BehaveUpdateMotion = function( self, data )
-                if self:ShouldHoldDistance() then
-                    self:TaskComplete( "movement_handler" )
-                    self:StartTask( "movement_spirit_hold", "they're in range" )
-                    return
-
-                end
-
                 -- can't see them but our scouts can, stay close instead of wandering off
                 local intel = not self.IsSeeEnemy and self:GetFreshIntel()
                 if intel then
@@ -751,12 +788,13 @@ if SERVER then
     function ENT:AdditionalInitialize()
         BaseClass.AdditionalInitialize( self )
         self:SetBodygroup( 1, 0 )
+        self.zamb_HoldRangeMin = self.DeployDistance * 0.5
+        self.zamb_HoldRangeMax = self.DeployDistance
     end
 
     function ENT:SpiritDeath()
         if self:GetIsDying() then return end
-        self:SetIsDying( true )
-        self:SetDeathTime( CurTime() )
+        self:MarkDying()
 
         self:StopMoving()
         self:SetSolid( SOLID_NONE )
@@ -769,12 +807,13 @@ if SERVER then
         end
 
         local ed = EffectData()
-        ed:SetMagnitude( 1.5 )
+        ed:SetMagnitude( self.DeathFxDuration )
         ed:SetOrigin( self:WorldSpaceCenter() )
-        ed:SetRadius( 78 )
+        ed:SetRadius( self.DeathFxSize )
         ed:SetNormal( self:GetAngles():Up() )
         util.Effect( "eff_zambspirit_blast", ed, true, true )
-        self:EmitSound( "npc/advisor/advisor_scream.wav", 100, 170, 1 )
+        -- its own channel, so the die sound on CHAN_VOICE plays under it
+        self:EmitSound( "npc/advisor/advisor_scream.wav", 100 + self.term_SoundLevelShift, 170 + self.term_SoundPitchShift, 1, CHAN_STATIC )
 
         -- FinishDying hid us, but the dying trails and sprite are drawn by us
         self:SetNoDraw( false )
@@ -858,18 +897,21 @@ if SERVER then
 
         end
 
-        -- couldn't find anywhere to hide lately
-        if dist < self.DeployDistance / 2 and self:KeepDistanceFrom( enemy:GetPos() ) then return end
-
-        if self:IsTaskActive( "movement_followenemy" ) then
+        -- couldn't find anywhere to hide lately, movement_holdrange keeps our distance
+        if self:IsTaskActive( "movement_holdrange" ) then return end
+        if dist < self.zamb_HoldRangeMin or self:IsTaskActive( "movement_followenemy" ) then
             self:KillAllTasksWith( "movement" )
-            self:StartTask( "movement_spirit_hold", "close enough, time to summon" )
+            self:StartTask( "movement_holdrange", "close enough, time to summon" )
             self:RestartMotionCoroutine()
 
         end
     end
 
     function ENT:SpiritDealtFistDamage( _target, _dmg )
+    end
+
+    -- Only called for subclasses with a Term_DeathAnim, SpiritDeath comes once it's played.
+    function ENT:SpiritStartDying()
     end
 end
 
@@ -891,20 +933,30 @@ ENT.MySpecialActions = {
     },
 }
 
+-- Dying, or playing a Term_DeathAnim on the way there, either way it's done.
+local function IsGone( self )
+    return self:GetIsDying() or self.term_Dead
+
+end
+
 ENT.MyClassTask = {
     OnDamaged = function( self, _data, dmg )
-        if self:GetIsDying() then return true end
+        if IsGone( self ) then return true end
         return self:SpiritOnDamaged( dmg )
 
     end,
     Think = function( self )
-        if self:GetIsDying() then return end -- still called while behaviour is disabled
+        if IsGone( self ) then return end -- still called while behaviour is disabled
         self:SpiritThink()
 
     end,
     BehaveUpdatePriority = function( self )
-        if self:GetIsDying() then return end
+        if IsGone( self ) then return end
         self:SpiritBehavePriority()
+
+    end,
+    OnStartDying = function( self )
+        self:SpiritStartDying()
 
     end,
     OnDealtFistDamage = function( self, _data, target, dmg )
@@ -924,12 +976,14 @@ ENT.MyClassTask = {
 
     end,
     DisableBehaviour = function( self )
-        return self:GetIsDying()
+        return IsGone( self )
 
     end,
 }
 
 if CLIENT then
+    local entMeta = FindMetaTable( "Entity" )
+
     ENT.mat       = Material( "effects/strider_muzzle" )
     ENT.mat_trail = Material( "trails/plasma" )
 
@@ -971,9 +1025,11 @@ if CLIENT then
     end
 
     -- 1 while alive, eases to 0 over the death fade
+    -- every frame, reads GetDeathTime's NW2 straight off entMeta
     local function DeathFrac( self )
-        if not self:GetIsDying() then return 1 end
-        local elapsed = CurTime() - self:GetDeathTime()
+        local deathTime = entMeta.GetNW2Float( self, "zamb_SpiritDeathTime", 0 )
+        if deathTime <= 0 then return 1 end
+        local elapsed = CurTime() - deathTime
         return math.ease.InCubic( math.max( 0, 1 - elapsed / DEATH_FADE_TIME ) )
 
     end
@@ -986,6 +1042,47 @@ if CLIENT then
     local HEARTBEAT_SOUND = "npc/vort/vort_foot1.wav"
     local MAX_ECHOES  = 3 -- each is another DrawModel
     local ECHO_LIFE   = 0.6
+
+    -- Leaves a fading copy of us at pos. bright draws it like the living spirit, not a dim echo.
+    function ENT:AddEcho( pos, life, bright )
+        local echoes = self.zamb_Echoes
+        table.insert( echoes, 1, { pos = pos, at = CurTime(), life = life or ECHO_LIFE, bright = bright } )
+        echoes[self:MaxEchoes() + 1] = nil
+
+    end
+
+    -- Stubs, subclasses override these to change how it looks.
+
+    -- How many echoes it keeps alive.
+    function ENT:MaxEchoes()
+        return MAX_ECHOES
+
+    end
+
+    -- A beat's starting. Leaves an echo where we stood, returns how far we skip aside on the thud, skip's the usual.
+    function ENT:SpiritBeat( _amp, skip )
+        self:AddEcho( self:GetPos() )
+        return skip
+
+    end
+
+    -- SpiritDeath just ran. Return true if it started a beat.
+    function ENT:SpiritFinalBeat()
+        return false
+
+    end
+
+    -- How much of us shows this frame: whether the red body's drawn, how much red's left for the trails and sprites,
+    -- and whether the plain body under it is drawn.
+    function ENT:SpiritLook( _pulse )
+        return true, 1, false
+
+    end
+
+    -- Anything extra to draw while dying, the body, echoes and trails are done by then.
+    function ENT:SpiritDrawDying( _time )
+    end
+
     local SKIP_DIST   = 12 -- times the beat's strength, rage and summons skip farther
     local SKIP_FRAC   = 0.4 -- of a thump, then it snaps back
 
@@ -1025,14 +1122,13 @@ if CLIENT then
         self.zamb_BeatRate = rate / slowBy
         self.zamb_BeatAmp, self.zamb_DubAmp = amp, dubAmp
 
-        -- leaves a ghost where it stood, and almost blinks away
-        local echoes = self.zamb_Echoes
-        table.insert( echoes, 1, { pos = self:GetPos(), at = CurTime() } )
-        echoes[MAX_ECHOES + 1] = nil
+        self.zamb_LastBeatAt = CurTime() -- subclasses convulse off this
+
+        -- almost blinks away
         local skipDir = VectorRand()
         skipDir.z = 0
         skipDir:Normalize()
-        self.zamb_SkipOffset = skipDir * SKIP_DIST * amp
+        self.zamb_SkipOffset = self:SpiritBeat( amp, skipDir * SKIP_DIST * amp )
         -- heard through walls, so it can be hunted by ear
         self:EmitSound( HEARTBEAT_SOUND, 80 + amp * 5, self.HeartbeatPitch / slowBy, math.min( 1, amp * 0.5 ) )
 
@@ -1051,7 +1147,10 @@ if CLIENT then
         -- slows to a stop as it dies
         local phase = self.zamb_BeatPhase + ( now - last ) * self.zamb_BeatRate * DeathFrac( self )
 
-        if Crossed( self, "zamb_SummonAt", last, now ) then
+        if Crossed( self, "zamb_SpiritDeathTime", last, now ) and self:SpiritFinalBeat() then -- DeathFrac drags whatever it starts out
+            return
+
+        elseif Crossed( self, "zamb_SummonAt", last, now ) then
             self:StartBeat( 2.5, 0.3, 2 )
 
         elseif Crossed( self, "zamb_BodyguardAt", last, now ) then
@@ -1073,21 +1172,23 @@ if CLIENT then
     end
 
     -- Think only runs 16 times a second, so this carries the phase on to the frame.
-    local function CurrentPhase( self, now )
-        return self.zamb_BeatPhase + ( now - self.zamb_PulseThinkAt ) * self.zamb_BeatRate * DeathFrac( self )
+    local function CurrentPhase( self, myTbl, now )
+        return myTbl.zamb_BeatPhase + ( now - myTbl.zamb_PulseThinkAt ) * myTbl.zamb_BeatRate * DeathFrac( self )
 
     end
 
     -- How hard the heart's thudding right now, 0 between beats, can go past 1.
+    -- Called every frame, by our draw and once for all our links, so myTbl, not self's __index.
     function ENT:GetPulse()
-        if not self.zamb_PulseThinkAt then return 0 end -- the link hook can find us before we've initialized
+        local myTbl = entMeta.GetTable( self )
+        if not myTbl.zamb_PulseThinkAt then return 0 end -- the link hook can find us before we've initialized
         local now = CurTime()
-        local phase = CurrentPhase( self, now )
-        local length = ThumpLength( self.zamb_BeatRate )
-        local pulse = self.zamb_BeatAmp * Thump( phase, length ) + self.zamb_DubAmp * Thump( phase - DUB_AT, length )
+        local phase = CurrentPhase( self, myTbl, now )
+        local length = ThumpLength( myTbl.zamb_BeatRate )
+        local pulse = myTbl.zamb_BeatAmp * Thump( phase, length ) + myTbl.zamb_DubAmp * Thump( phase - DUB_AT, length )
 
         -- swells into the summon's thud
-        local windup = 1 - ( self:GetNW2Float( "zamb_SummonAt", 0 ) - now ) / SUMMON_ARRIVE_DELAY
+        local windup = 1 - ( entMeta.GetNW2Float( self, "zamb_SummonAt", 0 ) - now ) / SUMMON_ARRIVE_DELAY
         if windup > 0 and windup < 1 then
             pulse = pulse + windup ^ 2 * 1.5
 
@@ -1097,18 +1198,22 @@ if CLIENT then
     end
 
     local bodyMatrix = Matrix() -- reused, EnableMatrix copies it
+    local bodyScale = Vector()
 
     -- Draws the model offset and scaled, render only, the hitbox stays put.
     -- The bone cache holds last draw's matrix, so drawing more than once a frame needs it rebuilt.
+    -- Runs several times a frame per spirit, so entMeta, not self's __index.
     local function DrawModelAt( self, localOffset, scale )
         bodyMatrix:Identity()
         bodyMatrix:Translate( localOffset )
-        bodyMatrix:Scale( Vector( scale, scale, scale ) )
-        self:EnableMatrix( "RenderMultiply", bodyMatrix )
-        self:InvalidateBoneCache()
-        self:DrawModel()
+        bodyScale:SetUnpacked( scale, scale, scale )
+        bodyMatrix:Scale( bodyScale )
+        entMeta.EnableMatrix( self, "RenderMultiply", bodyMatrix )
+        entMeta.InvalidateBoneCache( self )
+        entMeta.DrawModel( self )
 
     end
+    ENT.DrawModelAt = DrawModelAt
 
     -- Zambies a spirit sent glow in time with it, until it dies.
     local pulseLinks = {}
@@ -1120,25 +1225,178 @@ if CLIENT then
 
     end )
 
+    local ARRIVE_GLOW_TIME  = 0.6 -- lands as solid spirit red, cooling back to skin over this
+    local ARRIVE_SKIP_TIME  = 0.15 -- and stutters around its landing spot for the start of it
+    local ARRIVE_SKIP_DIST  = 16
+    local DEPART_GHOST_TIME = 0.8 -- a red ghost stays where it was pulled from, fading
+    local ARRIVE_FX_TIME    = math.max( ARRIVE_GLOW_TIME, DEPART_GHOST_TIME )
+    local AFTERGLOW_TIME    = 4 -- fresh arrivals' pulse glow starts this much bigger and settles over AFTERGLOW_TIME
+    local AFTERGLOW_BOOST   = 2
+
+    local arriveSkip = Vector()
+
+    -- The extra model draws for a zambie a spirit just sent, the depart ghost and the cooling silhouette.
+    local function DrawArrival( ally, sinceArrive )
+        render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
+        render.OverrideDepthEnable( true, false ) -- or the ghost cuts a hole in whatever's behind it
+
+        local departPos = ally:GetNW2Vector( "zamb_SpiritDepartPos", false )
+        if departPos and sinceArrive < DEPART_GHOST_TIME then
+            local fade = 1 - sinceArrive / DEPART_GHOST_TIME
+            render.SetColorModulation( fade ^ 2 * 3, 0, 0 ) -- same as the spirit's own echoes
+            DrawModelAt( ally, ally:WorldToLocal( departPos ), 1 )
+
+        end
+
+        if sinceArrive < ARRIVE_GLOW_TIME then
+            local fade = 1 - sinceArrive / ARRIVE_GLOW_TIME
+            local offset = vector_origin
+            if sinceArrive < ARRIVE_SKIP_TIME then
+                arriveSkip:SetUnpacked( math.Rand( -ARRIVE_SKIP_DIST, ARRIVE_SKIP_DIST ), math.Rand( -ARRIVE_SKIP_DIST, ARRIVE_SKIP_DIST ), 0 )
+                offset = arriveSkip
+
+            end
+            render.SetBlend( fade )
+            render.SetColorModulation( 700, 1, 1 ) -- the spirit's body trick, solid red under the additive blend
+            DrawModelAt( ally, offset, 1 + fade * 0.1 )
+            render.SetBlend( 1 )
+
+        end
+
+        render.SetColorModulation( 1, 1, 1 )
+        render.OverrideDepthEnable( false )
+        render.OverrideBlend( false )
+        -- the real draw is the engine's, it can't inherit our matrix or our bones
+        ally:DisableMatrix( "RenderMultiply" )
+        ally:InvalidateBoneCache()
+
+    end
+
+    local linkColor = Color( 255, 0, 0, 255 )
+    local framePulses = {} -- a spirit's pulse, worked out once a frame, not once per zambie it's linked to
+
+    -- every linked zambie, every frame, engine calls go through entMeta, not each entity's __index
     hook.Add( "PostDrawTranslucentRenderables", "zamb_SpiritPulseLinks", function( depth, skybox )
         if depth or skybox or next( pulseLinks ) == nil then return end
 
-        render.SetMaterial( linkGlow )
+        local now = CurTime()
+        local drawModels = GetFPSEstimate() > 30 -- the extra draws are the first thing to go
+        for spirit in pairs( framePulses ) do
+            framePulses[spirit] = nil
+
+        end
+
         for ally, spirit in pairs( pulseLinks ) do
             if not IsValid( ally ) or not IsValid( spirit ) or spirit:GetIsDying() then
                 pulseLinks[ally] = nil
                 continue
 
             end
-            if ally:IsDormant() or spirit:IsDormant() then continue end
+            if entMeta.IsDormant( ally ) then continue end
 
-            local pulse = spirit:GetPulse()
+            local sinceArrive = now - entMeta.GetNW2Float( ally, "zamb_SpiritArrivedAt", -math.huge )
+            if drawModels and sinceArrive < ARRIVE_FX_TIME and not entMeta.GetNoDraw( ally ) then
+                DrawArrival( ally, sinceArrive )
+
+            end
+
+            local pulse = framePulses[spirit]
+            if not pulse then
+                pulse = entMeta.IsDormant( spirit ) and 0 or spirit:GetPulse()
+                framePulses[spirit] = pulse
+
+            end
             if pulse < 0.05 then continue end
-            local size = 40 * pulse * ally:GetModelScale()
-            render.DrawSprite( ally:WorldSpaceCenter(), size, size, Color( 255, 0, 0, 255 * math.min( 1, pulse ) ) )
+            local fresh = math.max( 0, 1 - sinceArrive / AFTERGLOW_TIME )
+            local size = 40 * pulse * entMeta.GetModelScale( ally ) * ( 1 + fresh * AFTERGLOW_BOOST )
+            linkColor.a = 255 * math.min( 1, pulse )
+            render.SetMaterial( linkGlow ) -- every time, the arrival draws bind their own
+            render.DrawSprite( entMeta.WorldSpaceCenter( ally ), size, size, linkColor )
 
         end
     end )
+
+    -- Where a spirit's squad is about to land, marked until it does. Sprites only, the zambies are usually far off and dormant.
+    local INCOMING_LEAD = 1.5 -- a warning sent earlier than this before landing waits to show
+    local INCOMING_HEIGHT = Vector( 0, 0, 36 )
+    local incoming = {}
+
+    net.Receive( "zamb_SpiritIncoming", function()
+        local spirit = net.ReadEntity()
+        for _ = 1, net.ReadUInt( 5 ) do
+            table.insert( incoming, { pos = net.ReadVector() + INCOMING_HEIGHT, at = net.ReadFloat(), spirit = spirit } )
+
+        end
+    end )
+
+    hook.Add( "PostDrawTranslucentRenderables", "zamb_SpiritIncoming", function( depth, skybox )
+        if depth or skybox or #incoming == 0 then return end
+
+        local now = CurTime()
+        render.SetMaterial( linkGlow )
+        for i = #incoming, 1, -1 do
+            local mark = incoming[i]
+            local untilLand = mark.at - now
+            if untilLand <= 0 then
+                table.remove( incoming, i )
+                continue
+
+            end
+            if untilLand > INCOMING_LEAD then continue end
+
+            -- builds as it nears, and throbs with the spirit's heart if we can see it
+            local closeness = 1 - untilLand / INCOMING_LEAD
+            local spirit = mark.spirit
+            local pulse = IsValid( spirit ) and not spirit:IsDormant() and spirit:GetPulse() or 0
+            local size = ( 30 + closeness * 50 ) * ( 1 + pulse * 0.3 )
+            render.DrawSprite( mark.pos, size, size * 1.6, Color( 255, 0, 0, 40 + closeness * 120 ) )
+
+        end
+    end )
+
+    -- the sprite layers spread out right as it dies, 1 at the moment of death to 0 a fifth of a second later
+    local function BlastFrac( self, time )
+        if not self:GetIsDying() then return 0 end
+        return math.max( 0, 1 - ( time - self:GetDeathTime() ) * 5 )
+
+    end
+
+    local BOUNDS_PAD = 100 -- covers a body standing on an echo, the skip, and the sprite layers at a hard beat
+    local BOUNDS_BLAST_PAD = 250 -- and the layers flung out as it dies
+    local boundsMins, boundsMaxs = Vector(), Vector()
+    local math_min, math_max = math.min, math.max
+
+    -- Everything we draw away from the body, echoes, trails and sprites, or it all culls the moment the body's off screen.
+    -- Unpacked, not .x, field access is slow and this runs 16 times a second per spirit.
+    local function UpdateRenderBounds( self )
+        local minX, minY, minZ = self:WorldSpaceCenter():Unpack()
+        local maxX, maxY, maxZ = minX, minY, minZ
+        local function Include( pos )
+            local x, y, z = pos:Unpack()
+            minX, minY, minZ = math_min( minX, x ), math_min( minY, y ), math_min( minZ, z )
+            maxX, maxY, maxZ = math_max( maxX, x ), math_max( maxY, y ), math_max( maxZ, z )
+
+        end
+
+        for _, echo in ipairs( self.zamb_Echoes ) do
+            Include( echo.pos )
+
+        end
+        if self.trails then
+            for _, trail in ipairs( self.trails ) do
+                for _, point in ipairs( trail ) do
+                    Include( point )
+
+                end
+            end
+        end
+
+        local pad = ( BOUNDS_PAD + BlastFrac( self, CurTime() ) * BOUNDS_BLAST_PAD ) * self:GetModelScale()
+        boundsMins:SetUnpacked( minX - pad, minY - pad, minZ - pad )
+        boundsMaxs:SetUnpacked( maxX + pad, maxY + pad, maxZ + pad )
+        self:SetRenderBoundsWS( boundsMins, boundsMaxs )
+
+    end
 
     function ENT:Think()
         BaseClass.Think( self )
@@ -1163,37 +1421,45 @@ if CLIENT then
 
             end
         end
+        UpdateRenderBounds( self )
         self:SetNextClientThink( CurTime() + 1 / self.trailLength )
 
         return true
 
     end
 
+    local trailColor = Color( 0, 0, 0 ) -- AddBeam copies it
+
+    -- every frame, so myTbl and entMeta, not self's __index
     function ENT:DrawTranslucent()
         if render.GetRenderTarget() then return end
 
-        local myPos     = self:WorldSpaceCenter()
+        local myTbl     = entMeta.GetTable( self )
+        local myPos     = entMeta.WorldSpaceCenter( self )
         local eyePos    = EyePos()
         local time      = CurTime()
-        local dying     = self:GetIsDying()
+        local dying     = myTbl.GetIsDying( self )
         local deathFrac = DeathFrac( self )
-        -- the sprite layers spread out right as it dies
-        local blastFrac = dying and math.max( 0, 1 - ( time - self:GetDeathTime() ) * 5 ) or 0
-        local pulse     = self:GetPulse()
+        local blastFrac = BlastFrac( self, time )
+        local pulse     = myTbl.GetPulse( self )
         local swell     = 1 + pulse * 0.35
+        local showRed, redLeft, plainBody = myTbl.SpiritLook( self, pulse )
+        local spirit    = deathFrac * redLeft -- how much of the red is left in it, for the trails and sprites
 
         render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
 
-        if self.trails and GetFPSEstimate() > 30 then
-            render.SetMaterial( self.mat_trail )
-            for _, trail in ipairs( self.trails ) do
+        local trails = myTbl.trails
+        if trails and showRed and spirit > 0 and GetFPSEstimate() > 30 then
+            render.SetMaterial( myTbl.mat_trail )
+            for _, trail in ipairs( trails ) do
                 local count = #trail
                 if count < 2 then continue end
 
                 render.StartBeam( count )
                 for j, point in ipairs( trail ) do
                     local alongTrail = ( j - 1 ) / ( count - 1 )
-                    render.AddBeam( point, 7 * swell * deathFrac * ( 1 - alongTrail ), alongTrail * 4, Color( 255 * ( 1 - alongTrail ), 0, 0 ) )
+                    trailColor.r = 255 * ( 1 - alongTrail )
+                    render.AddBeam( point, 7 * swell * spirit * ( 1 - alongTrail ), alongTrail * 4, trailColor )
                 end
                 render.EndBeam()
 
@@ -1201,42 +1467,67 @@ if CLIENT then
         end
 
         if not dying then
-            -- ghosts of where it stood on recent beats, fading out
-            -- no depth writes, or a ghost in front cuts a hole in the body
+            -- echoes of where it stood on recent beats, fading out
+            -- no depth writes, or an echo in front cuts a hole in the body
             -- drawn before the body, so the bone cache ends on the body's matrix, the trails read it
             render.OverrideDepthEnable( true, false )
-            for _, echo in ipairs( self.zamb_Echoes ) do
-                local fade = 1 - ( time - echo.at ) / ECHO_LIFE
+            for _, echo in ipairs( myTbl.zamb_Echoes ) do
+                local fade = 1 - ( time - echo.at ) / echo.life
                 if fade <= 0 then continue end
-                render.SetColorModulation( fade ^ 2 * 3, 0, 0 )
-                DrawModelAt( self, self:WorldToLocal( echo.pos ), 1 )
+                if echo.bright then
+                    render.SetBlend( fade )
+                    render.SetColorModulation( 700, 1, 1 )
+                    DrawModelAt( self, entMeta.WorldToLocal( self, echo.pos ), 1 )
+                    render.SetBlend( 1 )
+
+                else
+                    render.SetColorModulation( fade ^ 2 * 3, 0, 0 )
+                    DrawModelAt( self, entMeta.WorldToLocal( self, echo.pos ), 1 )
+
+                end
 
             end
             render.OverrideDepthEnable( false )
 
-            render.SetColorModulation( 700, 1, 1 ) -- blows the red channel out, the model glows solid red under the additive blend
             -- swells on each beat, and for the start of the thud, skips aside like it nearly teleported
             local bodySwell = 1 + math.min( pulse, 2.5 ) * 0.1
-            local skipping = CurrentPhase( self, time ) < ThumpLength( self.zamb_BeatRate ) * SKIP_FRAC
-            DrawModelAt( self, skipping and self.zamb_SkipOffset or vector_origin, bodySwell )
+            local skipping = CurrentPhase( self, myTbl, time ) < ThumpLength( myTbl.zamb_BeatRate ) * SKIP_FRAC
+            local bodyOffset = skipping and myTbl.zamb_SkipOffset or vector_origin
+            if plainBody then -- drawn normally, under the red
+                render.OverrideBlend( false )
+                render.SetColorModulation( 1, 1, 1 )
+                DrawModelAt( self, vector_origin, 1 )
+                render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE, BLENDFUNC_ADD )
+
+            end
+            if showRed then
+                render.SetColorModulation( 700, 1, 1 ) -- blows the red channel out, the model glows solid red under the additive blend
+                DrawModelAt( self, bodyOffset, bodySwell )
+
+            end
             render.SetColorModulation( 1, 1, 1 )
+
+        else
+            myTbl.SpiritDrawDying( self, time )
 
         end
 
-        if eyePos:DistToSqr( myPos ) < 3250 ^ 2 then
-            surface.SetMaterial( self.mat )
+        if eyePos:DistToSqr( myPos ) < 3250 ^ 2 and ( ( showRed and spirit > 0 ) or dying ) then
+            surface.SetMaterial( myTbl.mat )
             surface.SetAlphaMultiplier( 1 )
-            surface.SetDrawColor( 255 * deathFrac, 0, 0, 255 * deathFrac )
+            -- the death burst brings them back, the spirit bursting out
+            local spriteAlpha = dying and deathFrac or spirit
+            surface.SetDrawColor( 255 * spriteAlpha, 0, 0, 255 * spriteAlpha )
             local angle = ( myPos - eyePos ):Angle()
             angle:RotateAroundAxis( angle:Right(), 90 )
-            local scale = self:GetModelScale()
+            local scale = entMeta.GetModelScale( self )
             local spriteSwell = 1 + pulse * 0.6 -- harder than the trails, the spin and shrink hide a small one
 
             -- four spinning layers, each a quarter cycle out of step
             for layer = 1, 4 do
                 cam.Start3D2D( myPos, angle, scale * ( 1 + blastFrac * layer ) )
                 local cycle = ( time + layer / 4 ) % 1
-                local size  = ( 72 - cycle * 32 ) * spriteSwell * deathFrac
+                local size  = ( 72 - cycle * 32 ) * spriteSwell * spriteAlpha
                 surface.DrawTexturedRectRotated( 0, 0, size, size, cycle / 4 * layer * 360 )
                 cam.End3D2D()
 

@@ -20,6 +20,32 @@ function terminator_Extras.zamb_RingBasis( normal )
 
 end
 
+-- boomers and their crabs bleed this, keep their particles, drips and decals on it
+terminator_Extras.zamb_BoomerBloodColor = Color( 40, 220, 50 )
+
+-- alien blood, the tint multiplies the texture so red blood decals stay red
+local BOOMER_BLOOD_DECALS = {}
+for i = 1, 6 do
+    BOOMER_BLOOD_DECALS[i] = Material( "decals/yblood" .. i )
+
+end
+
+local decalTr = { mask = MASK_SOLID_BRUSHONLY }
+
+-- splats boomer blood wherever a trace from start along dir lands, if it lands
+function terminator_Extras.zamb_BoomerBloodDecal( start, dir, scale )
+    decalTr.start = start
+    decalTr.endpos = start + dir
+    local tr = util.TraceLine( decalTr )
+    if not tr.Hit then return end
+
+    local mat = BOOMER_BLOOD_DECALS[math.random( 1, #BOOMER_BLOOD_DECALS )]
+    if mat:IsError() then return end
+
+    util.DecalEx( mat, tr.Entity, tr.HitPos, tr.HitNormal, terminator_Extras.zamb_BoomerBloodColor, math.Rand( 0.6, 1.6 ) * scale, math.Rand( 0.6, 1.6 ) * scale )
+
+end
+
 local ringPoint = Vector()
 
 -- draws a ring of beam, call between render.SetMaterial and the next material change

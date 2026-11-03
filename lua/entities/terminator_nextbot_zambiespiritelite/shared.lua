@@ -20,11 +20,65 @@ local RAGE_TIME = 12 -- each hit keeps it angry this long
 ENT.DesperateHealthFrac = 0.25 -- below a quarter health, it gets slippery
 ENT.HeartbeatPitch = 30
 
+-- Failing is its death anim playing out, before the base's SpiritDeath. NW2, set in SpiritStartDying.
+
+-- When the death anim started, 0 if it hasn't.
+function ENT:GetFailingAt()
+    return self:GetNW2Float( "zamb_SpiritFailingAt", 0 )
+
+end
+
+function ENT:IsFailing()
+    return self:GetFailingAt() > 0 and not self:GetIsDying()
+
+end
+
+-- 0 as the death anim starts, 1 as it ends, 0 if it isn't playing
+function ENT:FailingFrac()
+    local at = self:GetFailingAt()
+    if at <= 0 or self:GetIsDying() then return 0 end
+    local span = self:GetNW2Float( "zamb_SpiritFailingUntil", at ) - at
+    if span <= 0 then return 1 end
+    return math.Clamp( ( CurTime() - at ) / span, 0, 1 )
+
+end
+
 if CLIENT then
     language.Add( "terminator_nextbot_zambiespiritelite", ENT.PrintName )
 
+    -- Failing, the rate only follows how far gone it is, so every death gets the same count of beats.
+    -- The stumbling's in their strengths, and in the lurches.
+    local FAILING_RATE_MIN, FAILING_RATE_MAX = 2, 9 -- Hz
+    local LURCH_RATE = 1.1 -- a heavy held beat, then nothing for a moment
+    local LURCH_WINDOWS = { { 0.15, 0.45 }, { 0.5, 0.8 } } -- one lurch somewhere in each, of the way through the anim
+
+    -- Picks when this death's lurches land, the count never changes.
+    local function PlanLurches( self )
+        local lurches = {}
+        for i, window in ipairs( LURCH_WINDOWS ) do
+            lurches[i] = math.Rand( window[1], window[2] )
+
+        end
+        self.zamb_Lurches = lurches
+        self.zamb_NextLurch = 1
+
+    end
+
     -- A big slow heart. Rage races it, slowing as the rage runs out, and desperation makes it stumble.
     function ENT:NextBeat()
+        -- the death anim, the heart's giving out, racing faster until the last thud
+        if self:GetFailingAt() > 0 then
+            local lost = self:FailingFrac()
+            local lurches = self.zamb_Lurches
+            local nextLurch = lurches and lurches[self.zamb_NextLurch]
+            if nextLurch and lost >= nextLurch then
+                self.zamb_NextLurch = self.zamb_NextLurch + 1
+                return LURCH_RATE, 2.5, 0
+
+            end
+            return Lerp( lost ^ 1.5, FAILING_RATE_MIN, FAILING_RATE_MAX ), math.Rand( 0.4, 2.2 ), math.random() < 0.4 and 0 or math.Rand( 0.3, 1.5 )
+
+        end
         if self:GetNWBool( "zamb_SpiritEnraged", false ) then
             local rageLeft = math.Clamp( ( self:GetNW2Float( "zamb_RageUntil", 0 ) - CurTime() ) / RAGE_TIME, 0, 1 )
             return Lerp( rageLeft, 2, 5 ), 1.2, 0.8
@@ -39,15 +93,36 @@ if CLIENT then
 
     end
 
+    local DEATH_JITTER_MIN, DEATH_JITTER_MAX = 5, 45 -- degrees, as the death anim plays out
+    local CONVULSE_TIME = 0.25 -- each beat's spasm settles over this
+
     function ENT:Think()
         local ret = BaseClass.Think( self ) -- thinks every 1/16th of a second, plenty for jitter
-        local jitter = self:GetNWBool( "zamb_SpiritEnraged", false ) and not self:GetIsDying()
+
+        -- the death anim's started, the heart starts failing now, not once whatever slow beat it was on runs out
+        if not self.zamb_StartedFailing and self:GetFailingAt() > 0 then
+            self.zamb_StartedFailing = true
+            PlanLurches( self )
+            self:StartBeat()
+
+        end
+
+        local amp = 0
+        if self:IsFailing() then -- convulsing on each beat, harder as it loses itself
+            local settle = math.max( 0, 1 - ( CurTime() - ( self.zamb_LastBeatAt or 0 ) ) / CONVULSE_TIME )
+            amp = Lerp( self:FailingFrac(), DEATH_JITTER_MIN, DEATH_JITTER_MAX ) * settle
+
+        elseif self:GetNWBool( "zamb_SpiritEnraged", false ) and not self:GetIsDying() then
+            amp = 8
+
+        end
+        local jitter = amp > 0
         if not jitter and not self.zamb_Jittering then return ret end
         self.zamb_Jittering = jitter
 
         for i = 0, self:GetBoneCount() - 1 do
             if jitter then
-                self:ManipulateBoneAngles( i, Angle( math.Rand( -8, 8 ), math.Rand( -8, 8 ), math.Rand( -8, 8 ) ) )
+                self:ManipulateBoneAngles( i, Angle( math.Rand( -amp, amp ), math.Rand( -amp, amp ), math.Rand( -amp, amp ) ) )
 
             else -- calmed down, straighten out once
                 self:ManipulateBoneAngles( i, angle_zero )
@@ -55,6 +130,86 @@ if CLIENT then
             end
         end
         return ret
+
+    end
+
+    -- Failing, every beat it tries to blink away, and a piece of it makes it.
+    local FAILING_MAX_ECHOES = 6
+    local FAILING_GHOST_LIFE = 0.9
+    local FAILING_GHOST_SOUND = "npc/advisor/advisor_blast1.wav" -- the summon sound, a piece of it teleporting off
+    local FAILING_SKIP_MUL_MIN, FAILING_SKIP_MUL_MAX = 1.5, 5 -- the skip reaches farther each beat, scattering it
+    local FAILING_RED_PULSE_MIN, FAILING_RED_PULSE_MAX = 0.15, 1 -- how hard a thud has to be to flash the red back, as it fails
+    local FINAL_SNAP_TIME = 0.15 -- on the last thud, what's left of it snaps back in before the burst
+
+    function ENT:MaxEchoes()
+        if self:IsFailing() then return FAILING_MAX_ECHOES end
+        return BaseClass.MaxEchoes( self )
+
+    end
+
+    -- Failing, the ghost lands where the skip went, farther each beat.
+    function ENT:SpiritBeat( amp, skip )
+        if not self:IsFailing() then return BaseClass.SpiritBeat( self, amp, skip ) end
+
+        local lost = self:FailingFrac()
+        skip = skip * Lerp( lost, FAILING_SKIP_MUL_MIN, FAILING_SKIP_MUL_MAX )
+        local ghostPos = self:LocalToWorld( skip )
+        self:AddEcho( ghostPos, FAILING_GHOST_LIFE, true )
+
+        -- the summon's teleport sound where it lands, deeper as it fails, and a jolt for whoever's near
+        sound.Play( FAILING_GHOST_SOUND, ghostPos, 85, Lerp( lost, 140, 70 ) + math.Rand( -10, 10 ), 0.8 )
+        util.ScreenShake( ghostPos, Lerp( lost, 2, 10 ) * amp, 20, 0.3, 1500 )
+
+        local ed = EffectData()
+        ed:SetOrigin( self:WorldSpaceCenter() )
+        ed:SetNormal( vector_up )
+        ed:SetRadius( Lerp( lost, 40, 90 ) * self:GetModelScale() )
+        ed:SetMagnitude( 0.4 ) -- short, they come thick and fast by the end
+        util.Effect( "eff_zambspirit_blast", ed )
+        return skip
+
+    end
+
+    -- A heart that gave out over the death anim gets one last thud.
+    function ENT:SpiritFinalBeat()
+        if self:GetFailingAt() <= 0 then return BaseClass.SpiritFinalBeat( self ) end
+        self:StartBeat( 4, 0, 1.5 )
+        return true
+
+    end
+
+    -- Failing, the plain body shows, and the red only flashes back on a hard enough thud, fewer as the heart gives out.
+    function ENT:SpiritLook( pulse )
+        if not self:IsFailing() then return BaseClass.SpiritLook( self, pulse ) end
+        local lost = self:FailingFrac()
+        return pulse > Lerp( lost, FAILING_RED_PULSE_MIN, FAILING_RED_PULSE_MAX ), 1 - lost, true
+
+    end
+
+    -- The last thud, every ghost still out there snaps back into it, then the burst throws it all out.
+    function ENT:SpiritDrawDying( time )
+        BaseClass.SpiritDrawDying( self, time )
+        if self:GetFailingAt() <= 0 then return end
+
+        local deathTime = self:GetDeathTime()
+        local snap = ( time - deathTime ) / FINAL_SNAP_TIME
+        if snap >= 1 then return end
+
+        local DrawModelAt = self.DrawModelAt
+        local myOrigin = self:GetPos()
+        render.OverrideDepthEnable( true, false )
+        render.SetColorModulation( 700, 1, 1 )
+        for _, echo in ipairs( self.zamb_Echoes ) do
+            if not echo.bright or deathTime - echo.at > echo.life then continue end
+            DrawModelAt( self, self:WorldToLocal( LerpVector( snap ^ 2, echo.pos, myOrigin ) ), 1 )
+
+        end
+        render.SetColorModulation( 1, 1, 1 )
+        render.OverrideDepthEnable( false )
+        -- the trails read the bone cache, leave it on the body, not the last ghost
+        render.SetBlend( 0 )
+        DrawModelAt( self, vector_origin, 1 )
+        render.SetBlend( 1 )
 
     end
     return
@@ -80,6 +235,10 @@ ENT.SummonCountMin = 6
 ENT.SummonCountMax = 10
 ENT.SummonCountBehindWalls = 4 -- squads dropped deep behind walls shrink down to this
 ENT.SummonsOnDeath = false -- dying cuts the strings instead
+ENT.DeathFxSize = 260
+ENT.DeathFxDuration = 2.5
+ENT.SummonMinPlayerDist = 400
+ENT.SummonGuardDist = 300
 ENT.OneHitFreebie = true
 ENT.UsesScoutIntel = true
 
@@ -232,7 +391,7 @@ function ENT:PlanSummon( targetPos, count )
 
         end
 
-        for i, spot in ipairs( self.PackSquadVectors( entry, #squad, 60 ) ) do
+        for i, spot in ipairs( self:SpotsAwayFromPlayers( self.PackSquadVectors( entry, #squad, 60 ) ) ) do
             table.insert( positions, spot )
             table.insert( chosen, squad[i] )
             entryOf[#positions] = entryIndex
@@ -246,8 +405,8 @@ end
 
 -- No room around the target, so they arrive at our feet, and their orders walk them the whole way there.
 function ENT:PlanLemmings( candidates )
-    local positions = self.PackSquadVectors( self:GetPos(), #candidates, 80 )
-    if #positions == 0 then return nil, "no room around the target, or us" end
+    local positions = self:SpotsAwayFromPlayers( self.PackSquadVectors( self:GetPos(), #candidates, 80 ) )
+    if #positions == 0 then return nil, "no room around the target, or us, away from players" end
 
     for i = #candidates, #positions + 1, -1 do
         candidates[i] = nil
@@ -286,6 +445,12 @@ function ENT:SendSummon( plan )
 
 end
 
+-- Each entry's group lands GROUP_STAGGER after the last, see SendSummon.
+function ENT:SummonArriveTime( plan, index )
+    return plan.at + ( plan.extra[index] - 1 ) * GROUP_STAGGER
+
+end
+
 function ENT:SendDueSummons()
     local pending = self.zamb_PendingSends
     local cur = CurTime()
@@ -296,8 +461,10 @@ function ENT:SendDueSummons()
 
         local ally = send.ally
         if not self:CanSummon( ally ) then continue end
-        self:TeleportZambieTo( ally, send.pos, send.targetPos )
-        self:GiveOrders( ally )
+        self:TeleportZambieTo( ally, send.pos, send.targetPos, function( arrived )
+            self:GiveOrders( arrived )
+
+        end )
         if send.announce then
             sound.Play( "npc/advisor/advisor_blast6.wav", send.pos, 90, math.random( 90, 110 ), 1 )
 
@@ -367,12 +534,21 @@ function ENT:ExpireOrders()
 end
 
 -- Everyone we sent forgets the plan, and stumbles back to their own ideas.
-function ENT:RevokeOrders()
+-- With flinchFrom, they freeze a moment facing it first, the strings snapping.
+function ENT:RevokeOrders( flinchFrom )
     for ally in pairs( self.zamb_Ordered ) do
         if not IsValid( ally ) or ally:Health() <= 0 then continue end
         ReturnBrains( ally )
         ally.zamb_SpiritOrdersUntil = 0
-        if ally:HasTask( "movement_handler" ) then
+        if flinchFrom then
+            local face = ( flinchFrom - ally:GetPos() ):Angle()
+            face.p = 0
+            face.r = 0
+            ally:SetAngles( face )
+            ally:RestartMotionCoroutine()
+            ally:StopMoving() -- a second in movement_wait, then back to movement_handler
+
+        elseif ally:HasTask( "movement_handler" ) then
             ally:KillAllTasksWith( "movement" )
             ally:StartTask( "movement_handler", "the spirit's gone" )
             ally:RestartMotionCoroutine()
@@ -388,7 +564,7 @@ function ENT:SummonBodyguards( enemy )
     local myCenter = self:WorldSpaceCenter()
     local enemyPos = enemy:GetPos()
     local center = LerpVector( 0.2, myCenter, enemyPos )
-    local positions = self.PackSquadVectors( center, BODYGUARD_COUNT, 100 )
+    local positions = self:SpotsAwayFromPlayers( self.PackSquadVectors( center, BODYGUARD_COUNT, 100 ) )
     if #positions == 0 then return end
 
     local candidates = self:PickSummonCandidates( enemyPos, #positions, center )
@@ -540,6 +716,8 @@ function ENT:RageThink()
     local healthy = self:Health() > self:GetMaxHealth() * 0.5
     if healthy and cur - self.zamb_RageLastHurt > RAGE_RETREAT_GRACE and self:IsRetreating( enemy ) then
         self:CalmDown() -- they learned their lesson
+        -- mocking them, not giving up, so they know it let them go
+        self:Term_SpeakSoundNow( self.term_RetreatLaughSound, -10 )
         return
 
     end
@@ -614,6 +792,7 @@ function ENT:AdditionalInitialize()
     self.zamb_PendingSends = {}
     self.zamb_Enraged = false
     self.zamb_Desperate = false
+    self.term_RetreatLaughSound = "npc/ministrider/hunter_laugh1.wav"
     self.zamb_SpawnStats = {
         walk  = self.WalkSpeed,
         move  = self.MoveSpeed,
@@ -624,9 +803,43 @@ function ENT:AdditionalInitialize()
     }
 end
 
+-- Plays as it dies, then SpiritDeath, so the heart gets a few stumbling seconds to give out.
+ENT.Term_DeathAnim = {
+    act = "BR2_Roar",
+    rate = 0.5,
+}
+
+-- Runs just before the base plays the death anim, so that overrides the call's own gesture.
+function ENT:SpiritStartDying()
+    -- the base set Term_DyingUntil before OnStartDying, so this is how long the anim plays, see FailingFrac
+    self:SetNW2Float( "zamb_SpiritFailingAt", CurTime() )
+    self:SetNW2Float( "zamb_SpiritFailingUntil", self.Term_DyingUntil or CurTime() )
+    -- the base's think stops updating this once we're dead, a stale true would slow every failing beat
+    self:SetNW2Bool( "zamb_SpiritLurking", false )
+    self:ZAMB_AngeringCall( true, 1, true ) -- a new call, so the horde chains it
+
+end
+
+local DEATH_JOLT_RADIUS = 2500
+local DEATH_JOLT_DSP = 35 -- ear ringing, fades on its own
+
+-- The last thud, everyone nearby feels it.
+function ENT:DeathJolt( pos )
+    util.ScreenShake( pos, 20, 5, 1.5, DEATH_JOLT_RADIUS, true )
+    local radiusSqr = DEATH_JOLT_RADIUS ^ 2
+    for _, ply in player.Iterator() do
+        if ply:GetPos():DistToSqr( pos ) < radiusSqr then
+            ply:SetDSP( DEATH_JOLT_DSP, false )
+
+        end
+    end
+end
+
 function ENT:SpiritDeath()
     if self:GetIsDying() then return end
-    self:RevokeOrders()
+    local pos = self:WorldSpaceCenter()
+    self:RevokeOrders( pos )
+    self:DeathJolt( pos )
     BaseClass.SpiritDeath( self )
 
 end

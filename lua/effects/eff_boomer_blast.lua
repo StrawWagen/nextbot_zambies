@@ -5,13 +5,7 @@ EFFECT.mat_beam = Material( "trails/plasma" )
 
 EFFECT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
-local BLOOD_DECALS = {}
-for i = 1, 9 do
-    BLOOD_DECALS[i] = Material( "decals/blood" .. i )
-end
-
-local BLOOD_R, BLOOD_G, BLOOD_B = 40, 220, 50
-local bloodColor = Color( BLOOD_R, BLOOD_G, BLOOD_B )
+local BLOOD_R, BLOOD_G, BLOOD_B = terminator_Extras.zamb_BoomerBloodColor:Unpack()
 
 local gravFire  = Vector( 0, 0, -40 )
 local gravFall  = Vector( 0, 0, -900 )
@@ -132,19 +126,13 @@ local function SpawnParticles( pos, radius, scale )
 
 end
 
+local DECAL_REF_RADIUS = 350 -- the boomer's, blasts wider than this get more decals to cover the area
+local DECAL_MAX = 250
+
 local function SplatterDecals( pos, radius, scale )
-    for _ = 1, math.Round( 12 * scale ) do
-        local tr = util.TraceLine( {
-            start  = pos,
-            endpos = pos + RandomDirection() * radius,
-            mask   = MASK_SOLID_BRUSHONLY,
-        } )
-        if not tr.Hit then continue end
-
-        local mat = BLOOD_DECALS[math.random( 1, #BLOOD_DECALS )]
-        if mat:IsError() then continue end
-
-        util.DecalEx( mat, tr.Entity, tr.HitPos, tr.HitNormal, bloodColor, math.Rand( 0.6, 1.6 ) * scale, math.Rand( 0.6, 1.6 ) * scale )
+    local areaMul = math.max( 1, radius / DECAL_REF_RADIUS ) ^ 2
+    for _ = 1, math.min( math.Round( 12 * scale * areaMul ), DECAL_MAX ) do
+        terminator_Extras.zamb_BoomerBloodDecal( pos, RandomDirection() * radius, scale )
 
     end
 end
