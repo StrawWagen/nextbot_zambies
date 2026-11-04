@@ -115,6 +115,7 @@ ENT.MyClassTask = {
         if math.random() > LAG_POP_CHANCE then return end
         if not terminator_Extras.zamb_IsLagging( lagFrac ) then return end
         DoExplosion( self )
+
     end,
 
     BehaveUpdatePriority = function( self )

@@ -275,7 +275,7 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
                 if not IsValid( self ) then return end
                 if self:Health() <= 0 then return end
 
-                local lagging = terminator_Extras.zamb_IsLagging( 0.65 )
+                local lagging = terminator_Extras.zamb_IsLagging( math.Rand( 0.25, 0.65 ) )
                 if lagging then -- lagging? don't spawn
                     self.necro_WasLagging = CurTime() + 1
                     return
