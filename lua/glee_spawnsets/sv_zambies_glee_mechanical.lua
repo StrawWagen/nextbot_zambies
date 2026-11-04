@@ -1,24 +1,6 @@
 
-local nextScream = 0
-
-local function screamAfterSpawning( _, spawned )
-    if nextScream > CurTime() then return end
-    nextScream = CurTime() + math.random( 120, 240 )
-
-    timer.Simple( math.random( 5, 30 ), function()
-        if not IsValid( spawned ) then return end
-        spawned:ZAMB_AngeringCall()
-
-    end )
-end
-
-local function alwaysScreamAfterSpawning( _, spawned )
-    timer.Simple( math.random( 5, 30 ), function()
-        if not IsValid( spawned ) then return end
-        spawned:ZAMB_AngeringCall()
-
-    end )
-end
+local screamAfterSpawning = GAMEMODE.setHelpers.zamb_ScreamAfterSpawning()
+local alwaysScreamAfterSpawning = GAMEMODE.setHelpers.zamb_AlwaysScreamAfterSpawning
 
 local zambieSpawnSet = {
     name = "zambies_glee_mechanical", -- unique name

@@ -1,17 +1,6 @@
 -- credit to https://steamcommunity.com/id/TakeTheBeansIDontCare/
 
-local nextScream = 0
-
-local function screamAfterSpawning( _, crab )
-    if nextScream > CurTime() then return end
-    nextScream = CurTime() + math.random( 120, 240 )
-
-    timer.Simple( math.random( 5, 30 ), function()
-        if not IsValid( crab ) then return end
-        crab:ZAMB_AngeringCall()
-
-    end )
-end
+local screamAfterSpawning = GAMEMODE.setHelpers.zamb_ScreamAfterSpawning()
 
 local zambieSpawnSet = {
     name = "zambies_glee_godcrabs", -- unique name

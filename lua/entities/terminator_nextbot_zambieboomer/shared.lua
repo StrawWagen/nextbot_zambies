@@ -163,7 +163,7 @@ end
 
 ENT.zamb_BoomerBlastRadius   = 350
 ENT.zamb_BoomerPrimedDamage  = 125 -- unprimed it does 1, the crabs are the real threat
-ENT.zamb_BoomerCrabCount     = 7
+ENT.zamb_BoomerCrabCount     = 4
 ENT.zamb_BoomerCrabClass     = "terminator_nextbot_zambieblastcrab"
 
 -- MyClassTask hands off to these, subclasses override them.
