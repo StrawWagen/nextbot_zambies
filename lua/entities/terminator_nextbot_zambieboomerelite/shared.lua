@@ -6,6 +6,7 @@ ENT.Base = "terminator_nextbot_zambieboomer"
 DEFINE_BASECLASS( ENT.Base )
 ENT.PrintName = "Zombie Boomer Elite"
 ENT.Spawnable = false
+ENT.Author = "Octantis Addons + Straw W Wagen"
 list.Set( "NPC", "terminator_nextbot_zambieboomerelite", {
     Name     = "Zombie Boomer Elite",
     Class    = "terminator_nextbot_zambieboomerelite",
