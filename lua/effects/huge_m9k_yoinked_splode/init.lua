@@ -89,3 +89,6 @@ function EFFECT:Dust()
         end
     end
 end
+
+function EFFECT:Render() -- dont draw the ERROR model of mystery and power
+end

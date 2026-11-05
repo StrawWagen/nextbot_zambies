@@ -193,14 +193,6 @@ ENT.Term_FootstepSound = { -- running sounds
 }
 
 local flattener = Vector( 1, 1, 0.1 )
-local function isLagging()
-    local idealTickrate = 1 / FrameTime()
-    local currTickrate = 1 / engine.AbsoluteFrameTime()
-    local threshold = math.max( 2.5, idealTickrate * 0.65 )
-    return currTickrate <= threshold
-
-end
-
 function ENT:NECRO_TrySpawnMinions( maxCountNow )
     local aliveCount = 0
     local newTbl = {}
@@ -283,7 +275,7 @@ function ENT:NECRO_TrySpawnMinions( maxCountNow )
                 if not IsValid( self ) then return end
                 if self:Health() <= 0 then return end
 
-                local lagging = isLagging()
+                local lagging = terminator_Extras.zamb_IsLagging( math.Rand( 0.25, 0.65 ) )
                 if lagging then -- lagging? don't spawn
                     self.necro_WasLagging = CurTime() + 1
                     return

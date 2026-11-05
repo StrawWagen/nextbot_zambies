@@ -168,6 +168,8 @@ local zambieSpawnSet = {
             difficultyNeeded = { 500, 1000 },
             countClass = "terminator_nextbot_zambienecro",
             maxCount = { 1 },
+            slots = { "miniboss" },
+            cooldown = 60,
             postSpawnedFuncs = nil,
         },
         {
@@ -180,6 +182,8 @@ local zambieSpawnSet = {
             difficultyNeeded = { 2500, 7500 },
             countClass = "terminator_nextbot_zambienecroelite",
             maxCount = { 1 },
+            slots = { "boss" },
+            cooldown = 240,
             postSpawnedFuncs = nil,
         },
     }

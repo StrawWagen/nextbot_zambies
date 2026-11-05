@@ -343,6 +343,7 @@ local function angeringCallFunc( me, rate )
     end
 
     return true
+
 end
 
 function ENT:ZAMB_AngeringCall( doNow, rate, newCall )
@@ -373,14 +374,22 @@ function ENT:ZAMB_NormalCall()
 
 end
 
+local LEAP_ABANDON_TIME = 0.5 -- a wind up nobody's come back to in this long was abandoned
+
+-- ZambBlockJumpToPos only stops new leaps, a wound up leap always fires.
 function ENT:TryAndLeapTo( myTbl, leapPos )
     local cur = CurTime()
+    -- our caller moved on mid wind up, don't spring it on the next one
+    if myTbl.Zamb_LeapingPrepare and cur - myTbl.Zamb_LastTryAndLeap > LEAP_ABANDON_TIME then
+        myTbl.Zamb_LeapingPrepare = nil
+
+    end
+    myTbl.Zamb_LastTryAndLeap = cur
+
     if myTbl.Zamb_NextLeap and myTbl.Zamb_NextLeap > cur then
         return
 
     end
-    local blockLeap = myTbl.RunTask( self, "ZambBlockJumpToPos" )
-    if blockLeap then return end
 
     local canLeap = myTbl.loco:IsOnGround()
     local addMul = 1
@@ -402,6 +411,8 @@ function ENT:TryAndLeapTo( myTbl, leapPos )
         return true
 
     end
+
+    if myTbl.RunTask( self, "ZambBlockJumpToPos" ) then return end
 
     if not myTbl.Zamb_NextTryAndLeap then
         myTbl.Zamb_NextTryAndLeap = cur + math.Rand( 0, 10 ) * addMul
@@ -426,6 +437,12 @@ function ENT:TryAndLeapTo( myTbl, leapPos )
     end
 end
 
+function ENT:TryLeapAlongPath( myTbl, data )
+    if myTbl.RunTask( self, "ZambBlockJumpToPos" ) then return end
+    return BaseClass.TryLeapAlongPath( self, myTbl, data )
+
+end
+
 local nextZombieCall = 0
 local nextLoneZombieCall = 0
 
@@ -433,6 +450,11 @@ ENT.zamb_LookAheadWhenRunning = true
 ENT.zamb_MeleeAttackSpeed = 1.1
 ENT.term_SoundPitchShift = 0
 ENT.term_SoundLevelShift = 0
+
+ENT.zamb_StayOutOfMeleeRange = nil -- never duels, never leaps at enemies, keeps its distance in movement_holdrange instead
+ENT.zamb_StayOutOfMeleeRangeUnlessPushed = nil -- but an enemy that gets inside zamb_HoldRangeMin gets walked up to and fought, see ZAMB_UpdatePushed
+ENT.zamb_HoldRangeMin = nil -- movement_holdrange backs off when its enemy is closer than this
+ENT.zamb_HoldRangeMax = nil -- and closes in when they're farther, see ZAMB_CanHoldRangeHere
 
 ENT.term_LoseEnemySound = "Zombie.Idle"
 ENT.term_CallingSound = "ambient/creatures/town_zombie_call1.wav"
@@ -659,8 +681,7 @@ ENT.MyClassTask = {
         end
     end,
     OnKilled = function( self, data, damage, rag )
-        self:EmitSound( "common/null.wav", 80 + self.term_SoundLevelShift, 100, 1, CHAN_VOICE )
-        self:EmitSound( self.term_DieSound, 80 + self.term_SoundLevelShift, 100 + self.term_SoundPitchShift, 1, CHAN_VOICE, sndFlags )
+        self:Term_SpeakSoundNow( self.term_DieSound, 0, 4 ) -- +4, deaths were always a touch louder than talking
         local b1, b2 = self:GetSafeCollisionBounds()
         b1 = b1 * 2
         b2 = b2 * 2
@@ -699,7 +720,122 @@ ENT.MyClassTask = {
         return ( not self.HasBrains and not self:IsAngry() ) or self:shouldDoWalk()
 
     end,
+    BehaveUpdatePriority = function( self, _data )
+        if not self.zamb_StayOutOfMeleeRangeUnlessPushed then return end
+        self:ZAMB_UpdatePushed()
+
+    end,
+    -- pushed, it walks in to fight, it doesn't charge
+    ModifyMovementSpeed = function( self, _data, speed )
+        if not self.zamb_Pushed then return end
+        return math.min( speed, self.WalkSpeed )
+
+    end,
 }
+
+local PUSHED_RELEASE_MUL = 1.25 -- they back off this far past zamb_HoldRangeMin before we let it go, or we'd flicker at the line
+
+-- Pushed zamb_StayOutOfMeleeRangeUnlessPushed zambies fight like anyone else, at a walk, until their enemy backs off.
+function ENT:ZAMB_UpdatePushed()
+    local enemy = self:GetEnemy()
+    if not self.zamb_StayOutOfMeleeRange or not IsValid( enemy ) then
+        self.zamb_Pushed = nil
+
+    elseif self.zamb_Pushed then
+        if self.DistToEnemy > self.zamb_HoldRangeMin * PUSHED_RELEASE_MUL then
+            self.zamb_Pushed = nil
+
+        end
+    elseif self.IsSeeEnemy and self.DistToEnemy < self.zamb_HoldRangeMin then
+        self.zamb_Pushed = true
+
+    end
+end
+
+-- zamb_StayOutOfMeleeRange, unless we've been pushed into fighting.
+-- Movement tasks ask this, not the field.
+function ENT:ZAMB_StaysOutOfMeleeRange()
+    return ( self.zamb_StayOutOfMeleeRange and not self.zamb_Pushed ) or false
+
+end
+
+-- The movement task that goes after our enemy, start this instead of naming one.
+function ENT:ZAMB_ChaseTask()
+    if self:ZAMB_StaysOutOfMeleeRange() then return "movement_holdrange" end
+    return "movement_followenemy"
+
+end
+
+-- Whether movement_holdrange can stop and work from where we are.
+-- Override it for zambies that need more than seeing their enemy, like a clear throw.
+function ENT:ZAMB_CanHoldRangeHere()
+    if not self.IsSeeEnemy then return false end
+    if not IsValid( self:GetEnemy() ) then return false end
+    return self.DistToEnemy <= self.zamb_HoldRangeMax
+
+end
+
+local HOLDRANGE_BACKOFF_YAWS = { 0, 45, -45, 90, -90 } -- straight away first, then angled off if that's a wall
+
+-- A spot about zamb_HoldRangeMin away from us, farther from enemyPos than we are, nil if there's nowhere.
+function ENT:ZAMB_FindHoldRangeBackOff( myTbl, enemyPos )
+    local myPos = entMeta.GetPos( self )
+    local myDistSqr = myPos:DistToSqr( enemyPos )
+    local away = myPos - enemyPos
+    away.z = 0
+    away:Normalize()
+
+    for _, yaw in ipairs( HOLDRANGE_BACKOFF_YAWS ) do
+        local dir = Vector( away )
+        dir:Rotate( Angle( 0, yaw, 0 ) )
+
+        -- the nearest area to a spot behind us can be on the enemy's side of a wall
+        local area = navmesh.GetNearestNavArea( myPos + dir * myTbl.zamb_HoldRangeMin, false, 512 )
+        local drowns = area and myTbl.BreathesAir and area:IsUnderwater()
+        if area and not drowns and area:GetCenter():DistToSqr( enemyPos ) > myDistSqr and myTbl.areaIsReachable( self, area ) then
+            return area:GetCenter()
+
+        end
+        coroutine_yield()
+
+    end
+end
+
+-- Paths away from enemyPos, cornered, it stands its ground.
+function ENT:ZAMB_HoldRangeBackOff( myTbl, data, enemyPos )
+    local myPos = entMeta.GetPos( self )
+    -- got there, or they've cut us off
+    if data.backOffPos and data.backOffPos:DistToSqr( enemyPos ) <= myPos:DistToSqr( enemyPos ) then
+        data.backOffPos = nil
+
+    end
+
+    if not data.backOffPos then
+        if ( data.nextBackOffSearch or 0 ) > CurTime() then
+            coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
+            return
+
+        end
+        data.nextBackOffSearch = CurTime() + 0.5
+
+        local backOffPos = myTbl.ZAMB_FindHoldRangeBackOff( self, myTbl, enemyPos )
+        if not backOffPos then return end
+
+        data.backOffPos = backOffPos
+        myTbl.InvalidatePath( self, "backing off" )
+        myTbl.SetupPathShell( self, backOffPos )
+        coroutine_yield()
+
+    end
+    if not myTbl.primaryPathIsValid( self ) then
+        data.backOffPos = nil
+        return
+
+    end
+    if myTbl.TryLeapAlongPath( self, myTbl, data ) then return end
+    myTbl.ControlPath2( self, true )
+
+end
 
 function ENT:DoCustomTasks( defaultTasks )
     self.TaskList = {
@@ -715,7 +851,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local myTbl = entMeta.GetTable( self )
                 if myTbl.IsSeeEnemy then
                     myTbl.TaskComplete( self, "movement_handler" )
-                    myTbl.StartTask( self, "movement_followenemy", "i see an enemy!" )
+                    myTbl.StartTask( self, myTbl.ZAMB_ChaseTask( self ), "i see an enemy!" )
                     return
 
                 else
@@ -752,6 +888,15 @@ function ENT:DoCustomTasks( defaultTasks )
             end,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = entMeta.GetTable( self )
+                -- intercepts start us here to reach their spot, and ZAMB_StaysOutOfMeleeRange can flip mid chase
+                -- unseen, we keep following, that's how we go and look for them
+                if myTbl.ZAMB_StaysOutOfMeleeRange( self ) and myTbl.IsSeeEnemy then
+                    myTbl.TaskComplete( self, "movement_followenemy" )
+                    myTbl.StartTask( self, "movement_holdrange", "i see them, keeping my distance" )
+                    return
+
+                end
+
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
                 local enemyPos = myTbl.EnemyLastPos
@@ -844,7 +989,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 local result = self:ControlPath2( lookAtGoal )
                 coroutine_yield()
 
-                if myTbl.Term_Leaps then
+                if myTbl.Term_Leaps and not myTbl.ZAMB_StaysOutOfMeleeRange( self ) then
                     local leapPreparing = myTbl.TryAndLeapTo( self, myTbl, enemyPos )
                     if leapPreparing then
                         return
@@ -873,7 +1018,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     data.overridePos = nil
                     local justDuel = myTbl.zamb_JustTryDuelingUnreachable or 0
                     if justDuel > CurTime() then
-                        if not myTbl.HasBrains or ( math.random( 0, 100 ) < 50 and myTbl.CanMoveRightUpToEnemy( self, myTbl ) ) then
+                        if not myTbl.HasBrains or ( math.random( 0, 100 ) < 50 and myTbl.CanMoveRightUpToEnemy( self, enemy ) ) then
                             myTbl.ReallyAnger( self, 25 )
                             myTbl.TaskComplete( self, "movement_followenemy" )
                             myTbl.StartTask( self, "movement_duelenemy_near", { overrideDist = myTbl.DistToEnemy + 500 }, "i cant get to them and i tried frenzying" )
@@ -905,12 +1050,105 @@ function ENT:DoCustomTasks( defaultTasks )
                 end
             end,
         },
+        -- For zamb_StayOutOfMeleeRange zambies, stays between zamb_HoldRangeMin and zamb_HoldRangeMax of the enemy.
+        -- Backs off when they're too close, stops while ZAMB_CanHoldRangeHere, closes in otherwise.
+        -- zamb_StayOutOfMeleeRangeUnlessPushed zambies don't back off, ZAMB_StaysOutOfMeleeRange goes false and they leave to fight.
+        ["movement_holdrange"] = {
+            OnStart = function( self, _data )
+                if not self.isUnstucking then
+                    self:InvalidatePath( "holdrange_OnStart" )
+
+                end
+            end,
+            BehaveUpdateMotion = function( self, data )
+                local myTbl = entMeta.GetTable( self )
+                local enemy = myTbl.GetEnemy( self )
+                if not IsValid( enemy ) then
+                    myTbl.TaskComplete( self, "movement_holdrange" )
+                    myTbl.StartTask( self, "movement_handler", "no range to hold" )
+                    return
+
+                end
+                if not myTbl.ZAMB_StaysOutOfMeleeRange( self ) then
+                    myTbl.TaskComplete( self, "movement_holdrange" )
+                    myTbl.StartTask( self, myTbl.ZAMB_ChaseTask( self ), "not keeping my distance" )
+                    return
+
+                end
+
+                if myTbl.IsSeeEnemy and myTbl.DistToEnemy < myTbl.zamb_HoldRangeMin and not myTbl.zamb_StayOutOfMeleeRangeUnlessPushed then
+                    data.holding = nil
+                    myTbl.ZAMB_HoldRangeBackOff( self, myTbl, data, enemy:GetPos() )
+                    return
+
+                end
+                data.backOffPos = nil
+
+                if myTbl.ZAMB_CanHoldRangeHere( self ) then
+                    if not data.holding then
+                        data.holding = true
+                        myTbl.InvalidatePath( self, "holding my range" )
+
+                    end
+                    return
+
+                end
+                data.holding = nil
+
+                -- close in on where we last saw them
+                local enemyPos = myTbl.EnemyLastPos
+                if not enemyPos then
+                    myTbl.TaskFail( self, "movement_holdrange" )
+                    myTbl.StartTask( self, "movement_wander", "no idea where they are" )
+                    return
+
+                end
+                if myTbl.primaryPathInvalidOrOutdated( self, enemyPos ) then
+                    if myTbl.zamb_NextPathAttempt > CurTime() then
+                        coroutine_yield( terminator_Extras.BOT_COROUTINE_RESULTS.WAIT )
+                        return
+
+                    end
+                    myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
+
+                    local result = terminator_Extras.getNearestPosOnNav( enemyPos )
+                    if myTbl.areaIsReachable( self, result.area ) then
+                        myTbl.SetupPathShell( self, result.pos )
+                        coroutine_yield()
+
+                    end
+                    if not myTbl.primaryPathIsValid( self ) then
+                        myTbl.TaskFail( self, "movement_holdrange" )
+                        myTbl.StartTask( self, "movement_wander", "i cant get in range of them" )
+                        return
+
+                    end
+                end
+
+                if myTbl.TryLeapAlongPath( self, myTbl, data ) then return end
+                local lookAtGoal = myTbl.zamb_LookAheadWhenRunning or not ( myTbl.IsSeeEnemy and myTbl.HasBrains )
+                local reached = myTbl.ControlPath2( self, lookAtGoal )
+                if reached and not myTbl.IsSeeEnemy then
+                    myTbl.TaskComplete( self, "movement_holdrange" )
+                    myTbl.StartTask( self, "movement_wander", "got there, but they're gone" )
+
+                end
+            end,
+        },
         ["movement_duelenemy_near"] = {
             OnStart = function( self, data )
                 data.badCount = 0
             end,
             BehaveUpdateMotion = function( self, data )
                 local myTbl = entMeta.GetTable( self )
+                -- checked here, not at the many places that start dueling
+                if myTbl.ZAMB_StaysOutOfMeleeRange( self ) then
+                    myTbl.TaskComplete( self, "movement_duelenemy_near" )
+                    myTbl.StartTask( self, myTbl.ZAMB_ChaseTask( self ), "i stay out of melee range" )
+                    return
+
+                end
+
                 local enemy = myTbl.GetEnemy( self )
                 local validEnemy = IsValid( enemy )
                 local enemyPos = myTbl.EnemyLastPos
@@ -965,7 +1203,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                     else
                         myTbl.TaskComplete( self, "movement_duelenemy_near" )
-                        myTbl.StartTask( self, "movement_followenemy", "got bored" )
+                        myTbl.StartTask( self, myTbl.ZAMB_ChaseTask( self ), "got bored" )
                         return
 
                     end
@@ -1170,7 +1408,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                 local enemyIsReachable
                 if goodEnemy then
-                    local result = terminator_Extras.getNearestPosOnNav( enemyPos )
+                    local result = terminator_Extras.getNearestPosOnNav( enemy:GetPos() )
                     enemyIsReachable = myTbl.areaIsReachable( self, result.area )
                 end
 
@@ -1184,7 +1422,7 @@ function ENT:DoCustomTasks( defaultTasks )
                 if data.quitCount > 100 then
                     if myTbl.IsSeeEnemy then
                         myTbl.TaskComplete( self, "movement_frenzy" )
-                        myTbl.StartTask( self, "movement_followenemy", "got bored" )
+                        myTbl.StartTask( self, myTbl.ZAMB_ChaseTask( self ), "got bored" )
                         return
 
                     else
@@ -1405,7 +1643,7 @@ function ENT:DoCustomTasks( defaultTasks )
 
                         if splitUpResult and myTbl.areaIsReachable( self, splitUpResult.area ) then
                             -- flank em!
-                            myTbl.SetupFlankingPath( self, enemyPos, splitUpResult.area, splitUpBubble )
+                            myTbl.SetupFlankingPath( self, result.pos, splitUpResult.area, splitUpBubble )
                             coroutine_yield()
 
                         end
@@ -1475,7 +1713,7 @@ function ENT:DoCustomTasks( defaultTasks )
                     end
                 elseif goodEnemy and enemyIsReachable then
                     myTbl.TaskFail( self, "movement_wander" )
-                    myTbl.StartTask( self, "movement_followenemy", "new enemy!" )
+                    myTbl.StartTask( self, myTbl.ZAMB_ChaseTask( self ), "new enemy!" )
 
                 elseif result then
                     data.toPos = nil

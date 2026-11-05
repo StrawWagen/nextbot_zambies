@@ -1,5 +1,7 @@
 -- credit to https://steamcommunity.com/id/TakeTheBeansIDontCare/
 
+local screamAfterSpawning = GAMEMODE.setHelpers.zamb_ScreamAfterSpawning()
+
 local zambieSpawnSet = {
     name = "zambies_glee_harder", -- unique name
     prettyName = "Specially Infected Hell",
@@ -128,6 +130,48 @@ local zambieSpawnSet = {
             countClass = "terminator_nextbot_zambiewraith",
             maxCount = { 4 },
             postSpawnedFuncs = nil,
+        },
+        {
+            hardRandomChance = nil,
+            name = "zambie_boomer",
+            prettyName = "A Boomer",
+            class = "terminator_nextbot_zambieboomer",
+            spawnType = "hunter",
+            difficultyCost = { 30, 50 },
+            countClass = "terminator_nextbot_zambieboomer",
+            maxCount = { 3 },
+        },
+        {
+            hardRandomChance = { 5, 15 },
+            name = "zambie_boomerelite",
+            prettyName = "The Elite Boomer",
+            class = "terminator_nextbot_zambieboomerelite",
+            spawnType = "hunter",
+            difficultyCost = { 300, 400 },
+            countClass = "terminator_nextbot_zambieboomerelite",
+            maxCount = { 1 },
+        },
+        {
+            hardRandomChance = { 10, 20 },
+            name = "zambie_spirit",
+            prettyName = "A Spirit Zombie",
+            class = "terminator_nextbot_zambiespirit",
+            spawnType = "hunter",
+            difficultyCost = { 50, 80 },
+            countClass = "terminator_nextbot_zambiespirit",
+            maxCount = { 1 },
+            slots = { "miniminiboss" },
+        },
+        {
+            hardRandomChance = { 5, 15 },
+            name = "zambie_spiritelite",
+            prettyName = "The Elite Spirit",
+            class = "terminator_nextbot_zambiespiritelite",
+            spawnType = "hunter",
+            difficultyCost = { 250, 350 }, -- above the elite necro, below the demigod crabs
+            countClass = "terminator_nextbot_zambiespiritelite",
+            maxCount = { 1 },
+            slots = { "miniboss" },
         },
         {
             hardRandomChance = { 20, 40 },

@@ -41,7 +41,7 @@ ENT.RunSpeed = 4000
 ENT.AccelerationSpeed = 850
 ENT.neverManiac = true
 
-ENT.TERM_FOV = 120
+ENT.Term_FOV = 120
 
 ENT.zamb_MeleeAttackSpeed = 2
 ENT.zamb_MeleeAttackHitFrameMul = 40
@@ -60,6 +60,10 @@ ENT.CollisionBounds = { Vector( -1, -1, 0 ), Vector( 1, 1, 2 ) }
 ENT.CrouchCollisionBounds = { Vector( -0.75, -0.75, 0 ), Vector( 0.75, 0.75, 1.75 ) }
 ENT.MyPhysicsMass = 50000
 ENT.ReallyHeavy = true
+
+ENT.ChargeCrushes = true
+ENT.ChargeCrushDmgPerSpeed = 1
+ENT.ChargeCrushDmgMinSpeed = 500
 
 ENT.Term_BaseMsBetweenSteps = 1100
 ENT.Term_FootstepMsReductionPerUnitSpeed = 1.05
