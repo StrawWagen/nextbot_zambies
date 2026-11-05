@@ -289,8 +289,8 @@ function ENT:BoomerBlastFX( pos )
     ed:SetMagnitude( self.zamb_BoomerPrimed and 1.4 or 1 )
     util.Effect( "eff_boomer_blast", ed, true, true )
 
-    self:EmitSound( "npc/zombie/zombie_die1.wav", 100, 80, 1 )
-    self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 70, 1 )
+    self:EmitSound( "npc/zombie/zombie_die1.wav", 80, 80, 1 )
+    self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 90, 70, 1 )
 end
 
 function ENT:BoomerBlast( pos )

@@ -34,7 +34,7 @@ local function DoExplosion( self )
 
         local pos = self:WorldSpaceCenter()
         self:EmitSound( "NPC_Headcrab.Die" )
-        self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 100, 100, 1 )
+        self:EmitSound( "physics/flesh/flesh_bloody_break.wav", 80, 120, 1 )
 
         local ed = EffectData()
         ed:SetOrigin( pos )

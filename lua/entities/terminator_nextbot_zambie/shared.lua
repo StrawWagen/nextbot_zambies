@@ -343,6 +343,7 @@ local function angeringCallFunc( me, rate )
     end
 
     return true
+
 end
 
 function ENT:ZAMB_AngeringCall( doNow, rate, newCall )

@@ -469,12 +469,12 @@ if SERVER then
         self.zamb_SummonHurt = nil
         local queued, whyNot = self:QueueSummon( self:GetSummonTarget(), count )
         if queued then
-            print( "summon" )
+            --print( "summon" )
             self.zamb_LastSummon = cur
             self:ReallyAnger( math.random( 1, 10 ) )
 
         else
-            print( "summonfail", whyNot )
+            --print( "summonfail", whyNot )
             self.zamb_NextSummonAttempt = cur + SUMMON_RETRY
 
         end
