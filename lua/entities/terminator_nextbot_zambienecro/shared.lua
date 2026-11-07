@@ -90,7 +90,7 @@ ENT.zamb_AttackAnim = ACT_MELEE_ATTACK1 -- ACT_RANGE_ATTACK1
 function ENT:AdditionalInitialize()
     self:SetModel( NECRO_ZAMBIE_MODEL )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
 
     self.nextInterceptTry = 0

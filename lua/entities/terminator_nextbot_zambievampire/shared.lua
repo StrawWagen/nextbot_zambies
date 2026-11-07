@@ -104,7 +104,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetSubMaterial( 0, "models/props_c17/paper01" )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4

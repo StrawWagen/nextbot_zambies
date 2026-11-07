@@ -15,6 +15,9 @@ ENT.ThreshMulIfDueling = 4 -- thresh is multiplied by this amount if we're close
 ENT.ThreshMulIfClose = 2 -- if we're closer than DuelEnemyDist * 2
 ENT.MaxPathingIterations = 2500
 
+ENT.isTerminatorHunterChummy = "zambies"
+ENT.Term_NPCCLASS = CLASS_ZOMBIE
+
 ENT.JumpHeight = 80
 ENT.Term_Leaps = false
 ENT.Term_LeapMinimizesHeight = true -- zombies should always leap as low as possible
@@ -170,26 +173,30 @@ function ENT:shouldDoWalk()
 
 end
 
-function ENT:AdditionalAvoidAreas( costs )
+-- bodies rot where zombies die, flies gather, the smart ones steer clear
+if SERVER then
+    local up = Vector( 0, 0, 1 )
+    terminator_Extras.term_Heat.RegisterLayer( "zamb_rot", {
+        hotSpot = true,
+        onThink = function( state )
+            local hotSpot = state.hotSpot
+            local rot = state.hotSpotHeat
+            if not IsValid( hotSpot ) or rot <= 5 then return end
 
-    if not self.HasBrains then return end
+            local sndPos = hotSpot:GetRandomPoint() + up * math.random( 5, 25 )
+            sound.Play( "ambient/creatures/flies" .. math.random( 1, 5 ) .. ".wav", sndPos, 75 + rot / 8, math.random( 95, 105 ) )
 
-    if not terminator_Extras.zamb_IndexedRottingAreas then return end
-    costs = costs or {}
+        end,
+    } )
+end
 
-    local scale = self:GetCreationID() % 10
-    scale = scale / 10
+ENT.HeatAvoidance = { zamb_rot = 1, term_deaths = 0, term_hurt = 0 } -- rot already covers it
+ENT.zamb_RotAvoidance = 1 -- 0 to not care about body smell
 
-    local rotAmounts = terminator_Extras.zamb_RottingAreas
-    for _, area in ipairs( terminator_Extras.zamb_IndexedRottingAreas ) do
-        if not IsValid( area ) then continue end
-        local oldMul = costs[ area:GetID() ] or 0
-        local cost = oldMul + rotAmounts[ area ] * scale
-        cost = math.Clamp( cost, 0, 500 )
-        costs[ area:GetID() ] = cost
-
-    end
-    return costs
+function ENT:GetHeatSensitivity( myTbl, layerName )
+    if layerName ~= "zamb_rot" then return BaseClass.GetHeatSensitivity( self, myTbl, layerName ) end
+    if not myTbl.HasBrains then return 0 end
+    return myTbl.zamb_RotAvoidance * ( self:GetCreationID() % 10 ) / 10 -- some care a lot, some not at all
 
 end
 
@@ -218,7 +225,6 @@ ENT.IdleActivityTranslations = {
 
 ENT.zamb_CallAnim = nil
 ENT.zamb_AttackAnim = nil
-ENT.zamb_CantCall = nil
 
 function ENT:DoHardcodedRelations()
     self.term_HardCodedRelations = {
@@ -238,7 +244,6 @@ function ENT:AdditionalInitialize()
     self:SetModel( zambieModel() )
     self:SetBodygroup( 1, 1 )
 
-    self.isTerminatorHunterChummy = "zambies"
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 2
     self.CanHearStuff = false
@@ -331,7 +336,7 @@ local function angeringCallFunc( me, rate )
         timer.Simple( time, function()
             if not IsValid( ally ) then return end
             local chainCall = ( not ally.HasBrains and ally:Health() > myHealth and math.random( 0, 100 ) < 55 ) or math.random( 0, 100 ) < 15
-            if chainCall and myCallId and ( not ally.zamb_CallId or ally.zamb_CallId < myCallId ) then
+            if chainCall and ally.term_CallingSound and myCallId and ( not ally.zamb_CallId or ally.zamb_CallId < myCallId ) then
                 ally:ZAMB_AngeringCall( true, 1, false )
                 ally.zamb_CallId = myCallId
 
@@ -347,6 +352,7 @@ local function angeringCallFunc( me, rate )
 end
 
 function ENT:ZAMB_AngeringCall( doNow, rate, newCall )
+    if not self.term_CallingSound then return end
     if newCall then
         self.zamb_CallId = CurTime()
 
@@ -457,7 +463,7 @@ ENT.zamb_HoldRangeMin = nil -- movement_holdrange backs off when its enemy is cl
 ENT.zamb_HoldRangeMax = nil -- and closes in when they're farther, see ZAMB_CanHoldRangeHere
 
 ENT.term_LoseEnemySound = "Zombie.Idle"
-ENT.term_CallingSound = "ambient/creatures/town_zombie_call1.wav"
+ENT.term_CallingSound = "ambient/creatures/town_zombie_call1.wav" -- false and we never call, allies' calls just anger us
 ENT.term_CallingSmallSound = "npc/zombie/zombie_voice_idle6.wav"
 ENT.term_FindEnemySound = "Zombie.Alert"
 ENT.term_AttackSound = "Zombie.Alert"
@@ -494,7 +500,7 @@ ENT.MyClassTask = {
         if not self.loco:IsOnGround() then return end
 
         local cur = CurTime()
-        if self.HasBrains or self.zamb_CantCall or math.random( 1, 100 ) > 25 then
+        if self.HasBrains or not self.term_CallingSound or math.random( 1, 100 ) > 25 then
             self:Term_SpeakSound( self.term_FindEnemySound )
             return
 
@@ -689,12 +695,7 @@ ENT.MyClassTask = {
         if #deadlyAreas > 0 then
             local rotPunishment = self:GetMaxHealth() / #deadlyAreas
             rotPunishment = rotPunishment / 100
-            for _, area in ipairs( deadlyAreas ) do
-                local old = terminator_Extras.zamb_RottingAreas[ area ] or 0
-                terminator_Extras.zamb_RottingAreas[ area ] = old + rotPunishment
-                terminator_Extras.zamb_AreasLastRot[ area ] = CurTime()
-
-            end
+            terminator_Extras.term_Heat.Add( "zamb_rot", nil, deadlyAreas, rotPunishment )
         end
     end,
     OnPathFail = function( self )
@@ -1502,7 +1503,7 @@ function ENT:DoCustomTasks( defaultTasks )
                         myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 1, 4 )
 
                     end
-                    local smellySpot = terminator_Extras.zamb_SmelliestRottingArea
+                    local smellySpot = terminator_Extras.term_Heat.GetHotSpot( "zamb_rot" )
                     local foundSomewhereNotBeen = nil
                     if IsValid( smellySpot ) and math.random( 1, 100 ) < 50 and myTbl.areaIsReachable( self, smellySpot ) then
                         data.toPos = smellySpot:GetCenter()

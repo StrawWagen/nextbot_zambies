@@ -80,7 +80,7 @@ function ENT:AdditionalInitialize()
 
     end--]]
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4

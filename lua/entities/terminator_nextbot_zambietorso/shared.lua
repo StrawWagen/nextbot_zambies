@@ -56,11 +56,10 @@ ENT.IdleActivityTranslations = {
     [ACT_LAND]                          = ACT_LAND,
 }
 
-ENT.zamb_CantCall = true
-
 function ENT:AdditionalInitialize()
     self:SetModel( TORSO_MDL )
     BaseClass.AdditionalInitialize( self )
     self:SetModel( TORSO_MDL )
+    self.term_CallingSound = false
 
 end

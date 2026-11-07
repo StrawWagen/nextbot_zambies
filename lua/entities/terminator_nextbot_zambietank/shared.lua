@@ -84,8 +84,7 @@ ENT.IdleActivityTranslations = {
 ENT.CanHearStuff = true
 
 -- tanks dont care about body smell
-function ENT:AdditionalAvoidAreas()
-end
+ENT.zamb_RotAvoidance = 0
 
 function ENT:canDoRun()
     if self:Health() < self:GetMaxHealth() * ( self.zamb_LoseCoolRatio / 2 ) and not self.zamb_HasArmor then
@@ -125,7 +124,7 @@ end
 function ENT:AdditionalInitialize()
     self:SetModel( TANK_ZAMBIE_MODEL )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = false
 
     self.nextInterceptTry = 0

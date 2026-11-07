@@ -28,6 +28,17 @@ local zambieSpawnSet = {
             maxCount = { 2, 3 },
         },
         {
+            name = "zambie_spiritelite",
+            prettyName = "The Elite Spirit",
+            class = "terminator_nextbot_zambiespiritelite",
+            spawnType = "hunter",
+            difficultyCost = { 300, 600 },
+            minutesNeeded = { 100, 150 }, -- a reward for surviving the long haul
+            countClass = "terminator_nextbot_zambiespiritelite",
+            maxCount = { 1 },
+            cooldown = 190,
+        },
+        {
             name = "zambie_blastcrab",
             prettyName = "A Blastcrab",
             class = "terminator_nextbot_zambieblastcrab",

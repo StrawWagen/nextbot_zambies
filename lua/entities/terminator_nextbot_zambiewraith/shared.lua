@@ -90,7 +90,7 @@ function ENT:AdditionalInitialize()
 
     end--]]
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4
@@ -143,7 +143,7 @@ ENT.wraithTerm_CloakDecidingTask = function( self, data ) -- ran in BehaveUpdate
     local enemDist = self.DistToEnemy
     local allyCount = #self:GetNearbyAllies()
     if doHide and self.IsSeeEnemy and math.random( 0, allyCount * 20 ) < 1 and allyCount >= 1 then
-        if enemDist < 2500 and enemDist > 800 and not self:IsReallyAngry() and not self.zamb_CantCall then
+        if enemDist < 2500 and enemDist > 800 and not self:IsReallyAngry() and self.term_CallingSound then
             self:ZAMB_AngeringCall()
             self:ReallyAnger( 45 )
             doHide = false

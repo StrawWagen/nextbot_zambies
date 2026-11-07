@@ -147,7 +147,7 @@ function ENT:AdditionalInitialize()
     self:SetSubMaterial( 0, "!nextbotZambies_BurntFlesh" )
     self:SetColor( self.ENERGY_COLOR )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.CanHearStuff = false
 
     if math.random( 1, 100 ) < 30 then

@@ -87,7 +87,7 @@ function ENT:AdditionalInitialize()
     self:SetBloodColor( BLOOD_COLOR_ZOMBIE )
     self:SetModel( GRUNT_MODEL )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = math.random( 0, 100 ) < 50
 
     self.nextInterceptTry = 0

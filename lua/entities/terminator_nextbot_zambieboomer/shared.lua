@@ -424,7 +424,7 @@ function ENT:AdditionalInitialize()
     end
     self.zamb_BoomerSpineBone = spine
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains                = false
 
     self.term_SoundPitchShift = -10

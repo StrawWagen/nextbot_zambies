@@ -49,7 +49,7 @@ function ENT:AdditionalInitialize()
     self:SetModel( FAST_ZAMBIE_MODEL )
     self:SetBodygroup( 1, 1 )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = math.random( 1, 100 ) < 85
     self.nextInterceptTry = 0
     self.term_NextIdleTaunt = CurTime() + 4

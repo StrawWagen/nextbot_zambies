@@ -95,8 +95,7 @@ ENT.IdleActivityTranslations = {
 }
 
 -- dont care about body smell
-function ENT:AdditionalAvoidAreas()
-end
+ENT.zamb_RotAvoidance = 0
 
 function ENT:PostHitObject( hit )
     local enemy = self:GetEnemy()
@@ -115,7 +114,7 @@ function ENT:AdditionalInitialize()
     self:SetModel( COP_ZAMBIE_MODEL )
     self:SetBodygroup(0, 1)
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
 
     self.nextInterceptTry = 0

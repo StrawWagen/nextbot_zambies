@@ -36,7 +36,7 @@ function ENT:AdditionalInitialize()
     self:SetBodygroup( 1, 1 )
     self:SetMaterial( "models/props_debris/plasterwall009d" )
     self:SetColor( BURNT_COLOR )
-    self.isTerminatorHunterChummy = "zambies"
+
     self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < 30
     if hasBrains then

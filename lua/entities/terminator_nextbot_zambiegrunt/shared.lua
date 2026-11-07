@@ -46,7 +46,7 @@ ENT.zambGrunt_HasArmor = true
 function ENT:AdditionalInitialize()
     self:SetModel( GRUNT_MODEL )
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < 30
     if hasBrains then

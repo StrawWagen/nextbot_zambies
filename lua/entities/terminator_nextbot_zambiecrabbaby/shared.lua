@@ -70,7 +70,7 @@ ENT.IdleActivityTranslations = {
 ENT.zamb_CallAnim = "rearup"
 ENT.zamb_AttackAnim = ACT_RANGE_ATTACK1
 
-ENT.zamb_CantCall = true
+ENT.term_CallingSound = false
 
 function ENT:AdditionalInitialize()
     self:SetModel( BABY_CRAB_MODEL )
@@ -86,7 +86,7 @@ function ENT:AdditionalInitialize()
 
     end--]]
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
 
     self.nextInterceptTry = 0

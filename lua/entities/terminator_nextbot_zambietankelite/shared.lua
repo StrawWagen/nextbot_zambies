@@ -53,10 +53,6 @@ ENT.TERM_FISTS = "weapon_term_zombieclaws"
 
 
 -- tanks dont care about body smell
-function ENT:AdditionalAvoidAreas()
-end
-
-
 function ENT:AdditionalInitialize()
     BaseClass.AdditionalInitialize( self )
 

@@ -132,8 +132,7 @@ function ENT:shouldDoWalk()
 end
 
 -- dont care about body smell
-function ENT:AdditionalAvoidAreas()
-end
+ENT.zamb_RotAvoidance = 0
 
 -- launch stuff towards our enemy!
 function ENT:PostHitObject( hit )
@@ -164,7 +163,7 @@ function ENT:AdditionalInitialize()
 
     end--]]
 
-    self.isTerminatorHunterChummy = "zambies"
+
     self.HasBrains = true
 
     self.nextInterceptTry = 0

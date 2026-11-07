@@ -55,7 +55,7 @@ cvars.AddChangeCallback( "zambie_director_debug", function( _, _, new ) debuggin
 
 local function debugPrint( ... )
     if not debugging then return end
-    print( ... )
+    permaPrint( ... )
 
 end
 
