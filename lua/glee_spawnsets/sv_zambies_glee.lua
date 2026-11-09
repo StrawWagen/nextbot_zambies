@@ -16,7 +16,7 @@ local zambieSpawnSet = {
     hordeSpawn = true,
     slotSizes = {
         miniminiboss = "minutes*0.1",
-        miniboss = "minutes*0.5", -- every five minutes, 1 miniboss slot opens up
+        miniboss = "minutes*0.5", -- every 2 minutes, 1 miniboss slot opens up
         boss = "minutes*0.1"
     },
     roundEndSound = "music/ravenholm_1.mp3",

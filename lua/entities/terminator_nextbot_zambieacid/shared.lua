@@ -59,7 +59,7 @@ function ENT:AdditionalInitialize()
     self:SetSubMaterial( 0, "!nextbotZambies_AcidFlesh" )
     self:SetColor( ACIDIC_COLOR )
     self:SetBloodColor( BLOOD_COLOR_GREEN )
-    
+
     self.CanHearStuff = false
     local hasBrains = math.random( 1, 100 ) < 30
     if hasBrains then

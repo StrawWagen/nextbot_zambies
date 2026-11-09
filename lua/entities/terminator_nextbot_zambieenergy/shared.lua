@@ -216,6 +216,7 @@ end
 
 function ENT:DealEnergyDamageTo( ent, dmg, pos )
     if not IsValid( ent ) then return end
+    if ent.term_Dead then return end -- dying bots can still have health, damaging them re-runs OnKilled
 
     local pals = ent.isTerminatorHunterChummy and ent.isTerminatorHunterChummy == self.isTerminatorHunterChummy
     if pals then
@@ -291,7 +292,7 @@ function ENT:DoAoeEnergyDamage( ent, rad )
         if aoeEnt == ent then continue end
         if aoeEnt == self then continue end
 
-        if aoeEnt:GetMaxHealth() > 1 and aoeEnt:Health() <= 0 then return end
+        if aoeEnt:GetMaxHealth() > 1 and aoeEnt:Health() <= 0 then continue end
 
         local dmg = rad - aoeEnt:NearestPoint( areaDamagePos ):Distance( areaDamagePos )
         local entsClass = aoeEnt:GetClass()
