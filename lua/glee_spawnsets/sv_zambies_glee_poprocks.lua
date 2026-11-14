@@ -14,27 +14,17 @@ local zambieSpawnSet = {
     hordeSpawn = true,
     roundEndSound = "music/stingers/industrial_suspense1.wav",
     roundStartSound = "music/hl1_song6.mp3",
-    chanceToBeVotable = 0.5,
+    chanceToBeVotable = 0.15,
     chanceToBeVotableWhenHard = 1,
     spawns = {
-        {
-            name = "zambie_spirit",
-            prettyName = "A Spirit Zombie",
-            class = "terminator_nextbot_zambiespirit",
-            spawnType = "hunter",
-            difficultyCost = { 20, 40 },
-            countClass = "terminator_nextbot_zambiespirit",
-            minCount = { 1 }, -- without one, it's just Crabbing a Blast!
-            maxCount = { 2, 3 },
-        },
         {
             name = "zambie_spiritelite",
             prettyName = "The Elite Spirit",
             class = "terminator_nextbot_zambiespiritelite",
             spawnType = "hunter",
-            difficultyCost = { 300, 600 },
-            minutesNeeded = { 100, 150 }, -- a reward for surviving the long haul
+            difficultyCost = 1,
             countClass = "terminator_nextbot_zambiespiritelite",
+            minCount = { 1 }, -- without one, it's just Crabbing a Blast!
             maxCount = { 1 },
             cooldown = 190,
         },
