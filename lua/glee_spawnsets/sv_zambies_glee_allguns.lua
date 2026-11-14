@@ -1,7 +1,7 @@
 
 -- CREDIT MEMEMAN -- https://steamcommunity.com/id/blahaj1337/
 
-local function americanize( hunter )
+local function americanize( _, hunter )
     hunter.CanUseStuff = true
 
 end
@@ -80,7 +80,7 @@ local set = {
         },
         {
             hardRandomChance = nil,
-            name = "zambie_shitter_rpg", -- it's accura
+            name = "zambie_shitter_smg", -- it's accura
             prettyName = "An Armed Diarrhea American",
             class = "terminator_nextbot_zambieacid", -- class spawned
             spawnType = "hunter",
@@ -102,7 +102,7 @@ local set = {
         },
         {
             hardRandomChance = nil,
-            name = "zambie_crack_rpg", -- it's accura
+            name = "zambie_crack_smg", -- it's accura
             prettyName = "An Armed American On Crack",
             class = "terminator_nextbot_zambieenergy", -- class spawned
             spawnType = "hunter",
@@ -113,7 +113,7 @@ local set = {
         },
         {
             hardRandomChance = nil,
-            name = "zambie_shitter_rpg", -- it's accura
+            name = "zambie_crack_rpg", -- it's accura
             prettyName = "A Well Armed Overcharged American On Crack",
             class = "terminator_nextbot_zambieenergy", -- class spawned
             spawnType = "hunter",
@@ -156,7 +156,7 @@ local set = {
             postSpawnedFuncs =  { americanize, giveAR2 },
         },
         {
-            name = "zambie_tank",
+            name = "zambie_tank_rpg",
             prettyName = "A Well Armed American",
             class = "terminator_nextbot_zambietank",
             spawnType = "hunter",
@@ -166,7 +166,6 @@ local set = {
             maxCount = { 1 },
             postSpawnedFuncs = { americanize, giveRPG },
         },
-        -- wraith shit below
         {
             name = "zambie_wraith_drugged",
             prettyName = "A Lightly Armed Drugged American",
@@ -190,52 +189,7 @@ local set = {
             postSpawnedFuncs = { americanize, giveXBOW },
         },
         {
-            name = "zambie_tank",
-            prettyName = "A Well Armed American",
-            class = "terminator_nextbot_zambietank",
-            spawnType = "hunter",
-            difficultyCost = { 100, 150 },
-            difficultyNeeded = { 200, 400 },
-            countClass = "terminator_nextbot_zambietank",
-            maxCount = { 1 },
-            postSpawnedFuncs = { americanize, giveRPG },
-        },
-        -- wraith shit below
-        {
-            name = "zambie_wraith_drugged",
-            prettyName = "A Lightly Armed Drugged American",
-            class = "terminator_nextbot_zambiewraith",
-            spawnType = "hunter",
-            difficultyCost = { 80, 120 },
-            difficultyNeeded = { 160, 190 },
-            countClass = "terminator_nextbot_zambiewraith",
-            maxCount = { 3 },
-            postSpawnedFuncs = { americanize, giveSMG },
-        },
-        {
-            name = "zambie_wraithelite_drugged",
-            prettyName = "A Drugged Average American Sniper",
-            class = "terminator_nextbot_zambiewraithelite",
-            spawnType = "hunter",
-            difficultyCost = { 120, 180 },
-            difficultyNeeded = { 210, 450 },
-            countClass = "terminator_nextbot_zambiewraithelite",
-            maxCount = { 2 },
-            postSpawnedFuncs = { americanize, giveXBOW },
-        },
-        {
-            name = "zambie_tank",
-            prettyName = "A Well Armed American",
-            class = "terminator_nextbot_zambietank",
-            spawnType = "hunter",
-            difficultyCost = { 100, 150 },
-            difficultyNeeded = { 200, 400 },
-            countClass = "terminator_nextbot_zambietank",
-            maxCount = { 1 },
-            postSpawnedFuncs = { americanize, giveRPG },
-        },
-        {
-            name = "zambie_tank",
+            name = "zambie_tank_xbow",
             prettyName = "An Average American Sniper",
             class = "terminator_nextbot_zambietank",
             spawnType = "hunter",

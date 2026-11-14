@@ -15,8 +15,8 @@ local zambieSpawnSet = {
     maxSpawnCount = 40,
     hordeSpawn = true,
     slotSizes = {
-        miniminiboss = "minutes*0.1",
-        miniboss = "minutes*0.5", -- every 2 minutes, 1 miniboss slot opens up
+        miniminiboss = "difficulty*0.005",
+        miniboss = "difficulty*0.025", -- every 40 difficulty (~2 minutes with x2 difficultyPerMin), 1 miniboss slot opens up
         boss = "minutes*0.1"
     },
     roundEndSound = "music/ravenholm_1.mp3",
