@@ -1,0 +1,21 @@
+"Refract"
+{
+    "$model" 1
+    "$normalmap" "dev/water_normal"
+    "$refractamount" "0.18"
+    "$bluramount" 0
+    "$refracttint" "[1 1 1]"
+    "$bumpframe" 0
+    "$bumptransform" "center .5 .5 scale 3 3 rotate 0 translate 0 0"
+    "$nocull" 1
+
+    "Proxies"
+    {
+        "TextureScroll"
+        {
+            "texturescrollvar" "$bumptransform"
+            "texturescrollrate" 0.12
+            "texturescrollangle" 90
+        }
+    }
+}
