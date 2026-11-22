@@ -521,6 +521,8 @@ ENT.MyClassTask = {
         end
     end,
     OnBlockingAlly = function( self, data, theAlly, sinceStarted )
+        self:ZAMB_GetOutOfTheWay( entMeta.GetTable( self ) )
+
         local myOffset = self:GetCreationID() % 4
         myOffset = myOffset
         if self:IsCrouching() and sinceStarted >= myOffset then
@@ -838,6 +840,173 @@ function ENT:ZAMB_HoldRangeBackOff( myTbl, data, enemyPos )
     myTbl.ControlPath2( self, true )
 
 end
+
+-- following rot, movement_rotsmell
+-- rot builds up where the enemy kills us, so climbing it finds the fight without any A*
+-- brainless ones do it fresh out of spawn, when crowded, or when they're blocking an ally while thinking up a path
+-- leaves the pathing budget for the smart ones
+
+local ROTSMELL_COOLDOWN = 20 -- every way out of rotsmell goes to wander, this stops wander sending us straight back
+local ROTSMELL_FRESH_SPAWN = 10
+local ROTSMELL_CROWD_RADIUS = 400
+local ROTSMELL_CROWD_COUNT = 5 -- this many allies within the radius and we're a crowd
+local ROTSMELL_MAX_HOPS = 25 -- rot keeps changing under us, so the climb isn't guaranteed to end on its own
+local ROTSMELL_PATIENCE = 4 -- hops without smelling anything worse, stops us circling a peak we can't reach
+local ROTSMELL_SMELL_RINGS = 4 -- smelling is just a heat lookup, so we smell past dips we can't hop over
+local ROTSMELL_HOP_RINGS = 2
+local ROTSMELL_EDGE_INSET = 50 -- keeps hops off the very edge, where we'd ride the seam between areas
+local ROTSMELL_ARRIVE_DIST = 35
+local ROTSMELL_TRACE_LIFT = Vector( 0, 0, 15 ) -- above stairs and lips we'd walk over
+
+local function rotAt( area )
+    return terminator_Extras.term_Heat.Get( "zamb_rot", nil, area )
+
+end
+
+local function clampInset( val, lo, hi )
+    if hi - lo <= ROTSMELL_EDGE_INSET * 2 then return ( lo + hi ) / 2 end
+    return math.Clamp( val, lo + ROTSMELL_EDGE_INSET, hi - ROTSMELL_EDGE_INSET )
+
+end
+
+-- nearest point on the area, stepped in off whichever edges it's against
+-- areas are axis aligned, so clamping into the shrunk rectangle does that, corners included
+local function hopPosOnArea( area, from )
+    local extent = area:GetExtentInfo()
+    local lo, hi = extent.lo, extent.hi
+    local pos = Vector( clampInset( from.x, lo.x, hi.x ), clampInset( from.y, lo.y, hi.y ), 0 )
+    pos.z = area:GetZ( pos )
+    return pos
+
+end
+
+-- remembers the area as checked, and whether it's the worst rot yet
+local function smellArea( data, area )
+    data.CheckedAreas[area] = true
+    local rot = rotAt( area )
+    if rot > data.WorstRotSmelled then
+        data.WorstRotSmelled = rot
+        data.WorstRotArea = area
+        data.HopsSinceWorse = 0
+
+    end
+    return rot
+
+end
+
+-- smells everything within SMELL_RINGS of us
+-- returns the areas within HOP_RINGS, and which area each smelled area was reached from
+local function smellAround( data, myNav )
+    local checked = data.CheckedAreas
+    if not checked[myNav] then
+        smellArea( data, myNav )
+
+    end
+
+    local hoppable = {}
+    local cameFrom = { [myNav] = true }
+    local ring = { myNav }
+    for depth = 1, ROTSMELL_SMELL_RINGS do
+        local nextRing = {}
+        for _, area in ipairs( ring ) do
+            for _, neighbor in ipairs( area:GetAdjacentAreas() ) do
+                if cameFrom[neighbor] then continue end
+                cameFrom[neighbor] = area
+                nextRing[#nextRing + 1] = neighbor
+                if depth <= ROTSMELL_HOP_RINGS then
+                    hoppable[#hoppable + 1] = neighbor
+
+                end
+                if not checked[neighbor] then
+                    smellArea( data, neighbor )
+
+                end
+            end
+        end
+        ring = nextRing
+        coroutine_yield()
+
+    end
+    return hoppable, cameFrom
+
+end
+
+-- the areas between us and one we smelled this hop, along the nav connections the smell came through
+-- nearest first, nil when it wasn't smelled this hop
+local function stepsToward( cameFrom, myNav, area )
+    local steps = {}
+    while area and area ~= myNav do
+        table.insert( steps, 1, area )
+        area = cameFrom[area]
+
+    end
+    if area ~= myNav then return end
+    return steps
+
+end
+
+-- where we'd stand on the area, if we can barrel straight there
+local function hopPosIfClear( self, myTbl, area, myPos )
+    local pos = hopPosOnArea( area, myPos )
+    if pos.z - myPos.z > myTbl.JumpHeight then return end
+    if not myTbl.ClearOrBreakable( self, myPos + ROTSMELL_TRACE_LIFT, pos + ROTSMELL_TRACE_LIFT ) then return end
+    return pos
+
+end
+
+-- done climbing, whatever the reason, wander takes it from here
+local function stopFollowingRot( self, myTbl, reason, failed )
+    if failed then
+        myTbl.TaskFail( self, "movement_rotsmell" )
+
+    else
+        myTbl.TaskComplete( self, "movement_rotsmell" )
+
+    end
+    myTbl.StartTask( self, "movement_wander", reason )
+
+end
+
+-- a crowd of us all pathing at once is where the lag comes from
+local function inACrowd( self )
+    local myPos = entMeta.GetPos( self )
+    local count = 0
+    for _, ally in ipairs( self:GetNearbyAllies() ) do
+        if not IsValid( ally ) or myPos:DistToSqr( entMeta.GetPos( ally ) ) > ROTSMELL_CROWD_RADIUS^2 then continue end
+        count = count + 1
+        if count >= ROTSMELL_CROWD_COUNT then return true end
+
+    end
+    return false
+
+end
+
+function ENT:ZAMB_CanFollowRot( myTbl )
+    return not myTbl.HasBrains and myTbl.zamb_NextRotSmell < CurTime()
+
+end
+
+function ENT:ZAMB_WantsToFollowRot( myTbl )
+    if not myTbl.ZAMB_CanFollowRot( self, myTbl ) then return false end
+    if CurTime() - self:GetCreationTime() < ROTSMELL_FRESH_SPAWN then return true end
+    return inACrowd( self )
+
+end
+
+-- we're standing in an ally's way thinking up a path, just get moving
+-- called from the blocked ally's coroutine, so ours gets restarted, it's mid path build
+function ENT:ZAMB_GetOutOfTheWay( myTbl )
+    if not myTbl.ZAMB_CanFollowRot( self, myTbl ) then return end
+    if myTbl.IsTaskActive( self, "movement_rotsmell" ) then return end
+    if not myTbl.IsBusyBuildingPath( self, myTbl ) then return end
+
+    myTbl.KillAllTasksWith( self, "movement" )
+    myTbl.StartTask( self, "movement_rotsmell", "im in the way, and thinking too hard" )
+    myTbl.RestartMotionCoroutine( self, myTbl )
+
+end
+
+ENT.zamb_NextRotSmell = 0
 
 function ENT:DoCustomTasks( defaultTasks )
     self.TaskList = {
@@ -1498,6 +1667,13 @@ function ENT:DoCustomTasks( defaultTasks )
                 local nextPathAttempt = myTbl.zamb_NextPathAttempt
 
                 if not data.toPos and nextPathAttempt < CurTime() then
+                    -- before we spend anything on a path
+                    if myTbl.ZAMB_WantsToFollowRot( self, myTbl ) then
+                        myTbl.TaskComplete( self, "movement_wander" )
+                        myTbl.StartTask( self, "movement_rotsmell", "i smell something" )
+                        return
+
+                    end
                     coroutine_yield()
                     myTbl.zamb_NextPathAttempt = CurTime() + math.Rand( 0.5, 1 )
                     if myTbl.term_ExpensivePath then
@@ -1726,6 +1902,154 @@ function ENT:DoCustomTasks( defaultTasks )
                     coroutine_yield()
 
                 end
+            end,
+        },
+        -- climb the rot one hop at a time, no A*, see the top of "following rot"
+        -- each hop smells a few rings out, then steps toward the worst rot smelled so far
+        -- stops standing on the worst rot it's smelled, when nothing around beats it
+        ["movement_rotsmell"] = {
+            OnStart = function( self, data )
+                local myTbl = entMeta.GetTable( self )
+                myTbl.zamb_NextRotSmell = CurTime() + ROTSMELL_COOLDOWN
+                if not myTbl.isUnstucking then
+                    myTbl.InvalidatePath( self, "rotsmell_OnStart" )
+
+                end
+                data.CheckedAreas = {}
+                data.WorstRotSmelled = 0
+                data.WorstRotArea = nil
+                data.HopsSinceWorse = 0
+                data.Hops = 0
+                data.CurrentTaskGoalPos = nil
+                data.CurrentTaskGoalArea = nil
+                data.HopGiveUpAt = 0
+
+            end,
+            EnemyFound = function( self, data )
+                local myTbl = entMeta.GetTable( self )
+                if not myTbl.IsSeeEnemy then return end
+                local distToEnemy = myTbl.DistToEnemy
+                if distToEnemy > myTbl.DuelEnemyDist * 4 then return end
+
+                myTbl.TaskComplete( self, "movement_rotsmell" )
+                if distToEnemy <= myTbl.DuelEnemyDist then
+                    myTbl.StartTask( self, "movement_duelenemy_near", "i found an enemy, right here!" )
+
+                else
+                    myTbl.StartTask( self, "movement_handler", "i found an enemy!" )
+
+                end
+                self:RestartMotionCoroutine()
+
+            end,
+            BehaveUpdatePriority = function( self, data )
+                local myTbl = entMeta.GetTable( self )
+                if not myTbl.IsSeeEnemy then return end
+                if myTbl.DistToEnemy > myTbl.DuelEnemyDist then return end
+
+                myTbl.TaskComplete( self, "movement_rotsmell" )
+                myTbl.StartTask( self, "movement_duelenemy_near", "i see an enemy!" )
+                self:RestartMotionCoroutine()
+
+            end,
+            BehaveUpdateMotion = function( self, data )
+                local myTbl = entMeta.GetTable( self )
+                local myNav = myTbl.GetCurrentNavArea( self, myTbl )
+                if not IsValid( myNav ) then
+                    stopFollowingRot( self, myTbl, "i dont know where i am!", true )
+                    return
+
+                end
+
+                local myPos = entMeta.GetPos( self )
+                local goal = data.CurrentTaskGoalPos
+                -- area too, or a hop that ends near a seam counts before we've stepped onto it
+                local arrived = goal and myNav == data.CurrentTaskGoalArea and myPos:DistToSqr( goal ) < ROTSMELL_ARRIVE_DIST^2
+                if goal and not arrived and data.HopGiveUpAt < CurTime() then
+                    stopFollowingRot( self, myTbl, "i cant get over there", true )
+                    return
+
+                end
+
+                if not goal or arrived then
+                    if data.Hops >= ROTSMELL_MAX_HOPS then
+                        stopFollowingRot( self, myTbl, "i've followed it far enough" )
+                        return
+
+                    end
+
+                    local hoppable, cameFrom = smellAround( data, myNav )
+
+                    local worstArea = data.WorstRotArea
+                    if data.WorstRotSmelled <= 0 or not IsValid( worstArea ) then
+                        stopFollowingRot( self, myTbl, "nothing smells around here" )
+                        return
+
+                    elseif worstArea == myNav then -- we've smelled SMELL_RINGS past it, so it really is the peak
+                        stopFollowingRot( self, myTbl, "this is the worst rot yet" )
+                        return
+
+                    elseif data.HopsSinceWorse >= ROTSMELL_PATIENCE then
+                        stopFollowingRot( self, myTbl, "the smell's fading" )
+                        return
+
+                    end
+
+                    local bestArea, bestPos
+
+                    -- smelled it this hop, follow the way the smell came, gets us through doors and around walls
+                    local steps = stepsToward( cameFrom, myNav, worstArea )
+                    if steps then
+                        for i = math.min( #steps, ROTSMELL_HOP_RINGS ), 1, -1 do
+                            coroutine_yield()
+                            local pos = hopPosIfClear( self, myTbl, steps[i], myPos )
+                            if pos then
+                                bestArea, bestPos = steps[i], pos
+                                break
+
+                            end
+                        end
+                    end
+
+                    -- smelled it on an earlier hop, or the way there's blocked, get as close as the crow flies
+                    if not bestPos then
+                        local candidates = {}
+                        for _, area in ipairs( hoppable ) do
+                            local pos = hopPosOnArea( area, myPos )
+                            local distToWorst = pos:DistToSqr( worstArea:GetClosestPointOnArea( pos ) )
+                            candidates[#candidates + 1] = { area = area, dist = distToWorst }
+
+                        end
+                        table.sort( candidates, function( a, b ) return a.dist < b.dist end )
+
+                        for _, candidate in ipairs( candidates ) do
+                            coroutine_yield()
+                            local pos = hopPosIfClear( self, myTbl, candidate.area, myPos )
+                            if pos then
+                                bestArea, bestPos = candidate.area, pos
+                                break
+
+                            end
+                        end
+                    end
+
+                    if not bestPos then
+                        stopFollowingRot( self, myTbl, "i cant get any closer" )
+                        return
+
+                    end
+
+                    data.Hops = data.Hops + 1
+                    data.HopsSinceWorse = data.HopsSinceWorse + 1
+                    data.CurrentTaskGoalPos = bestPos
+                    data.CurrentTaskGoalArea = bestArea
+                    -- brainless walk slow, give them time
+                    data.HopGiveUpAt = CurTime() + 3 + ( myPos:Distance( bestPos ) / myTbl.WalkSpeed ) * 2
+
+                end
+
+                myTbl.GotoPosSimple( self, myTbl, data.CurrentTaskGoalPos, 10 )
+
             end,
         },
     }
