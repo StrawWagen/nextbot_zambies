@@ -854,8 +854,12 @@ if SERVER then
 
         end
         if IsValid( threat ) and threat ~= self then
-            self:EscapeFrom( threat )
+            -- damage can arrive inside a physics callback, and leaping rebuilds our physics
+            timer.Simple( 0, function()
+                if not IsValid( self ) or not IsValid( threat ) or self:Health() <= 0 then return end
+                self:EscapeFrom( threat )
 
+            end )
         end
     end
 
