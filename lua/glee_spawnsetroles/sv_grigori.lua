@@ -10,6 +10,9 @@ local roles = {
                 purchaseClips = 30,
             },
         },
+        defaultWeapons = {
+            "weapon_fists"
+        },
     },
 }
 
