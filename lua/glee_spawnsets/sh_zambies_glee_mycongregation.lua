@@ -17,7 +17,7 @@ if SERVER then
         roundEndSound = "music/ravenholm_1.mp3",
         roundStartSound = "music/hl2_song7.mp3",
         chanceToBeVotable = 1,
-        defaultWeapons = { "gmod_camera", "termhunt_radio" }, -- no crowbar, the annabelle's all they get
+        defaultWeapons = { "gmod_camera", "termhunt_radio" }, -- no crowbar, the grigori role brings their weapons
         importedMiserySpawns = {
             { name = "zambies_glee_thehorde" },
         },
