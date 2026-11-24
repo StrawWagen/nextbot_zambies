@@ -14,8 +14,9 @@ list.Set( "NPC", "terminator_nextbot_zambiephantom", {
 
 ENT.PhantomColor = Color( 65, 70, 80 )
 ENT.PhantomParticleColor = Vector( 65, 70, 80 )
-ENT.PhantomMaterialName = "nextbotZambies_PhantomFlesh"
-ENT.PhantomAlpha = 130
+ENT.PhantomMaterialName = "nextbot_zambies/phantom_skin"
+ENT.PhantomOverlayMaterialName = "nextbot_zambies/phantom_warp"
+ENT.PhantomAlpha = 255
 
 function ENT:GetPhantomParticleColor()
     return self.PhantomParticleColor
@@ -32,26 +33,87 @@ end
 if CLIENT then
     language.Add( "terminator_nextbot_zambiephantom", ENT.PrintName )
 
-    local materialCreated = false
+    -- draw after opaque things like players and npcs, so they dont cover the phantom
+    ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
+
+    local overlayMaterials = {}
+
+    -- the warp overlay is a refract shader, it samples a copy of the screen
+    -- that copy has to be refreshed from the main translucent pass only
+    -- refreshing it from anywhere else, like the c-menu hover halo pass, turns the whole screen black
+    -- the copy is expensive, so every phantom's skin is drawn first, then there is ONE copy per frame, then all the warps
+    local WARP_MAX_DIST_SQR = 3000^2 -- phantoms further than this just show their skin, they're tiny on screen by then
+
+    local inTranslucentPass = false
+    local warpList = {}
+    local warpCount = 0
+
+    hook.Add( "PreDrawTranslucentRenderables", "zamb_phantom_translucentpass", function( drawingDepth, drawingSkybox )
+        if drawingDepth or drawingSkybox then return end
+        inTranslucentPass = true
+
+    end )
+
+    hook.Add( "PostDrawTranslucentRenderables", "zamb_phantom_translucentpass", function( drawingDepth, drawingSkybox )
+        if not inTranslucentPass then return end
+        inTranslucentPass = false
+
+        if warpCount <= 0 then return end
+
+        render.UpdateScreenEffectTexture()
+
+        for i = 1, warpCount do
+            local ent = warpList[i]
+            if IsValid( ent ) then
+                render.MaterialOverride( ent:GetPhantomOverlayMaterial() )
+                ent:DrawModel()
+
+            end
+        end
+        render.MaterialOverride( nil )
+
+        for i = 1, warpCount do
+            warpList[i] = nil
+
+        end
+        warpCount = 0
+
+    end )
+
+    function ENT:GetPhantomOverlayMaterial()
+        local name = self.PhantomOverlayMaterialName
+        local mat = overlayMaterials[name]
+        if not mat then
+            mat = Material( name )
+            overlayMaterials[name] = mat
+
+        end
+        return mat
+
+    end
 
     function ENT:AdditionalClientInitialize()
-        if not materialCreated then
-            materialCreated = true
-            CreateMaterial( self.PhantomMaterialName, "VertexLitGeneric", {
-                ["$basetexture"] = "models/magnusson_teleporter/magnusson_teleporter_fxglow1",
-                ["$model"] = 1,
-                ["$translucent"] = 1,
-                ["$vertexalpha"] = 1,
-                ["$vertexcolor"] = 1,
-            } )
-        end
-
         self:SetRenderMode( RENDERMODE_TRANSCOLOR )
         self:SetColor( ColorAlpha( self.PhantomColor, self.PhantomAlpha ) )
-        self:SetMaterial( "!" .. self.PhantomMaterialName )
+        self:SetMaterial( self.PhantomMaterialName )
         self:DrawShadow( false )
 
         self.NextAmbientParticle = 0
+
+    end
+
+    -- phantom_skin is the model's material, phantom_warp is drawn over it as a second pass
+    function ENT:Draw()
+        -- skin first
+        BaseClass.Draw( self )
+
+        if not inTranslucentPass then return end
+
+        -- queue the warp, it's drawn over the skin after all the phantoms have drawn their skins
+        if EyePos():DistToSqr( self:GetPos() ) > WARP_MAX_DIST_SQR then return end
+
+        warpCount = warpCount + 1
+        warpList[warpCount] = self
 
     end
 
@@ -155,7 +217,7 @@ ENT.MySpecialActions = {
 }
 
 function ENT:PhantomOnCreated( data )
-    self:SetMaterial( "!" .. self.PhantomMaterialName )
+    self:SetMaterial( self.PhantomMaterialName )
     self:SetRenderMode( RENDERMODE_TRANSCOLOR )
     self:SetColor( ColorAlpha( self.PhantomColor, self.PhantomAlpha ) )
     self:DrawShadow( false )
@@ -512,4 +574,3 @@ function ENT:PerformTeleport( data, dmg )
     self:CreatePhantomExplosion( startPos, 40 )
 
 end
-
